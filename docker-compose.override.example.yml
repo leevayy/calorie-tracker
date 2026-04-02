@@ -1,0 +1,11 @@
+# Optional local tooling: copy to `docker-compose.override.yml` (gitignored) to
+# expose Postgres on the host (e.g. GUI clients). Not for production.
+#
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#
+# Docker Compose merges this file automatically with docker-compose.yml.
+
+services:
+  db:
+    ports:
+      - "5432:5432"

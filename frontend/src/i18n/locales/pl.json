@@ -1,0 +1,93 @@
+{
+  "auth": {
+    "title": "Licznik kalorii",
+    "signInSubtitle": "Zaloguj się na konto",
+    "signUpSubtitle": "Utwórz nowe konto",
+    "email": "E-mail",
+    "password": "Hasło",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••••",
+    "signIn": "Zaloguj się",
+    "signUp": "Zarejestruj się",
+    "toggleToSignUp": "Nie masz konta? Zarejestruj się",
+    "toggleToSignIn": "Masz już konto? Zaloguj się"
+  },
+  "errors": {
+    "network": "Błąd sieci. Sprawdź połączenie i spróbuj ponownie.",
+    "timeout": "Przekroczono limit czasu. Spróbuj ponownie.",
+    "unknown": "Coś poszło nie tak.",
+    "invalidResponse": "Serwer zwrócił nieoczekiwaną odpowiedź.",
+    "http_400": "Nieprawidłowe żądanie. Sprawdź dane.",
+    "http_401": "Nieprawidłowy e-mail lub hasło.",
+    "http_409": "Ten adres e-mail jest już zarejestrowany.",
+    "http_502": "Usługa jest tymczasowo niedostępna. Spróbuj później.",
+    "http_generic": "Żądanie nie powiodło się. Spróbuj ponownie.",
+    "refreshTokenMissing": "Brak tokenu odświeżania. Zaloguj się ponownie."
+  },
+  "states": {
+    "loading": "Ładowanie…",
+    "retry": "Spróbuj ponownie",
+    "errorGeneric": "Coś poszło nie tak.",
+    "emptyHistory": "Brak danych w tym zakresie. Zapisuj posiłki, aby zobaczyć trendy.",
+    "emptySuggestions": "Nie rozpoznano żadnych produktów. Opisz dokładniej.",
+    "emptyMeals": "Brak pozycji.",
+    "emptyDay": "Brak wpisów na ten dzień.",
+    "emptyTip": "Brak wskazówki."
+  },
+  "languages": {
+    "en": "Angielski",
+    "ru": "Rosyjski",
+    "pl": "Polski",
+    "tt": "Tatarski"
+  },
+  "main": {
+    "title": "Licznik kalorii",
+    "tip": "Wskazówka",
+    "regenerateTip": "Nowa wskazówka",
+    "caloriesToday": "Kalorie dziś",
+    "recognizedFoods": "Rozpoznane produkty",
+    "clear": "Wyczyść",
+    "logFoodPlaceholder": "Zapisz posiłek… (np. kurczak z ryżem)",
+    "addToMeal": "Dodaj do",
+    "parsingFood": "Analizujemy opis…"
+  },
+  "meals": {
+    "breakfast": "Śniadanie",
+    "lunch": "Obiad",
+    "dinner": "Kolacja",
+    "snack": "Przekąska"
+  },
+  "history": {
+    "title": "Historia",
+    "weeklySummary": "Podsumowanie tygodnia",
+    "average": "Średnia",
+    "vsGoal": "vs cel",
+    "over": "powyżej",
+    "under": "poniżej",
+    "calPerDay": "kcal / dzień",
+    "dailyBreakdown": "Dzień po dniu",
+    "calShort": "kcal"
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "language": "Język",
+    "languageLabel": "Język aplikacji",
+    "languageHint": "Interfejs, dzienne wskazówki i opisy jedzenia z AI.",
+    "appearance": "Wygląd",
+    "darkMode": "Tryb ciemny",
+    "enabled": "Włączony",
+    "disabled": "Wyłączony",
+    "dailyGoals": "Cele dzienne",
+    "calorieGoal": "Dzienny cel kalorii",
+    "recommendedCalories": "Zwykle 1800–2500 kcal (dostosuj do siebie).",
+    "profile": "Profil",
+    "weight": "Masa (kg)",
+    "height": "Wzrost (cm)",
+    "save": "Zapisz profil",
+    "account": "Konto",
+    "signOut": "Wyloguj",
+    "about": "O aplikacji",
+    "version": "Licznik kalorii v1.0.0",
+    "aboutBody": "Aplikacja do liczenia kalorii z pomocą AI przy wpisywaniu posiłków."
+  }
+}

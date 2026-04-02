@@ -1,0 +1,94 @@
+import { useState } from "react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { Card } from "./ds/Card";
+import { motion, AnimatePresence } from "motion/react";
+
+export interface MealFoodItem {
+  id?: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
+
+interface MealSectionProps {
+  title: string;
+  foods: MealFoodItem[];
+  onRemove: (food: MealFoodItem) => void;
+  /** Shown when expanded and there are no foods */
+  emptyLabel?: string;
+  /** Disables remove actions (e.g. while a delete request is in flight) */
+  removeDisabled?: boolean;
+}
+
+export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled }: MealSectionProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const totalCalories = foods.reduce((sum, food) => sum + food.calories, 0);
+  const totalProtein = foods.reduce((sum, food) => sum + food.protein, 0);
+  const totalCarbs = foods.reduce((sum, food) => sum + food.carbs, 0);
+  const totalFats = foods.reduce((sum, food) => sum + food.fats, 0);
+
+  return (
+    <Card className="overflow-hidden">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div>
+            <h3 className="text-left">{title}</h3>
+            <p className="text-sm text-muted-foreground">
+              {totalCalories} cal • P: {totalProtein}g • C: {totalCarbs}g • F: {totalFats}g
+            </p>
+          </div>
+        </div>
+        {expanded ? (
+          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-t border-border overflow-hidden"
+          >
+            <div className="p-4 pt-3 space-y-2">
+              {foods.length === 0 && emptyLabel ? (
+                <p className="text-sm text-muted-foreground py-2">{emptyLabel}</p>
+              ) : null}
+              {foods.map((food, idx) => (
+                <div
+                  key={food.id ?? idx}
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 group"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm">{food.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {food.calories} cal • P: {food.protein}g • C: {food.carbs}g • F: {food.fats}g
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={removeDisabled || !food.id}
+                    onClick={() => onRemove(food)}
+                    className="p-1 rounded-full hover:bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </Card>
+  );
+}

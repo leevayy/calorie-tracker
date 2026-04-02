@@ -1,0 +1,93 @@
+{
+  "auth": {
+    "title": "Calorie Tracker",
+    "signInSubtitle": "Sign in to your account",
+    "signUpSubtitle": "Create a new account",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••••",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "toggleToSignUp": "Don't have an account? Sign up",
+    "toggleToSignIn": "Already have an account? Sign in"
+  },
+  "errors": {
+    "network": "Network error. Check your connection and try again.",
+    "timeout": "The request timed out. Try again.",
+    "unknown": "Something went wrong.",
+    "invalidResponse": "The server returned an unexpected response.",
+    "http_400": "Invalid request. Check your input.",
+    "http_401": "Invalid email or password.",
+    "http_409": "This email is already registered.",
+    "http_502": "The service is temporarily unavailable. Try again later.",
+    "http_generic": "Request failed. Please try again.",
+    "refreshTokenMissing": "No refresh token. Sign in again."
+  },
+  "states": {
+    "loading": "Loading…",
+    "retry": "Retry",
+    "errorGeneric": "Something went wrong.",
+    "emptyHistory": "No history for this range yet. Log meals to see trends.",
+    "emptySuggestions": "No foods recognized. Try a clearer description.",
+    "emptyMeals": "No items yet.",
+    "emptyDay": "No log for this day.",
+    "emptyTip": "No tip yet."
+  },
+  "languages": {
+    "en": "English",
+    "ru": "Russian",
+    "pl": "Polish",
+    "tt": "Tatar"
+  },
+  "main": {
+    "title": "Calorie Tracker",
+    "tip": "Tip",
+    "regenerateTip": "Generate a new tip",
+    "caloriesToday": "Calories today",
+    "recognizedFoods": "Recognized foods",
+    "clear": "Clear",
+    "logFoodPlaceholder": "Log food… (e.g. chicken and rice)",
+    "addToMeal": "Add to",
+    "parsingFood": "Understanding your food…"
+  },
+  "meals": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack"
+  },
+  "history": {
+    "title": "History",
+    "weeklySummary": "Weekly summary",
+    "average": "Average",
+    "vsGoal": "vs goal",
+    "over": "over",
+    "under": "under",
+    "calPerDay": "cal / day",
+    "dailyBreakdown": "Daily breakdown",
+    "calShort": "cal"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "languageLabel": "App language",
+    "languageHint": "Used for the interface, daily tips, and AI food descriptions.",
+    "appearance": "Appearance",
+    "darkMode": "Dark mode",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "dailyGoals": "Daily goals",
+    "calorieGoal": "Daily calorie goal",
+    "recommendedCalories": "Typical range: 1800–2500 kcal (adjust to your needs).",
+    "profile": "Profile",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "save": "Save profile",
+    "account": "Account",
+    "signOut": "Sign out",
+    "about": "About",
+    "version": "Calorie Tracker v1.0.0",
+    "aboutBody": "A calorie tracking app with AI-assisted food logging."
+  }
+}

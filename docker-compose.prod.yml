@@ -1,0 +1,27 @@
+# Production: TLS + HTTP on 80/443 via Caddy → `api:3000`.
+# Requires repo-root `.env` with API_DOMAIN=your.public.api.hostname
+# (DNS A/AAAA must point at this host before Let's Encrypt will succeed).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,7 @@
+# TLS and HTTP → API (Docker service `api` on port 3000).
+# Set API_DOMAIN in repo-root `.env` (e.g. api.example.com). Defaults to localhost for dry runs.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+{$API_DOMAIN:localhost} {
+	reverse_proxy api:3000
+}
