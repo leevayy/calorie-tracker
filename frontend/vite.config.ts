@@ -3,7 +3,10 @@ import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { createRequire } from 'module'
+import { fileURLToPath } from 'url'
 
+// Vite config runs in Node; in ESM `__dirname` is not defined by default.
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 const zodEntry = require.resolve('zod')
 

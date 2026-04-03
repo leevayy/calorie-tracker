@@ -94,7 +94,14 @@ jobs:
           script: |
             set -euo pipefail
             cd "${VM_DEPLOY_PATH:-/opt/calorie-tracker}"
+            # Ensure `git pull` works in non-interactive CI by authenticating to GitHub over HTTPS.
+            # Without this, the VM may have `origin` set to https://... which requires username/password.
+            ORIGIN_URL="$(git remote get-url origin || true)"
+            git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             git fetch origin main
             git checkout main
             git pull origin main
+            if [ -n "${ORIGIN_URL}" ]; then
+              git remote set-url origin "${ORIGIN_URL}"
+            fi
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
