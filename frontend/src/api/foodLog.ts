@@ -4,7 +4,7 @@ import { apiClient } from "./client";
 import { ApiError, parseResponse } from "./errors";
 
 export async function apiGetDayLog(day: string): Promise<DayLogResponse> {
-  const res = await apiClient.get(`/days/${encodeURIComponent(day)}`);
+  const res = await apiClient.get(`/api/v1/days/${encodeURIComponent(day)}`);
   if (res.status !== 200) {
     if (res.status === 401) throw new ApiError("errors.http_401", res.status);
     throw new ApiError("errors.http_generic", res.status);
@@ -13,7 +13,7 @@ export async function apiGetDayLog(day: string): Promise<DayLogResponse> {
 }
 
 export async function apiCreateFoodEntry(day: string, body: CreateFoodEntryBody): Promise<FoodEntryResponse> {
-  const res = await apiClient.post(`/days/${encodeURIComponent(day)}/entries`, body);
+  const res = await apiClient.post(`/api/v1/days/${encodeURIComponent(day)}/entries`, body);
   if (res.status !== 201) {
     if (res.status === 400) throw new ApiError("errors.http_400", res.status);
     if (res.status === 401) throw new ApiError("errors.http_401", res.status);
@@ -23,7 +23,7 @@ export async function apiCreateFoodEntry(day: string, body: CreateFoodEntryBody)
 }
 
 export async function apiDeleteFoodEntry(entryId: string): Promise<void> {
-  const res = await apiClient.delete(`/entries/${encodeURIComponent(entryId)}`);
+  const res = await apiClient.delete(`/api/v1/entries/${encodeURIComponent(entryId)}`);
   if (res.status !== 204) {
     if (res.status === 401) throw new ApiError("errors.http_401", res.status);
     throw new ApiError("errors.http_generic", res.status);

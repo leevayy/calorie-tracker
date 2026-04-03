@@ -3,6 +3,7 @@ import { initReactI18next } from "react-i18next";
 import en from "./locales/en.json";
 import pl from "./locales/pl.json";
 import ru from "./locales/ru.json";
+import kk from "./locales/kk.json";
 import tt from "./locales/tt.json";
 
 void i18n.use(initReactI18next).init({
@@ -11,6 +12,7 @@ void i18n.use(initReactI18next).init({
     ru: { translation: ru },
     tt: { translation: tt },
     pl: { translation: pl },
+    kk: { translation: kk },
   },
   lng: "en",
   fallbackLng: "en",

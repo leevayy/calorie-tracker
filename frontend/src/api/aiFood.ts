@@ -4,7 +4,7 @@ import { apiClient } from "./client";
 import { ApiError, parseResponse } from "./errors";
 
 export async function apiParseFood(body: ParseFoodRequest): Promise<ParseFoodResponse> {
-  const res = await apiClient.post("/ai/parse-food", body);
+  const res = await apiClient.post("/api/v1/ai/parse-food", body);
   if (res.status !== 200) {
     if (res.status === 400) throw new ApiError("errors.http_400", res.status);
     if (res.status === 401) throw new ApiError("errors.http_401", res.status);

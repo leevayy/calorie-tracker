@@ -249,6 +249,7 @@ const OUTPUT_LANGUAGE_NAMES: Record<PreferredLanguage, string> = {
   ru: "Russian",
   pl: "Polish",
   tt: "Tatar",
+  kk: "Kazakh",
 };
 
 function buildNutritionParserSystem(preferredLanguage: PreferredLanguage): string {
@@ -400,6 +401,18 @@ const FALLBACK_TIP: Record<
         : ` Сезнең төркемдә бүген уртача ${Math.round(ctx.communityAvgCalories)} ккал.`;
     return `${pct}% максат, ${deltaText}. ${macroTip}${communityText}`.trim();
   },
+  kk: (ctx, pct, delta, key, macroLow) => {
+    const deltaText =
+      key === "below" ? `${delta} ккал мақсаттан төмен` : `${delta} ккал мақсаттан жоғары`;
+    const macroTip = macroLow
+      ? "Келесі тағамда ақуыз қосуды қарастырыңыз."
+      : "Бүгін ақуыз қабылдауыңыз жақсы көрінеді.";
+    const communityText =
+      ctx.communityAvgCalories == null
+        ? ""
+        : ` Ұқсас мақсаттағы топта бүгін орташа ${Math.round(ctx.communityAvgCalories)} ккал.`;
+    return `${pct}% мақсат, ${deltaText}. ${macroTip}${communityText}`.trim();
+  },
 };
 
 export function generateFallbackTipMessage(context: TipContext): string {
@@ -416,6 +429,7 @@ export function generateFallbackTipMessage(context: TipContext): string {
       ru: " День уже не в начале — спланируйте нормальный приём пищи, чтобы не недоесть.",
       pl: " Jest już późno lokalnie — zaplanuj solidny posiłek, żeby nie kończyć dnia z deficytem.",
       tt: " Көн инде соңына якын — көн ахырына кимчелек калдырмаска ашарыгызны планлаштырыгыз.",
+      kk: " Жергілікті уақыт бойынша кеш болып қалды — күнді қысқа қалдырмас үшін жақсы тағам жоспарлаңыз.",
     };
     return `${base}${nudges[context.preferredLanguage]}`;
   }

@@ -65,8 +65,11 @@ export class InMemoryRateLimiter {
 }
 
 export function resolveRateLimitBucket(pathname: string): RateLimitBucket | null {
-  if (pathname.startsWith("/auth/")) return "auth";
-  if (pathname.startsWith("/ai/")) return "ai";
+  // When mounted under /api/v1, incoming paths become /api/v1/auth/* and /api/v1/ai/*.
+  // Normalize so the existing bucket logic keeps working.
+  const normalized = pathname.replace(/^\/api\/v1/, "");
+  if (normalized.startsWith("/auth/")) return "auth";
+  if (normalized.startsWith("/ai/")) return "ai";
   return null;
 }
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /** UI + AI response locale (matches app i18n resources). */
-export const PreferredLanguageSchema = z.enum(["en", "ru", "pl", "tt"]);
+export const PreferredLanguageSchema = z.enum(["en", "ru", "pl", "tt", "kk"]);
 export type PreferredLanguage = z.infer<typeof PreferredLanguageSchema>;
 
 /** YYYY-MM-DD */

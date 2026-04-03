@@ -10,4 +10,5 @@ export const PREFERRED_LANGUAGE_OPTIONS: { value: PreferredLanguage; labelKey: s
   { value: "ru", labelKey: "languages.ru" },
   { value: "pl", labelKey: "languages.pl" },
   { value: "tt", labelKey: "languages.tt" },
+  { value: "kk", labelKey: "languages.kk" },
 ];

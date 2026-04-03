@@ -75,36 +75,42 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
   });
 
-  await app.register(swagger, {
-    openapi: {
-      info: {
-        title: "Calorie Tracker Backend API",
-        version: "1.0.0",
-      },
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            bearerFormat: "JWT",
+  // Mount all API routes under /api/v1 (including /health and /docs).
+  await app.register(
+    async (api) => {
+      await api.register(swagger, {
+        openapi: {
+          info: {
+            title: "Calorie Tracker Backend API",
+            version: "1.0.0",
+          },
+          components: {
+            securitySchemes: {
+              bearerAuth: {
+                type: "http",
+                scheme: "bearer",
+                bearerFormat: "JWT",
+              },
+            },
           },
         },
-      },
+      });
+
+      await api.register(swaggerUi, {
+        routePrefix: "/docs",
+      });
+
+      api.get("/health", async () => ({ ok: true }));
+
+      await registerAuthRoutes(api);
+      await registerProfileRoutes(api);
+      await registerFoodLogRoutes(api);
+      await registerHistoryRoutes(api);
+      await registerTipsRoutes(api);
+      await registerAiRoutes(api);
     },
-  });
-
-  await app.register(swaggerUi, {
-    routePrefix: "/docs",
-  });
-
-  app.get("/health", async () => ({ ok: true }));
-
-  await registerAuthRoutes(app);
-  await registerProfileRoutes(app);
-  await registerFoodLogRoutes(app);
-  await registerHistoryRoutes(app);
-  await registerTipsRoutes(app);
-  await registerAiRoutes(app);
+    { prefix: "/api/v1" },
+  );
 
   return app;
 }

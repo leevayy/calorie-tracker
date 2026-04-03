@@ -45,7 +45,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 ### `GET /me`
 
-**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt`), `updatedAt`.
+**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `updatedAt`.
 
 ### `PATCH /me`
 
@@ -102,7 +102,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 | `mealsSummary` | Counts of items per meal for `date` (breakfast/lunch/dinner, optional snack). |
 | `clientTimeZone` | IANA zone id from the client (e.g. `Europe/Warsaw`) so the model can interpret “now” vs local midnight for `date`. |
 | `localTimeHm` | Client’s local wall time on that day, `HH:mm` (24h), same instant as the request. |
-| `preferredLanguage` | `en` \| `ru` \| `pl` \| `tt` — natural-language output for the tip. |
+| `preferredLanguage` | `en` \| `ru` \| `pl` \| `tt` \| `kk` — natural-language output for the tip. |
 
 **Server responsibilities**
 
@@ -134,7 +134,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 **Auth:** required.
 
-**Body:** `ParseFoodRequest` — `text` (user message), `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt`) for food names and portion strings.
+**Body:** `ParseFoodRequest` — `text` (user message), `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`) for food names and portion strings.
 
 **Response:** `200` `ParseFoodResponse` — `suggestions`: array of `ParsedFoodSuggestion` (`name`, `calories`, `protein`, `carbs`, `fats`, `portion`).
 
