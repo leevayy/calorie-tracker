@@ -1,8 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { CreateFoodEntryBodySchema, DayLogResponseSchema, FoodEntryResponseSchema } from "../contracts/food-log.ts";
+import {
+  CreateFoodEntryBodySchema,
+  DayLogResponseSchema,
+  FoodEntryResponseSchema,
+  FrequentFoodsQuerySchema,
+  FrequentFoodsResponseSchema,
+} from "../contracts/food-log.ts";
 import { IsoDateSchema } from "../contracts/common.ts";
 import { db } from "../db/client.ts";
 import { foodEntriesTable, usersTable } from "../db/schema.ts";
@@ -23,6 +29,61 @@ function userIdFromRequest(request: FastifyRequest): string | null {
 }
 
 export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void> {
+  app.get(
+    "/frequent-foods",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        querystring: toJsonSchema(FrequentFoodsQuerySchema),
+        response: {
+          200: toJsonSchema(FrequentFoodsResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
+
+      const parsed = FrequentFoodsQuerySchema.safeParse(request.query);
+      if (!parsed.success) return sendValidationError(reply);
+      if (parsed.data.from > parsed.data.to) {
+        return sendValidationError(reply, "from must be less than or equal to to");
+      }
+
+      const user = await db.query.usersTable.findFirst({
+        where: eq(usersTable.id, userId),
+      });
+      if (!user) return sendUnauthorized(reply);
+
+      const countSql = sql<number>`cast(count(*) as int)`;
+      const rows = await db
+        .select({
+          name: foodEntriesTable.name,
+          count: countSql,
+        })
+        .from(foodEntriesTable)
+        .where(
+          and(
+            eq(foodEntriesTable.userId, userId),
+            gte(foodEntriesTable.day, parsed.data.from),
+            lte(foodEntriesTable.day, parsed.data.to),
+          ),
+        )
+        .groupBy(foodEntriesTable.name)
+        .orderBy(desc(countSql), asc(foodEntriesTable.name))
+        .limit(parsed.data.limit);
+
+      const response = FrequentFoodsResponseSchema.parse({
+        items: rows.map((r) => ({ name: r.name, count: r.count })),
+      });
+      return reply.status(200).send(response);
+    },
+  );
+
   app.get(
     "/days/:day",
     {

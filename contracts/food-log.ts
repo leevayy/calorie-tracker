@@ -35,3 +35,22 @@ export const DayLogResponseSchema = z.object({
   meals: mealBucketsSchema,
 });
 export type DayLogResponse = z.infer<typeof DayLogResponseSchema>;
+
+/** `GET /frequent-foods?from=&to=&limit=` — counts identical `name` per entry row in range. */
+export const FrequentFoodsQuerySchema = z.object({
+  from: IsoDateSchema,
+  to: IsoDateSchema,
+  limit: z.coerce.number().int().min(1).max(20).optional().default(3),
+});
+export type FrequentFoodsQuery = z.infer<typeof FrequentFoodsQuerySchema>;
+
+export const FrequentFoodItemSchema = z.object({
+  name: z.string().min(1),
+  count: z.number().int().positive(),
+});
+export type FrequentFoodItem = z.infer<typeof FrequentFoodItemSchema>;
+
+export const FrequentFoodsResponseSchema = z.object({
+  items: z.array(FrequentFoodItemSchema),
+});
+export type FrequentFoodsResponse = z.infer<typeof FrequentFoodsResponseSchema>;

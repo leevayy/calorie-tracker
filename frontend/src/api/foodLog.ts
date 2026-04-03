@@ -1,7 +1,29 @@
-import type { CreateFoodEntryBody, DayLogResponse, FoodEntryResponse } from "@contracts/food-log";
-import { DayLogResponseSchema, FoodEntryResponseSchema } from "@contracts/food-log";
+import type {
+  CreateFoodEntryBody,
+  DayLogResponse,
+  FoodEntryResponse,
+  FrequentFoodsQuery,
+  FrequentFoodsResponse,
+} from "@contracts/food-log";
+import {
+  DayLogResponseSchema,
+  FoodEntryResponseSchema,
+  FrequentFoodsQuerySchema,
+  FrequentFoodsResponseSchema,
+} from "@contracts/food-log";
 import { apiClient } from "./client";
 import { ApiError, parseResponse } from "./errors";
+
+export async function apiGetFrequentFoods(query: FrequentFoodsQuery): Promise<FrequentFoodsResponse> {
+  const q = FrequentFoodsQuerySchema.parse(query);
+  const params = new URLSearchParams({ from: q.from, to: q.to, limit: String(q.limit) });
+  const res = await apiClient.get(`/api/v1/frequent-foods?${params.toString()}`);
+  if (res.status !== 200) {
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(FrequentFoodsResponseSchema, res.data);
+}
 
 export async function apiGetDayLog(day: string): Promise<DayLogResponse> {
   const res = await apiClient.get(`/api/v1/days/${encodeURIComponent(day)}`);

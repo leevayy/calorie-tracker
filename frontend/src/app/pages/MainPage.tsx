@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import type { MealType } from "@contracts/common";
+import type { FrequentFoodItem } from "@contracts/food-log";
 import type { ParsedFoodSuggestion } from "@contracts/ai-food";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,14 +14,16 @@ import { useRequireAuth } from "../hooks/useRequireAuth";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import { Input } from "../components/ds/Input";
+import { apiGetFrequentFoods } from "@/api/foodLog";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
-import { localIsoDate } from "@/utils/date";
+import { localIsoDate, weekRangeEndingOn } from "@/utils/date";
 import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 import { AnimatePresence, motion } from "motion/react";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+const CHAT_SUGGESTION_LIMIT = 3;
 
 const MainPage = observer(function MainPage() {
   useRequireAuth();
@@ -35,10 +38,12 @@ const MainPage = observer(function MainPage() {
   const [pendingSuggestions, setPendingSuggestions] = useState<ParsedFoodSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [targetMeal, setTargetMeal] = useState<MealType>("dinner");
+  const [weekFrequentFoods, setWeekFrequentFoods] = useState<FrequentFoodItem[]>([]);
 
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const tipAutoKeyRef = useRef("");
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   const preferredLanguage = coercePreferredLanguage(
     profile.read.profile?.preferredLanguage ?? i18n.language,
@@ -103,7 +108,7 @@ const MainPage = observer(function MainPage() {
     });
     if (aiParse.fetchState !== "success") return;
     setChatInput("");
-    const list = aiParse.data?.suggestions ?? [];
+    const list = (aiParse.data?.suggestions ?? []).slice(0, CHAT_SUGGESTION_LIMIT);
     setPendingSuggestions(list);
     setShowSuggestions(list.length > 0);
   };
@@ -141,6 +146,22 @@ const MainPage = observer(function MainPage() {
   const dayFetch = foodLog.dayRead.fetchState;
   const deleteBusy = foodLog.entryDelete.fetchState === "loading";
 
+  useEffect(() => {
+    let cancelled = false;
+    const { from, to } = weekRangeEndingOn(today);
+    void (async () => {
+      try {
+        const res = await apiGetFrequentFoods({ from, to, limit: CHAT_SUGGESTION_LIMIT });
+        if (!cancelled) setWeekFrequentFoods(res.items);
+      } catch {
+        if (!cancelled) setWeekFrequentFoods([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [today, dayData]);
+
   return (
     <div
       className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative"
@@ -177,9 +198,12 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
-        <div className="flex flex-col items-center gap-2 mb-6">
-          <div className="flex justify-center gap-6">
+      <div
+        className={`flex-1 overflow-y-auto px-4 pt-4 ${
+          chatExpanded ? (showSuggestions ? "pb-[78vh]" : "pb-[58vh]") : "pb-20"
+        }`}
+      >
+        <div className="flex justify-center gap-6 mb-6">
           <button
             type="button"
             onClick={() => navigate("/settings")}
@@ -197,13 +221,6 @@ const MainPage = observer(function MainPage() {
           >
             <History className="h-5 w-5" />
           </button>
-          </div>
-          {profile.read.profile ? (
-            <p className="text-xs text-muted-foreground text-center px-2">
-              <span className="text-foreground/80">{t("main.goal")}</span>{" "}
-              {t(`goals.${nutritionGoal}`)}
-            </p>
-          ) : null}
         </div>
 
         <AsyncSection
@@ -307,13 +324,13 @@ const MainPage = observer(function MainPage() {
       <motion.div
         className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-30 max-w-md mx-auto"
         animate={{
-          height: chatExpanded ? (showSuggestions ? "66vh" : "50vh") : "auto",
+          height: chatExpanded ? (showSuggestions ? "85vh" : "72vh") : "auto",
         }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
       >
         <div className="p-4">
           {chatExpanded && showSuggestions ? (
-            <div className="mb-4 max-h-[40vh] overflow-y-auto space-y-2">
+            <div className="mb-4 max-h-[52vh] overflow-y-auto space-y-2">
               <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                 <p className="text-sm">{t("main.recognizedFoods")}</p>
                 <button
@@ -369,6 +386,7 @@ const MainPage = observer(function MainPage() {
 
           <form onSubmit={(e) => void handleChatSubmit(e)} className="flex gap-2">
             <Input
+              ref={chatInputRef}
               placeholder={t("main.logFoodPlaceholder")}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
@@ -385,6 +403,35 @@ const MainPage = observer(function MainPage() {
               <Send className="h-4 w-4" />
             </Button>
           </form>
+
+          {chatExpanded && weekFrequentFoods.length > 0 ? (
+            <div className="mt-4 rounded-xl border border-border bg-muted/40">
+              <p className="px-4 pt-4 pb-2 text-sm font-semibold text-foreground">
+                {t("main.recentLogged")}
+              </p>
+              <ul className="pb-1">
+                {weekFrequentFoods.map((item) => (
+                  <li key={item.name} className="border-t border-border/70 first:border-t-0">
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-4 min-h-[3.25rem] flex items-center justify-between gap-4 hover:bg-accent/90 active:bg-accent transition-colors"
+                      onClick={() => {
+                        setChatInput(item.name);
+                        chatInputRef.current?.focus();
+                      }}
+                    >
+                      <span className="text-base font-medium leading-snug break-words flex-1">
+                        {item.name}
+                      </span>
+                      <span className="text-base tabular-nums text-muted-foreground shrink-0">
+                        ×{item.count}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {chatExpanded ? (
             <button

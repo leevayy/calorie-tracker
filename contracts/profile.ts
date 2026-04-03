@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { UserSummarySchema } from "./auth.ts";
-import { NutritionGoalSchema, PreferredLanguageSchema } from "./common.ts";
+import {
+  AiModelPreferenceSchema,
+  NutritionGoalSchema,
+  PreferredLanguageSchema,
+} from "./common.ts";
 
 export const UserProfileResponseSchema = z.object({
   user: UserSummarySchema,
@@ -9,6 +13,7 @@ export const UserProfileResponseSchema = z.object({
   heightCm: z.number().positive().optional(),
   preferredLanguage: PreferredLanguageSchema,
   nutritionGoal: NutritionGoalSchema,
+  aiModelPreference: AiModelPreferenceSchema,
   updatedAt: z.string().datetime(),
 });
 export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
@@ -20,6 +25,7 @@ export const UpdateProfileRequestSchema = z
     heightCm: z.number().positive().optional(),
     preferredLanguage: PreferredLanguageSchema.optional(),
     nutritionGoal: NutritionGoalSchema.optional(),
+    aiModelPreference: AiModelPreferenceSchema.optional(),
   })
   .refine((b) => Object.keys(b).length > 0, {
     message: "At least one field required",

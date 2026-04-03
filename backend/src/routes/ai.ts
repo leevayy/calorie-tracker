@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { NutritionGoalSchema } from "../contracts/common.ts";
+import { AiModelPreferenceSchema, NutritionGoalSchema } from "../contracts/common.ts";
 import { ParseFoodRequestSchema, ParseFoodResponseSchema } from "../contracts/ai-food.ts";
 import { db } from "../db/client.ts";
 import { usersTable } from "../db/schema.ts";
@@ -11,6 +11,11 @@ import { parseFoodTextWithAi } from "../services/ai.ts";
 function coerceNutritionGoal(raw: string) {
   const parsed = NutritionGoalSchema.safeParse(raw);
   return parsed.success ? parsed.data : "maintain";
+}
+
+function coerceAiModelPreference(raw: string) {
+  const parsed = AiModelPreferenceSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "deepseek";
 }
 
 function userIdFromRequest(request: FastifyRequest): string | null {
@@ -52,6 +57,7 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
           parsed.data.text,
           parsed.data.preferredLanguage,
           coerceNutritionGoal(user.nutritionGoal),
+          coerceAiModelPreference(user.aiModelPreference),
         );
         const response = ParseFoodResponseSchema.parse({ suggestions });
         return reply.status(200).send(response);

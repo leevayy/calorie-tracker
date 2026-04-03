@@ -9,9 +9,10 @@ import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
 import { useTheme } from "../components/ThemeProvider";
 import { useRequireAuth } from "../hooks/useRequireAuth";
-import type { NutritionGoal, PreferredLanguage } from "@contracts/common";
+import type { AiModelPreference, NutritionGoal, PreferredLanguage } from "@contracts/common";
 import type { UpdateProfileRequest } from "@contracts/profile";
 import { useRootStore } from "@/stores/StoreContext";
+import { AI_MODEL_PREFERENCE_OPTIONS, coerceAiModelPreference } from "@/utils/aiModelPreference";
 import { NUTRITION_GOAL_OPTIONS, coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { PREFERRED_LANGUAGE_OPTIONS } from "@/utils/preferredLanguage";
 
@@ -29,6 +30,7 @@ const SettingsPage = observer(function SettingsPage() {
   const [height, setHeight] = useState<string>("");
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>("en");
   const [nutritionGoal, setNutritionGoal] = useState<NutritionGoal>("maintain");
+  const [aiModelPreference, setAiModelPreference] = useState<AiModelPreference>("deepseek");
 
   useEffect(() => {
     void profile.read.load();
@@ -42,6 +44,7 @@ const SettingsPage = observer(function SettingsPage() {
     setHeight(p.heightCm != null ? String(p.heightCm) : "");
     setPreferredLanguage(p.preferredLanguage);
     setNutritionGoal(coerceNutritionGoal(p.nutritionGoal));
+    setAiModelPreference(coerceAiModelPreference(p.aiModelPreference));
   }, [profile.read.profile]);
 
   const handleSaveProfile = () => {
@@ -51,6 +54,7 @@ const SettingsPage = observer(function SettingsPage() {
       dailyCalorieGoal: dailyGoal,
       preferredLanguage,
       nutritionGoal,
+      aiModelPreference,
     };
     if (w != null && !Number.isNaN(w) && w > 0) body.weightKg = w;
     if (h != null && !Number.isNaN(h) && h > 0) body.heightCm = h;
@@ -114,6 +118,26 @@ const SettingsPage = observer(function SettingsPage() {
             ))}
           </select>
           <p className="text-xs text-muted-foreground mt-2">{t("settings.goalHint")}</p>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="mb-4">{t("settings.aiModel")}</h3>
+          <label className="text-sm" htmlFor="settings-ai-model">
+            {t("settings.aiModelLabel")}
+          </label>
+          <select
+            id="settings-ai-model"
+            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-sm"
+            value={aiModelPreference}
+            onChange={(e) => setAiModelPreference(e.target.value as AiModelPreference)}
+          >
+            {AI_MODEL_PREFERENCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {t(opt.labelKey)}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground mt-2">{t("settings.aiModelHint")}</p>
         </Card>
 
         <Card className="p-4">

@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { NutritionGoal, PreferredLanguage } from "../contracts/common.ts";
+import type {
+  AiModelPreference,
+  NutritionGoal,
+  PreferredLanguage,
+} from "../contracts/common.ts";
 import { ParsedFoodSuggestionSchema } from "../contracts/ai-food.ts";
 import { env } from "../env.ts";
 
@@ -152,7 +156,11 @@ function getNutrientAmount(
   return nutrient.amount;
 }
 
-async function aiChat(prompt: string, system: string): Promise<string> {
+async function aiChat(
+  prompt: string,
+  system: string,
+  aiModelPreference: AiModelPreference,
+): Promise<string> {
   const apiKey = env.YANDEX_AI_STUDIO_API_KEY;
   if (!apiKey) {
     throw new Error("Yandex AI Studio API key is missing");
@@ -161,7 +169,7 @@ async function aiChat(prompt: string, system: string): Promise<string> {
   const authorizationHeader = apiKey.startsWith("AQVN")
     ? `Api-Key ${apiKey}`
     : `Bearer ${apiKey}`;
-  const model = resolveModelUri();
+  const model = resolveModelUriForPreference(aiModelPreference);
   const defaultHeaders: HeadersInit = {
     Authorization: authorizationHeader,
     "Content-Type": "application/json",
@@ -192,14 +200,22 @@ async function aiChat(prompt: string, system: string): Promise<string> {
   return json.choices[0]?.message.content ?? "";
 }
 
-function resolveModelUri(): string {
-  if (env.YANDEX_AI_STUDIO_MODEL.startsWith("gpt://")) {
-    return env.YANDEX_AI_STUDIO_MODEL;
+function modelIdForPreference(pref: AiModelPreference): string {
+  return pref === "qwen3" ? env.YANDEX_AI_STUDIO_MODEL_QWEN3 : env.YANDEX_AI_STUDIO_MODEL;
+}
+
+function resolveModelUriFromModelId(modelId: string): string {
+  if (modelId.startsWith("gpt://")) {
+    return modelId;
   }
   if (env.YANDEX_FOLDER_ID) {
-    return `gpt://${env.YANDEX_FOLDER_ID}/${env.YANDEX_AI_STUDIO_MODEL}`;
+    return `gpt://${env.YANDEX_FOLDER_ID}/${modelId}`;
   }
-  return env.YANDEX_AI_STUDIO_MODEL;
+  return modelId;
+}
+
+function resolveModelUriForPreference(pref: AiModelPreference): string {
+  return resolveModelUriFromModelId(modelIdForPreference(pref));
 }
 
 function normalizeParseFoodText(text: string): string {
@@ -210,8 +226,9 @@ function buildParseFoodCacheKey(
   text: string,
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
+  aiModelPreference: AiModelPreference,
 ): string {
-  return `${PARSE_FOOD_CACHE_VERSION}:${resolveModelUri()}:${preferredLanguage}:${nutritionGoal}:${normalizeParseFoodText(text)}`;
+  return `${PARSE_FOOD_CACHE_VERSION}:${resolveModelUriForPreference(aiModelPreference)}:${preferredLanguage}:${nutritionGoal}:${normalizeParseFoodText(text)}`;
 }
 
 function cloneSuggestions(suggestions: ParsedFoodSuggestion[]): ParsedFoodSuggestion[] {
@@ -287,8 +304,13 @@ async function generateParseFoodSuggestions(
   text: string,
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
+  aiModelPreference: AiModelPreference,
 ): Promise<ParsedFoodSuggestion[]> {
-  const raw = await aiChat(text, buildNutritionParserSystem(preferredLanguage, nutritionGoal));
+  const raw = await aiChat(
+    text,
+    buildNutritionParserSystem(preferredLanguage, nutritionGoal),
+    aiModelPreference,
+  );
   const parsed = NutritionParserResponseSchema.parse(JSON.parse(extractFirstJsonObject(raw)));
 
   return parsed.foods.map((food) =>
@@ -307,8 +329,9 @@ export async function parseFoodTextWithAi(
   text: string,
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
+  aiModelPreference: AiModelPreference,
 ): Promise<ParsedFoodSuggestion[]> {
-  const cacheKey = buildParseFoodCacheKey(text, preferredLanguage, nutritionGoal);
+  const cacheKey = buildParseFoodCacheKey(text, preferredLanguage, nutritionGoal, aiModelPreference);
 
   const cached = getCachedParseFoodSuggestions(cacheKey);
   if (cached) {
@@ -320,7 +343,12 @@ export async function parseFoodTextWithAi(
     return cloneSuggestions(await inFlight);
   }
 
-  const requestPromise = generateParseFoodSuggestions(text, preferredLanguage, nutritionGoal);
+  const requestPromise = generateParseFoodSuggestions(
+    text,
+    preferredLanguage,
+    nutritionGoal,
+    aiModelPreference,
+  );
   parseFoodInFlight.set(cacheKey, requestPromise);
 
   try {
@@ -367,7 +395,10 @@ function fractionOfLocalDayElapsed(localTimeHm: string): number {
   return Math.min(1, Math.max(0, (h * 60 + m) / (24 * 60)));
 }
 
-export async function generateTipMessageWithAi(context: TipContext): Promise<string> {
+export async function generateTipMessageWithAi(
+  context: TipContext,
+  aiModelPreference: AiModelPreference,
+): Promise<string> {
   const langName = OUTPUT_LANGUAGE_NAMES[context.preferredLanguage];
   const dayFrac = fractionOfLocalDayElapsed(context.localTimeHm);
   const goalLine = NUTRITION_GOAL_TIP_COACH_HINTS[context.nutritionGoal];
@@ -383,7 +414,7 @@ export async function generateTipMessageWithAi(context: TipContext): Promise<str
     `Do not include markdown or bullet points.`,
   ].join("\n");
 
-  return aiChat(JSON.stringify(context), system);
+  return aiChat(JSON.stringify(context), system, aiModelPreference);
 }
 
 const FALLBACK_TIP: Record<

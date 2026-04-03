@@ -8,6 +8,10 @@ export type PreferredLanguage = z.infer<typeof PreferredLanguageSchema>;
 export const NutritionGoalSchema = z.enum(["maintain", "muscle_gain", "fat_loss", "recomposition"]);
 export type NutritionGoal = z.infer<typeof NutritionGoalSchema>;
 
+/** Which Yandex AI Studio model slug to use for parse-food and daily tips. */
+export const AiModelPreferenceSchema = z.enum(["deepseek", "qwen3"]);
+export type AiModelPreference = z.infer<typeof AiModelPreferenceSchema>;
+
 /** YYYY-MM-DD */
 export const IsoDateSchema = z
   .string()

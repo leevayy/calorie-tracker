@@ -23,3 +23,29 @@ export function parseIsoDateLocal(iso: string): Date {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d, 12, 0, 0, 0);
 }
+
+/** Add calendar days in the local time zone; `iso` is YYYY-MM-DD. */
+export function addDaysLocal(iso: string, deltaDays: number): string {
+  const d = parseIsoDateLocal(iso);
+  d.setDate(d.getDate() + deltaDays);
+  return localIsoDate(d);
+}
+
+/** Inclusive range of local calendar days; `from` and `to` are YYYY-MM-DD, `from <= to`. */
+export function enumerateLocalIsoDatesInclusive(from: string, to: string): string[] {
+  const out: string[] = [];
+  let current = from;
+  while (current <= to) {
+    out.push(current);
+    current = addDaysLocal(current, 1);
+  }
+  return out;
+}
+
+/** Rolling 7-day window ending on `endIso` (inclusive), local calendar. */
+export function weekRangeEndingOn(endIso: string): { from: string; to: string } {
+  const end = parseIsoDateLocal(endIso);
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+  return { from: localIsoDate(start), to: endIso };
+}

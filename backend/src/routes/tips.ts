@@ -7,12 +7,17 @@ import { addDays } from "../lib/dates.ts";
 import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
 import { env } from "../env.ts";
-import { NutritionGoalSchema } from "../contracts/common.ts";
+import { AiModelPreferenceSchema, NutritionGoalSchema } from "../contracts/common.ts";
 import { generateFallbackTipMessage, generateTipMessageWithAi } from "../services/ai.ts";
 
 function coerceNutritionGoal(raw: string) {
   const parsed = NutritionGoalSchema.safeParse(raw);
   return parsed.success ? parsed.data : "maintain";
+}
+
+function coerceAiModelPreference(raw: string) {
+  const parsed = AiModelPreferenceSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "deepseek";
 }
 
 function userIdFromRequest(request: FastifyRequest): string | null {
@@ -131,7 +136,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
       let message = "";
       if (env.YANDEX_AI_STUDIO_API_KEY) {
         try {
-          message = await generateTipMessageWithAi(context);
+          message = await generateTipMessageWithAi(context, coerceAiModelPreference(user.aiModelPreference));
         } catch {
           message = generateFallbackTipMessage(context);
         }

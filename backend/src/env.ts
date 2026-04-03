@@ -23,6 +23,7 @@ const EnvSchema = z.object({
     .url()
     .default("https://llm.api.cloud.yandex.net/v1/chat/completions"),
   YANDEX_AI_STUDIO_MODEL: z.string().default("deepseek-v3-2/latest"),
+  YANDEX_AI_STUDIO_MODEL_QWEN3: z.string().default("qwen3-235b-a22b-fp8/latest"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

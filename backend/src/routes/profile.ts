@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { NutritionGoalSchema, PreferredLanguageSchema } from "../contracts/common.ts";
+import {
+  AiModelPreferenceSchema,
+  NutritionGoalSchema,
+  PreferredLanguageSchema,
+} from "../contracts/common.ts";
 import {
   UpdateProfileRequestSchema,
   UserProfileResponseSchema,
@@ -23,6 +27,11 @@ function coercePreferredLanguage(raw: string) {
 function coerceNutritionGoal(raw: string) {
   const parsed = NutritionGoalSchema.safeParse(raw);
   return parsed.success ? parsed.data : "maintain";
+}
+
+function coerceAiModelPreference(raw: string) {
+  const parsed = AiModelPreferenceSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "deepseek";
 }
 
 export async function registerProfileRoutes(app: FastifyInstance): Promise<void> {
@@ -58,6 +67,7 @@ export async function registerProfileRoutes(app: FastifyInstance): Promise<void>
         heightCm: user.heightCm ?? undefined,
         preferredLanguage: coercePreferredLanguage(user.preferredLanguage),
         nutritionGoal: coerceNutritionGoal(user.nutritionGoal),
+        aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
         updatedAt: user.updatedAt.toISOString(),
       });
 
@@ -100,6 +110,7 @@ export async function registerProfileRoutes(app: FastifyInstance): Promise<void>
           heightCm: parsed.data.heightCm ?? current.heightCm,
           preferredLanguage: parsed.data.preferredLanguage ?? current.preferredLanguage,
           nutritionGoal: parsed.data.nutritionGoal ?? current.nutritionGoal,
+          aiModelPreference: parsed.data.aiModelPreference ?? current.aiModelPreference,
           updatedAt: new Date(),
         })
         .where(eq(usersTable.id, userId));
@@ -119,6 +130,7 @@ export async function registerProfileRoutes(app: FastifyInstance): Promise<void>
         heightCm: updated.heightCm ?? undefined,
         preferredLanguage: coercePreferredLanguage(updated.preferredLanguage),
         nutritionGoal: coerceNutritionGoal(updated.nutritionGoal),
+        aiModelPreference: coerceAiModelPreference(updated.aiModelPreference),
         updatedAt: updated.updatedAt.toISOString(),
       });
 

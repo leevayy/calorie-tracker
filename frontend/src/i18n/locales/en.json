@@ -47,9 +47,12 @@
     "fat_loss": "Lose fat",
     "recomposition": "Recomposition"
   },
+  "aiModels": {
+    "deepseek": "DeepSeek",
+    "qwen3": "Qwen 3"
+  },
   "main": {
     "title": "Calorie Tracker",
-    "goal": "Goal:",
     "tip": "Tip",
     "regenerateTip": "Generate a new tip",
     "caloriesToday": "Calories today",
@@ -57,7 +60,8 @@
     "clear": "Clear",
     "logFoodPlaceholder": "Log food… (e.g. chicken and rice)",
     "addToMeal": "Add to",
-    "parsingFood": "Understanding your food…"
+    "parsingFood": "Understanding your food…",
+    "recentLogged": "Logged today"
   },
   "meals": {
     "breakfast": "Breakfast",
@@ -84,6 +88,9 @@
     "goal": "Nutrition goal",
     "goalLabel": "Your target",
     "goalHint": "Shapes daily tips and how AI estimates ambiguous foods (with your calorie goal).",
+    "aiModel": "AI model",
+    "aiModelLabel": "Assistant model",
+    "aiModelHint": "Used for food parsing and daily tips.",
     "appearance": "Appearance",
     "darkMode": "Dark mode",
     "enabled": "Enabled",

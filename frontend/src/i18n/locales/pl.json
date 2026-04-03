@@ -47,9 +47,12 @@
     "fat_loss": "Redukcja tkanki tłuszczowej",
     "recomposition": "Rekompozycja"
   },
+  "aiModels": {
+    "deepseek": "DeepSeek",
+    "qwen3": "Qwen 3"
+  },
   "main": {
     "title": "Licznik kalorii",
-    "goal": "Cel:",
     "tip": "Wskazówka",
     "regenerateTip": "Nowa wskazówka",
     "caloriesToday": "Kalorie dziś",
@@ -57,7 +60,8 @@
     "clear": "Wyczyść",
     "logFoodPlaceholder": "Zapisz posiłek… (np. kurczak z ryżem)",
     "addToMeal": "Dodaj do",
-    "parsingFood": "Analizujemy opis…"
+    "parsingFood": "Analizujemy opis…",
+    "recentLogged": "Najczęściej w tym tygodniu"
   },
   "meals": {
     "breakfast": "Śniadanie",
@@ -84,6 +88,9 @@
     "goal": "Cel żywieniowy",
     "goalLabel": "Twój cel",
     "goalHint": "Wpływa na dzienne wskazówki i szacowanie niejednoznacznych produktów przez AI (wraz z celem kalorii).",
+    "aiModel": "Model AI",
+    "aiModelLabel": "Model asystenta",
+    "aiModelHint": "Używany do rozpoznawania posiłków i dziennych wskazówek.",
     "appearance": "Wygląd",
     "darkMode": "Tryb ciemny",
     "enabled": "Włączony",

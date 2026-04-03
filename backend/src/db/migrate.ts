@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS food_entries_user_day_meal_idx ON food_entries (user_
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language text NOT NULL DEFAULT 'en';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS nutrition_goal text NOT NULL DEFAULT 'maintain';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_model_preference text NOT NULL DEFAULT 'deepseek';
 `;
 
 async function main(): Promise<void> {
