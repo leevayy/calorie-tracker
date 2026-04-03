@@ -77,7 +77,8 @@ jobs:
 
   deploy-api:
     needs: deploy-static
-    if: vars.ENABLE_VM_DEPLOY == 'true'
+    # Static deploy is allowed to fail (e.g. build error) without blocking backend rollout.
+    if: always() && vars.ENABLE_VM_DEPLOY == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Pull and restart stack on VM
