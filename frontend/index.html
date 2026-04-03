@@ -3,8 +3,43 @@
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
       <title>Calorie Tracker</title>
+    <script>
+      // Prevent a "flash" of the wrong theme by applying the user's preferred
+      // color scheme before React mounts.
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          if (stored === "dark" || stored === "light") {
+            if (stored === "dark") document.documentElement.classList.add("dark");
+            return;
+          }
+          if (
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+          ) {
+            document.documentElement.classList.add("dark");
+          }
+        } catch (e) {
+          // Ignore storage/matchMedia failures (e.g. strict privacy mode).
+        }
+      })();
+    </script>
+    <style>
+      /* iOS Safari zooms focused inputs whose font-size is < 16px. */
+      @supports (-webkit-touch-callout: none) {
+        input,
+        textarea,
+        select {
+          font-size: 16px !important;
+        }
+      }
+    </style>
     </head>
 
     <body>

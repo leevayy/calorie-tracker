@@ -10,12 +10,28 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") {
-      return stored;
+  const [hasUserPreferredTheme, setHasUserPreferredTheme] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem("theme");
+      return stored === "dark" || stored === "light";
+    } catch {
+      return false;
     }
-    return "light";
+  });
+
+  const [theme, setTheme] = useState<Theme>(() => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem("theme");
+    } catch {
+      // Ignore storage failures; fall back to system preference.
+    }
+
+    if (stored === "dark" || stored === "light") return stored;
+
+    const prefersDark =
+      window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+    return prefersDark ? "dark" : "light";
   });
 
   useEffect(() => {
@@ -25,12 +41,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    if (hasUserPreferredTheme) {
+      try {
+        localStorage.setItem("theme", theme);
+      } catch {
+        // Ignore storage failures.
+      }
+    }
+  }, [theme, hasUserPreferredTheme]);
 
   const toggleTheme = () => {
+    setHasUserPreferredTheme(true);
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
+
+  useEffect(() => {
+    if (hasUserPreferredTheme) return;
+
+    const mql = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mql) return;
+
+    const handler = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? "dark" : "light");
+    };
+
+    // Safari < 14 uses addListener/removeListener.
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    } else {
+      // @ts-expect-error - Safari legacy API
+      mql.addListener(handler);
+      // @ts-expect-error - Safari legacy API
+      return () => mql.removeListener(handler);
+    }
+  }, [hasUserPreferredTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
