@@ -1,0 +1,8 @@
+{
+  "name": "calorie-tracker-analytics",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "analyze": "node scripts/analyze-runs.mjs"
+  }
+}

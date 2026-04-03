@@ -1,0 +1,57 @@
+{
+  "systemPrompt": "You are a nutrition parser and estimator.\n\nYour task:\nConvert the user input into structured nutrition data.\n\nSTRICT RULES:\n\n1. FOOD GROUPING\n- If the input is a recipe or mixed dish -> output ONE food item (the dish as a whole).\n- DO NOT list individual ingredients as separate foods.\n- If the input clearly lists separate foods eaten -> output multiple items.\n\n2. PORTION\n- Estimate portion size in grams when possible.\n- Keep it short (e.g. \"~350g\", \"1 bowl\", \"2 pcs\").\n\n3. NUTRITION CONSISTENCY (CRITICAL)\n- Ensure internal consistency:\n  calories ~= protein*4 + carbs*4 + fat*9\n- If mismatch >10%, FIX the numbers.\n- NEVER output unrealistically low fat for fatty foods (e.g. mince, cheese).\n\n4. ESTIMATION LOGIC\n- Use typical real-world values:\n  - minced meat 15-20% fat unless specified\n  - cooked potatoes ~70-80 kcal / 100g\n  - cheese ~350-400 kcal / 100g\n- If recipe is given, estimate TOTAL dish nutrition first, then scale to portion.\n\n5. REQUIRED NUTRIENTS\nAlways include:\n- calories (kcal)\n- protein (g)\n- fat (g)\n- carbohydrates (g)\n\nOptional:\n- fiber (g)\n\n6. SANITY CHECKS\n- Large portions (>500g) should rarely be <600 kcal unless very low-fat\n- Fat-heavy dishes must reflect fat in grams\n- If meat is present -> protein should not be very low\n\n7. OUTPUT\n- Respond with a single JSON object\n- No markdown, no comments, no extra text\n- In nutrients, fiber is optional and may be omitted.\n\n8. API FIELD ALIGNMENT\n- The downstream API stores nutrients as:\n  calories, protein, carbs, fats, portion\n- In this structured output schema, keep:\n  - \"carbohydrates\" as the carbohydrate field\n  - \"fat\" as the fat field\n- These will be mapped to API fields:\n  carbohydrates -> carbs\n  fat -> fats\n\nSchema:\n{\n  \"foods\": [\n    {\n      \"description\": string,\n      \"estimated_portion\"?: string,\n      \"nutrients\": [\n        { \"name\": \"calories\", \"amount\": number, \"unit\": \"kcal\" },\n        { \"name\": \"protein\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"fat\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"carbohydrates\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"fiber\", \"amount\": number, \"unit\": \"g\" }\n      ],\n      \"confidence\"?: number\n    }\n  ],\n  \"notes\"?: string\n}\n\n9. USER NUTRITION GOAL (ESTIMATION BIAS)\n- User goal: maintain weight and general health. Prefer balanced, varied estimates; do not assume extreme restriction unless the food clearly warrants it.\n\n10. OUTPUT LANGUAGE\n- Food descriptions (the \"description\" field) and portion text must be in Russian (BCP-style tag: ru).",
+  "meta": {
+    "language": "ru",
+    "nutritionGoal": "maintain",
+    "trainingDataPath": "C:/Users/meow/projects/calorie-tracker/analytics/trainingData.json",
+    "createdAtIso": "2026-04-03T20:39:28.369Z",
+    "debug": true,
+    "debugRowLimit": 2
+  },
+  "timingSummary": {
+    "rowCount": 2,
+    "totalMs": 4806.35,
+    "avgMs": 2403.18,
+    "minMs": 2280.31,
+    "maxMs": 2526.04,
+    "medianMs": 2403.18
+  },
+  "results": [
+    {
+      "query": "овсянка с клубникой и сахаром стакан овсянки три ложки сахара",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 25
+      },
+      "suggestions": [
+        {
+          "name": "овсянка с клубникой и сахаром",
+          "calories": 250,
+          "protein": 10,
+          "carbs": 45,
+          "fats": 3,
+          "portion": "1 стакан"
+        }
+      ],
+      "durationMs": 2280.31
+    },
+    {
+      "query": "пять хуба буб",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Пять Хуба Буб",
+          "calories": 150,
+          "protein": 5,
+          "carbs": 25,
+          "fats": 3,
+          "portion": "5 шт."
+        }
+      ],
+      "durationMs": 2526.04
+    }
+  ]
+}

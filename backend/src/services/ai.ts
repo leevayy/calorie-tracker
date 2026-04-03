@@ -201,7 +201,16 @@ async function aiChat(
 }
 
 function modelIdForPreference(pref: AiModelPreference): string {
-  return pref === "qwen3" ? env.YANDEX_AI_STUDIO_MODEL_QWEN3 : env.YANDEX_AI_STUDIO_MODEL;
+  switch (pref) {
+    case "qwen3":
+      return env.YANDEX_AI_STUDIO_MODEL_QWEN3;
+    case "gptoss":
+      return env.YANDEX_AI_STUDIO_MODEL_GPT_OSS;
+    case "alicegpt":
+      return env.YANDEX_AI_STUDIO_MODEL_ALICE_GPT;
+    default:
+      return env.YANDEX_AI_STUDIO_MODEL;
+  }
 }
 
 function resolveModelUriFromModelId(modelId: string): string {
@@ -285,7 +294,7 @@ const NUTRITION_GOAL_PARSER_HINTS: Record<NutritionGoal, string> = {
     "User goal: recomposition (typically mild deficit, high protein). Emphasize protein-forward estimates and moderate healthy fats; do not inflate calories for clearly lean meals.",
 };
 
-function buildNutritionParserSystem(
+export function buildNutritionParserSystem(
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
 ): string {
@@ -330,17 +339,21 @@ export async function parseFoodTextWithAi(
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
   aiModelPreference: AiModelPreference,
+  options?: { skipCache?: boolean },
 ): Promise<ParsedFoodSuggestion[]> {
+  const skipCache = options?.skipCache === true;
   const cacheKey = buildParseFoodCacheKey(text, preferredLanguage, nutritionGoal, aiModelPreference);
 
-  const cached = getCachedParseFoodSuggestions(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  if (!skipCache) {
+    const cached = getCachedParseFoodSuggestions(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
-  const inFlight = parseFoodInFlight.get(cacheKey);
-  if (inFlight) {
-    return cloneSuggestions(await inFlight);
+    const inFlight = parseFoodInFlight.get(cacheKey);
+    if (inFlight) {
+      return cloneSuggestions(await inFlight);
+    }
   }
 
   const requestPromise = generateParseFoodSuggestions(
@@ -349,14 +362,21 @@ export async function parseFoodTextWithAi(
     nutritionGoal,
     aiModelPreference,
   );
-  parseFoodInFlight.set(cacheKey, requestPromise);
+
+  if (!skipCache) {
+    parseFoodInFlight.set(cacheKey, requestPromise);
+  }
 
   try {
     const suggestions = await requestPromise;
-    setCachedParseFoodSuggestions(cacheKey, suggestions);
+    if (!skipCache) {
+      setCachedParseFoodSuggestions(cacheKey, suggestions);
+    }
     return cloneSuggestions(suggestions);
   } finally {
-    parseFoodInFlight.delete(cacheKey);
+    if (!skipCache) {
+      parseFoodInFlight.delete(cacheKey);
+    }
   }
 }
 

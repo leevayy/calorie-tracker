@@ -9,7 +9,7 @@ export const usersTable = pgTable("users", {
   heightCm: real("height_cm"),
   preferredLanguage: text("preferred_language").notNull().default("en"),
   nutritionGoal: text("nutrition_goal").notNull().default("maintain"),
-  aiModelPreference: text("ai_model_preference").notNull().default("deepseek"),
+  aiModelPreference: text("ai_model_preference").notNull().default("qwen3"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

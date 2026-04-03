@@ -1,0 +1,870 @@
+{
+  "systemPrompt": "You are a nutrition parser and estimator.\n\nYour task:\nConvert the user input into structured nutrition data.\n\nSTRICT RULES:\n\n1. FOOD GROUPING\n- If the input is a recipe or mixed dish -> output ONE food item (the dish as a whole).\n- DO NOT list individual ingredients as separate foods.\n- If the input clearly lists separate foods eaten -> output multiple items.\n\n2. PORTION\n- Estimate portion size in grams when possible.\n- Keep it short (e.g. \"~350g\", \"1 bowl\", \"2 pcs\").\n\n3. NUTRITION CONSISTENCY (CRITICAL)\n- Ensure internal consistency:\n  calories ~= protein*4 + carbs*4 + fat*9\n- If mismatch >10%, FIX the numbers.\n- NEVER output unrealistically low fat for fatty foods (e.g. mince, cheese).\n\n4. ESTIMATION LOGIC\n- Use typical real-world values:\n  - minced meat 15-20% fat unless specified\n  - cooked potatoes ~70-80 kcal / 100g\n  - cheese ~350-400 kcal / 100g\n- If recipe is given, estimate TOTAL dish nutrition first, then scale to portion.\n\n5. REQUIRED NUTRIENTS\nAlways include:\n- calories (kcal)\n- protein (g)\n- fat (g)\n- carbohydrates (g)\n\nOptional:\n- fiber (g)\n\n6. SANITY CHECKS\n- Large portions (>500g) should rarely be <600 kcal unless very low-fat\n- Fat-heavy dishes must reflect fat in grams\n- If meat is present -> protein should not be very low\n\n7. OUTPUT\n- Respond with a single JSON object\n- No markdown, no comments, no extra text\n- In nutrients, fiber is optional and may be omitted.\n\n8. API FIELD ALIGNMENT\n- The downstream API stores nutrients as:\n  calories, protein, carbs, fats, portion\n- In this structured output schema, keep:\n  - \"carbohydrates\" as the carbohydrate field\n  - \"fat\" as the fat field\n- These will be mapped to API fields:\n  carbohydrates -> carbs\n  fat -> fats\n\nSchema:\n{\n  \"foods\": [\n    {\n      \"description\": string,\n      \"estimated_portion\"?: string,\n      \"nutrients\": [\n        { \"name\": \"calories\", \"amount\": number, \"unit\": \"kcal\" },\n        { \"name\": \"protein\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"fat\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"carbohydrates\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"fiber\", \"amount\": number, \"unit\": \"g\" }\n      ],\n      \"confidence\"?: number\n    }\n  ],\n  \"notes\"?: string\n}\n\n9. USER NUTRITION GOAL (ESTIMATION BIAS)\n- User goal: maintain weight and general health. Prefer balanced, varied estimates; do not assume extreme restriction unless the food clearly warrants it.\n\n10. OUTPUT LANGUAGE\n- Food descriptions (the \"description\" field) and portion text must be in Russian (BCP-style tag: ru).",
+  "meta": {
+    "language": "ru",
+    "nutritionGoal": "maintain",
+    "trainingDataPath": "C:/Users/meow/projects/calorie-tracker/analytics/trainingData.json",
+    "createdAtIso": "2026-04-03T20:40:00.305Z"
+  },
+  "timingSummary": {
+    "rowCount": 46,
+    "totalMs": 306611.61,
+    "avgMs": 6665.47,
+    "minMs": 1544.37,
+    "maxMs": 12513.29,
+    "medianMs": 5993.56
+  },
+  "results": [
+    {
+      "query": "овсянка с клубникой и сахаром стакан овсянки три ложки сахара",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 25
+      },
+      "suggestions": [
+        {
+          "name": "Овсянка с клубникой и сахаром",
+          "calories": 320,
+          "protein": 10,
+          "carbs": 58,
+          "fats": 6,
+          "portion": "~300 г"
+        }
+      ],
+      "durationMs": 9101.96
+    },
+    {
+      "query": "пять хуба буб",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "пять хуба буб",
+          "calories": 125,
+          "protein": 2.5,
+          "carbs": 25,
+          "fats": 1.5,
+          "portion": "5 шт"
+        }
+      ],
+      "durationMs": 7347.24
+    },
+    {
+      "query": "хорошая тарелка солянки",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 10
+      },
+      "suggestions": [
+        {
+          "name": "Солянка, хорошая тарелка",
+          "calories": 380,
+          "protein": 18,
+          "carbs": 25,
+          "fats": 22,
+          "portion": "~350 г"
+        }
+      ],
+      "durationMs": 8457.54
+    },
+    {
+      "query": "чипсы из индейки бутылка пива",
+      "expectedResult": {
+        "calories": 1000,
+        "protein": 13
+      },
+      "suggestions": [
+        {
+          "name": "Чипсы из индейки",
+          "calories": 150,
+          "protein": 10,
+          "carbs": 5,
+          "fats": 10,
+          "portion": "~30g"
+        },
+        {
+          "name": "Пиво",
+          "calories": 200,
+          "protein": 2,
+          "carbs": 10,
+          "fats": 0,
+          "portion": "500 мл"
+        }
+      ],
+      "durationMs": 9450.67
+    },
+    {
+      "query": "арахисовая паста",
+      "expectedResult": {
+        "calories": 150,
+        "protein": 12
+      },
+      "suggestions": [
+        {
+          "name": "Арахисовая паста",
+          "calories": 190,
+          "protein": 8,
+          "carbs": 6,
+          "fats": 16,
+          "portion": "~32 г (2 ст. л.)"
+        }
+      ],
+      "durationMs": 5341.96
+    },
+    {
+      "query": "бутербродики вафля",
+      "expectedResult": {
+        "calories": 410,
+        "protein": 15
+      },
+      "suggestions": [
+        {
+          "name": "Бутербродики с вафлей",
+          "calories": 280,
+          "protein": 6,
+          "carbs": 40,
+          "fats": 10,
+          "portion": "2 шт ~60г"
+        }
+      ],
+      "durationMs": 6127.67
+    },
+    {
+      "query": "5 хуба буб",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "5 хуба буб",
+          "calories": 500,
+          "protein": 20,
+          "carbs": 80,
+          "fats": 10,
+          "portion": "5 шт"
+        }
+      ],
+      "durationMs": 5928.18
+    },
+    {
+      "query": "шашлычок",
+      "expectedResult": {
+        "calories": 900,
+        "protein": 45
+      },
+      "suggestions": [
+        {
+          "name": "Шашлык из свинины",
+          "calories": 540,
+          "protein": 45,
+          "carbs": 0,
+          "fats": 36,
+          "portion": "~300 г"
+        }
+      ],
+      "durationMs": 6258.6
+    },
+    {
+      "query": "макарошки",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 5
+      },
+      "suggestions": [
+        {
+          "name": "Макароны",
+          "calories": 280,
+          "protein": 10,
+          "carbs": 60,
+          "fats": 1.5,
+          "portion": "~200g"
+        }
+      ],
+      "durationMs": 6058.94
+    },
+    {
+      "query": "ред бул",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Ред Булл",
+          "calories": 110,
+          "protein": 0,
+          "carbs": 27,
+          "fats": 0,
+          "portion": "1 банка (250 мл)"
+        }
+      ],
+      "durationMs": 5561.96
+    },
+    {
+      "query": "конфетка",
+      "expectedResult": {
+        "calories": 60,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Конфета",
+          "calories": 100,
+          "protein": 1,
+          "carbs": 18,
+          "fats": 3,
+          "portion": "~20g"
+        }
+      ],
+      "durationMs": 5297.66
+    },
+    {
+      "query": "пловчик",
+      "expectedResult": {
+        "calories": 600,
+        "protein": 15
+      },
+      "suggestions": [
+        {
+          "name": "плов",
+          "calories": 450,
+          "protein": 15,
+          "carbs": 68,
+          "fats": 12,
+          "portion": "~350g"
+        }
+      ],
+      "durationMs": 5707.94
+    },
+    {
+      "query": "мюсли",
+      "expectedResult": {
+        "calories": 340,
+        "protein": 7
+      },
+      "suggestions": [
+        {
+          "name": "мюсли",
+          "calories": 190,
+          "protein": 6,
+          "carbs": 28,
+          "fats": 7,
+          "portion": "~50g"
+        }
+      ],
+      "durationMs": 5278.73
+    },
+    {
+      "query": "конфетки",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "конфеты",
+          "calories": 450,
+          "protein": 5,
+          "carbs": 60,
+          "fats": 20,
+          "portion": "~100g"
+        }
+      ],
+      "durationMs": 6316.37
+    },
+    {
+      "query": "хуба бубы",
+      "expectedResult": {
+        "calories": 80,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "хуба бубы",
+          "calories": 200,
+          "protein": 10,
+          "carbs": 22,
+          "fats": 8,
+          "portion": "1 порция"
+        }
+      ],
+      "durationMs": 5870.62
+    },
+    {
+      "query": "яблоко",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "яблоко",
+          "calories": 95,
+          "protein": 0.5,
+          "carbs": 25,
+          "fats": 0.3,
+          "portion": "~180g"
+        }
+      ],
+      "durationMs": 4965.92
+    },
+    {
+      "query": "конфетка и плов",
+      "expectedResult": {
+        "calories": 460,
+        "protein": 15
+      },
+      "suggestions": [
+        {
+          "name": "Конфета",
+          "calories": 50,
+          "protein": 0.5,
+          "carbs": 9,
+          "fats": 2,
+          "portion": "1 шт"
+        },
+        {
+          "name": "Плов",
+          "calories": 450,
+          "protein": 15,
+          "carbs": 55,
+          "fats": 18,
+          "portion": "~350 г"
+        }
+      ],
+      "durationMs": 10920.11
+    },
+    {
+      "query": "мороженое",
+      "expectedResult": {
+        "calories": 400,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Мороженое",
+          "calories": 207,
+          "protein": 3.5,
+          "carbs": 24,
+          "fats": 11,
+          "portion": "~100g"
+        }
+      ],
+      "durationMs": 6570.09
+    },
+    {
+      "query": "2 хуба бубы",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "2 хуба бубы",
+          "calories": 400,
+          "protein": 12,
+          "carbs": 50,
+          "fats": 18,
+          "portion": "2 шт"
+        }
+      ],
+      "durationMs": 8452.41
+    },
+    {
+      "query": "2 яйца с беконом",
+      "expectedResult": {
+        "calories": 340,
+        "protein": 20
+      },
+      "suggestions": [
+        {
+          "name": "Яичница с беконом",
+          "calories": 450,
+          "protein": 22,
+          "carbs": 2,
+          "fats": 35,
+          "portion": "~200 г"
+        }
+      ],
+      "durationMs": 5687.58
+    },
+    {
+      "query": "3 хуба бубы",
+      "expectedResult": {
+        "calories": 150,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "3 хуба бубы",
+          "calories": 450,
+          "protein": 15,
+          "carbs": 54,
+          "fats": 18,
+          "portion": "3 шт"
+        }
+      ],
+      "durationMs": 5077.88
+    },
+    {
+      "query": "два бутера супчик",
+      "expectedResult": {
+        "calories": 540,
+        "protein": 20
+      },
+      "suggestions": [
+        {
+          "name": "Два бутерброда с супчиком",
+          "calories": 420,
+          "protein": 18,
+          "carbs": 52,
+          "fats": 14,
+          "portion": "2 шт"
+        }
+      ],
+      "durationMs": 8078.98
+    },
+    {
+      "query": "4 яйца с беконом 4 куска хлеба",
+      "expectedResult": {
+        "calories": 740,
+        "protein": 35
+      },
+      "suggestions": [
+        {
+          "name": "Яичница с беконом и тостами",
+          "calories": 820,
+          "protein": 38,
+          "carbs": 36,
+          "fats": 58,
+          "portion": "~400g"
+        }
+      ],
+      "durationMs": 8285.48
+    },
+    {
+      "query": "овсянка с клубникой и сахаром бутербродики",
+      "expectedResult": {
+        "calories": 700,
+        "protein": 33
+      },
+      "suggestions": [
+        {
+          "name": "Овсянка с клубникой и сахаром",
+          "calories": 240,
+          "protein": 7,
+          "carbs": 42,
+          "fats": 4,
+          "portion": "~300г"
+        },
+        {
+          "name": "Бутерброды с маслом и колбасой или сыром",
+          "calories": 320,
+          "protein": 12,
+          "carbs": 38,
+          "fats": 14,
+          "portion": "2 шт"
+        }
+      ],
+      "durationMs": 12513.29
+    },
+    {
+      "query": "бутерброды",
+      "expectedResult": {
+        "calories": 340,
+        "protein": 10
+      },
+      "suggestions": [
+        {
+          "name": "бутерброды",
+          "calories": 450,
+          "protein": 15,
+          "carbs": 55,
+          "fats": 18,
+          "portion": "~200g"
+        }
+      ],
+      "durationMs": 8330.45
+    },
+    {
+      "query": "печеньки",
+      "expectedResult": {
+        "calories": 160,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Печеньки",
+          "calories": 150,
+          "protein": 2,
+          "carbs": 19,
+          "fats": 7,
+          "portion": "~30g (3-4 шт)"
+        }
+      ],
+      "durationMs": 5650.82
+    },
+    {
+      "query": "огромная порция макарох",
+      "expectedResult": {
+        "calories": 800,
+        "protein": 25
+      },
+      "suggestions": [
+        {
+          "name": "огромная порция макарон",
+          "calories": 650,
+          "protein": 20,
+          "carbs": 130,
+          "fats": 5,
+          "portion": "~500g"
+        }
+      ],
+      "durationMs": 7238.68
+    },
+    {
+      "query": "салатик",
+      "expectedResult": {
+        "calories": 150,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "салатик",
+          "calories": 80,
+          "protein": 2,
+          "carbs": 7,
+          "fats": 5,
+          "portion": "~150g"
+        }
+      ],
+      "durationMs": 7999.87
+    },
+    {
+      "query": "пол база",
+      "expectedResult": {
+        "calories": 400,
+        "protein": 0
+      },
+      "suggestions": [],
+      "durationMs": 1544.37
+    },
+    {
+      "query": "какава",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Какао",
+          "calories": 50,
+          "protein": 2,
+          "carbs": 10,
+          "fats": 1,
+          "portion": "1 чашка"
+        }
+      ],
+      "durationMs": 5647.3
+    },
+    {
+      "query": "овсянка",
+      "expectedResult": {
+        "calories": 300,
+        "protein": 8
+      },
+      "suggestions": [
+        {
+          "name": "Овсянка",
+          "calories": 150,
+          "protein": 5,
+          "carbs": 27,
+          "fats": 3,
+          "portion": "~250g"
+        }
+      ],
+      "durationMs": 5535.74
+    },
+    {
+      "query": "персик",
+      "expectedResult": {
+        "calories": 46,
+        "protein": 1
+      },
+      "suggestions": [
+        {
+          "name": "Персик",
+          "calories": 60,
+          "protein": 1.4,
+          "carbs": 14,
+          "fats": 0.3,
+          "portion": "~150 г"
+        }
+      ],
+      "durationMs": 5131.45
+    },
+    {
+      "query": "сахар",
+      "expectedResult": {
+        "calories": 60,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "сахар",
+          "calories": 99,
+          "protein": 0,
+          "carbs": 25,
+          "fats": 0,
+          "portion": "1 ст. ложка (~25 г)"
+        }
+      ],
+      "durationMs": 5874.28
+    },
+    {
+      "query": "картофельный суп",
+      "expectedResult": {
+        "calories": 108,
+        "protein": 6.7
+      },
+      "suggestions": [
+        {
+          "name": "Картофельный суп",
+          "calories": 120,
+          "protein": 4,
+          "carbs": 18,
+          "fats": 3,
+          "portion": "~350г"
+        }
+      ],
+      "durationMs": 6516.87
+    },
+    {
+      "query": "пара кусков хлеба",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "пара кусков хлеба",
+          "calories": 160,
+          "protein": 6,
+          "carbs": 30,
+          "fats": 2,
+          "portion": "2 куска"
+        }
+      ],
+      "durationMs": 5220.88
+    },
+    {
+      "query": "вафля",
+      "expectedResult": {
+        "calories": 60,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Вафля",
+          "calories": 75,
+          "protein": 1.2,
+          "carbs": 8.5,
+          "fats": 4.5,
+          "portion": "1 шт (~15 г)"
+        }
+      ],
+      "durationMs": 5571.28
+    },
+    {
+      "query": "салат 3 куска хлеба",
+      "expectedResult": {
+        "calories": 300,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Салат",
+          "calories": 150,
+          "protein": 3,
+          "carbs": 12,
+          "fats": 10,
+          "portion": "~200g"
+        },
+        {
+          "name": "Хлеб, 3 куска",
+          "calories": 240,
+          "protein": 8,
+          "carbs": 45,
+          "fats": 3,
+          "portion": "3 куска (~90g)"
+        }
+      ],
+      "durationMs": 10255.36
+    },
+    {
+      "query": "арахис",
+      "expectedResult": {
+        "calories": 900,
+        "protein": 45
+      },
+      "suggestions": [
+        {
+          "name": "арахис",
+          "calories": 170,
+          "protein": 7,
+          "carbs": 6,
+          "fats": 15,
+          "portion": "~30g (1 порция орехов)"
+        }
+      ],
+      "durationMs": 5657.41
+    },
+    {
+      "query": "блины с творогом",
+      "expectedResult": {
+        "calories": 380,
+        "protein": 18
+      },
+      "suggestions": [
+        {
+          "name": "Блины с творогом",
+          "calories": 480,
+          "protein": 22,
+          "carbs": 58,
+          "fats": 18,
+          "portion": "~350g (3 блина с начинкой)"
+        }
+      ],
+      "durationMs": 9658.92
+    },
+    {
+      "query": "колбаски",
+      "expectedResult": {
+        "calories": 240,
+        "protein": 11
+      },
+      "suggestions": [
+        {
+          "name": "колбаски",
+          "calories": 420,
+          "protein": 18,
+          "carbs": 6,
+          "fats": 32,
+          "portion": "~200g"
+        }
+      ],
+      "durationMs": 5109.99
+    },
+    {
+      "query": "мороженко",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 3
+      },
+      "suggestions": [
+        {
+          "name": "мороженое",
+          "calories": 207,
+          "protein": 3.5,
+          "carbs": 24,
+          "fats": 11,
+          "portion": "~100g"
+        }
+      ],
+      "durationMs": 6791.56
+    },
+    {
+      "query": "бутеры с арахисовой пастой",
+      "expectedResult": {
+        "calories": 360,
+        "protein": 21
+      },
+      "suggestions": [
+        {
+          "name": "Бутерброды с арахисовой пастой",
+          "calories": 520,
+          "protein": 18,
+          "carbs": 52,
+          "fats": 28,
+          "portion": "~200g"
+        }
+      ],
+      "durationMs": 5683.77
+    },
+    {
+      "query": "орешки",
+      "expectedResult": {
+        "calories": 90,
+        "protein": 4
+      },
+      "suggestions": [
+        {
+          "name": "Орехи смешанные",
+          "calories": 180,
+          "protein": 6,
+          "carbs": 4,
+          "fats": 17,
+          "portion": "~30g"
+        }
+      ],
+      "durationMs": 6275.65
+    },
+    {
+      "query": "картофельный суп",
+      "expectedResult": {
+        "calories": 308,
+        "protein": 6.7
+      },
+      "suggestions": [
+        {
+          "name": "Картофельный суп",
+          "calories": 120,
+          "protein": 4,
+          "carbs": 18,
+          "fats": 3,
+          "portion": "~350g"
+        }
+      ],
+      "durationMs": 5198.7
+    },
+    {
+      "query": "хлеб",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "хлеб",
+          "calories": 80,
+          "protein": 3,
+          "carbs": 15,
+          "fats": 1,
+          "portion": "1 ломтик ~30г"
+        }
+      ],
+      "durationMs": 5793.8
+    },
+    {
+      "query": "орешки",
+      "expectedResult": {
+        "calories": 550,
+        "protein": 27
+      },
+      "suggestions": [
+        {
+          "name": "Орехи смешанные",
+          "calories": 180,
+          "protein": 6,
+          "carbs": 4,
+          "fats": 17,
+          "portion": "~30г"
+        }
+      ],
+      "durationMs": 7266.68
+    }
+  ]
+}

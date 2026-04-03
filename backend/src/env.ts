@@ -24,6 +24,26 @@ const EnvSchema = z.object({
     .default("https://llm.api.cloud.yandex.net/v1/chat/completions"),
   YANDEX_AI_STUDIO_MODEL: z.string().default("deepseek-v3-2/latest"),
   YANDEX_AI_STUDIO_MODEL_QWEN3: z.string().default("qwen3-235b-a22b-fp8/latest"),
+  /**
+   * Override for aiModelPreference `gptoss`. Empty/unset → default slug (confirm in Model Gallery).
+   */
+  YANDEX_AI_STUDIO_MODEL_GPT_OSS: z.preprocess(
+    (val) => {
+      const s = val == null ? "" : String(val).trim();
+      return s.length > 0 ? s : "gpt-oss-20b/latest";
+    },
+    z.string().min(1),
+  ),
+  /**
+   * Override for aiModelPreference `alicegpt`. Empty/unset → YandexGPT slug (Alice family in product; confirm in console).
+   */
+  YANDEX_AI_STUDIO_MODEL_ALICE_GPT: z.preprocess(
+    (val) => {
+      const s = val == null ? "" : String(val).trim();
+      return s.length > 0 ? s : "yandexgpt/latest";
+    },
+    z.string().min(1),
+  ),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

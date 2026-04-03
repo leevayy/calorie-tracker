@@ -11,5 +11,5 @@
     "allowSyntheticDefaultImports": true,
     "types": ["node"]
   },
-  "include": ["src", "../contracts"]
+  "include": ["src", "scripts", "../contracts"]
 }

@@ -6,7 +6,8 @@
     "dev": "tsx watch src/server.ts",
     "start": "node --experimental-strip-types src/server.ts",
     "check": "tsc --noEmit",
-    "db:migrate": "node --experimental-strip-types src/db/migrate.ts"
+    "db:migrate": "node --experimental-strip-types src/db/migrate.ts",
+    "benchmark:parse-food": "node --experimental-strip-types --env-file=.env .\\scripts\\parse-food-benchmark.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

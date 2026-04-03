@@ -17,7 +17,7 @@ function coerceNutritionGoal(raw: string) {
 
 function coerceAiModelPreference(raw: string) {
   const parsed = AiModelPreferenceSchema.safeParse(raw);
-  return parsed.success ? parsed.data : "deepseek";
+  return parsed.success ? parsed.data : "qwen3";
 }
 
 function userIdFromRequest(request: FastifyRequest): string | null {

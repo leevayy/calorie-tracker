@@ -49,7 +49,9 @@
   },
   "aiModels": {
     "deepseek": "DeepSeek",
-    "qwen3": "Qwen 3"
+    "qwen3": "Qwen 3",
+    "gptoss": "GPT-OSS",
+    "alicegpt": "Alice GPT"
   },
   "main": {
     "title": "Трекер калорий",

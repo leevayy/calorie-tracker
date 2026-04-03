@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parse-food benchmark — 2026-04-03</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 1.25rem; max-width: 1100px; }
+    h1 { font-size: 1.25rem; }
+    h2 { font-size: 1rem; margin-top: 1.75rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+    th, td { border: 1px solid #8884; padding: 0.35rem 0.5rem; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .charts { display: grid; gap: 1.5rem; }
+    @media (min-width: 720px) { .charts.two { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .charts.metrics3 { grid-template-columns: 1fr 1fr 1fr; } }
+    .chart-box { position: relative; height: 280px; }
+    .muted { color: #666; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>Parse-food benchmark report</h1>
+  <p class="muted">C:/Users/meow/projects/calorie-tracker/analytics/runs/2026-04-03</p>
+
+  <h2>Summary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>OK rows</th>
+        <th>Errors</th>
+        <th>MAE kcal</th>
+        <th>MAE protein (g)</th>
+        <th>RMSE kcal</th>
+        <th>RMSE protein</th>
+        <th>Mean Δ kcal</th>
+        <th>Mean Δ protein</th>
+        <th>Avg parse (ms)</th>
+        <th>Median (ms)</th>
+        <th>Parse min–max (ms)</th>
+        <th>Total parse (s)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>alicegpt</td>
+        <td>45</td>
+        <td>1</td>
+        <td>132.7</td>
+        <td>6.1</td>
+        <td>215.7</td>
+        <td>10.0</td>
+        <td>-82.3</td>
+        <td>-0.9</td>
+        <td>2190.9</td>
+        <td>1979.8</td>
+        <td>1847–3713</td>
+        <td>100.78</td>
+      </tr>
+<tr>
+        <td>deepseek</td>
+        <td>41</td>
+        <td>5</td>
+        <td>170.5</td>
+        <td>7.1</td>
+        <td>240.1</td>
+        <td>11.5</td>
+        <td>-49.4</td>
+        <td>2.6</td>
+        <td>34264.4</td>
+        <td>32577.5</td>
+        <td>6216–105119</td>
+        <td>1576.16</td>
+      </tr>
+<tr>
+        <td>gptoss</td>
+        <td>46</td>
+        <td>0</td>
+        <td>171.4</td>
+        <td>6.6</td>
+        <td>246.9</td>
+        <td>9.8</td>
+        <td>-39.8</td>
+        <td>-0.0</td>
+        <td>3665.3</td>
+        <td>3042.5</td>
+        <td>1684–11787</td>
+        <td>168.60</td>
+      </tr>
+<tr>
+        <td>qwen3</td>
+        <td>46</td>
+        <td>0</td>
+        <td>161.7</td>
+        <td>5.6</td>
+        <td>224.7</td>
+        <td>9.0</td>
+        <td>-49.7</td>
+        <td>0.3</td>
+        <td>6665.5</td>
+        <td>5993.6</td>
+        <td>1544–12513</td>
+        <td>306.61</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="charts two metrics3">
+    <div>
+      <h2>MAE — calories (kcal)</h2>
+      <div class="chart-box"><canvas id="maeCal"></canvas></div>
+    </div>
+    <div>
+      <h2>MAE — protein (g)</h2>
+      <div class="chart-box"><canvas id="maeProt"></canvas></div>
+    </div>
+    <div>
+      <h2>Avg parse latency</h2>
+      <p class="muted">Wall time per training row (same rows as benchmark).</p>
+      <div class="chart-box"><canvas id="latencyAvg"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div>
+      <h2>Predicted vs expected — calories</h2>
+      <p class="muted">Each point is one training row (summed suggestions). Perfect agreement lies on the diagonal.</p>
+      <div class="chart-box" style="height:360px"><canvas id="scatterCal"></canvas></div>
+    </div>
+    <div>
+      <h2>Predicted vs expected — protein (g)</h2>
+      <div class="chart-box" style="height:360px"><canvas id="scatterProt"></canvas></div>
+    </div>
+  </div>
+
+  <script type="application/json" id="report-data">{"runDir":"C:/Users/meow/projects/calorie-tracker/analytics/runs/2026-04-03","date":"2026-04-03","subfolder":null,"models":[{"name":"alicegpt","errors":1,"okCount":45,"maeCalories":132.71333333333334,"maeProtein":6.062222222222222,"rmseCalories":215.65012868069428,"rmseProtein":10.000733306446417,"meanCalDelta":-82.31333333333333,"meanProtDelta":-0.8711111111111108,"scatterCalories":[{"x":500,"y":250},{"x":200,"y":150},{"x":500,"y":320},{"x":1000,"y":360},{"x":150,"y":194},{"x":410,"y":350},{"x":200,"y":125},{"x":900,"y":270},{"x":200,"y":420},{"x":500,"y":110},{"x":60,"y":40},{"x":600,"y":450},{"x":340,"y":120},{"x":120,"y":120},{"x":120,"y":60},{"x":460,"y":500},{"x":400,"y":200},{"x":120,"y":160},{"x":340,"y":360},{"x":150,"y":150},{"x":540,"y":560},{"x":740,"y":920},{"x":700,"y":430},{"x":340,"y":250},{"x":160,"y":120},{"x":800,"y":750},{"x":150,"y":120},{"x":400,"y":340},{"x":120,"y":80},{"x":300,"y":240},{"x":46,"y":58},{"x":60,"y":39.9},{"x":108,"y":150},{"x":120,"y":160},{"x":60,"y":117},{"x":300,"y":429},{"x":900,"y":166},{"x":380,"y":450},{"x":240,"y":250},{"x":200,"y":200},{"x":360,"y":450},{"x":90,"y":210},{"x":308,"y":150},{"x":120,"y":99},{"x":550,"y":210}],"scatterProtein":[{"x":25,"y":10},{"x":0,"y":5},{"x":10,"y":15},{"x":13,"y":11},{"x":12,"y":7.2},{"x":15,"y":5},{"x":0,"y":5},{"x":45,"y":18},{"x":5,"y":15},{"x":0,"y":0},{"x":0,"y":0.2},{"x":15,"y":20},{"x":7,"y":4},{"x":0,"y":0.5},{"x":0,"y":0.8},{"x":15,"y":20.5},{"x":0,"y":3},{"x":0,"y":4},{"x":20,"y":18},{"x":0,"y":2},{"x":20,"y":23},{"x":35,"y":44},{"x":33,"y":15},{"x":10,"y":10},{"x":0,"y":1.5},{"x":25,"y":25},{"x":0,"y":3},{"x":0,"y":13},{"x":0,"y":2},{"x":8,"y":9},{"x":1,"y":1.4},{"x":0,"y":0},{"x":6.7,"y":4},{"x":0,"y":5},{"x":0,"y":2.4},{"x":0,"y":22},{"x":45,"y":6.2},{"x":18,"y":15},{"x":11,"y":15},{"x":3,"y":3},{"x":21,"y":15},{"x":4,"y":6},{"x":6.7,"y":4},{"x":0,"y":2.5},{"x":27,"y":6}],"avgParseMs":2190.918260869565,"medianParseMs":1979.78,"minParseMs":1847.21,"maxParseMs":3712.84,"totalParseMs":100782.23999999999},{"name":"deepseek","errors":5,"okCount":41,"maeCalories":170.53658536585365,"maeProtein":7.117073170731707,"rmseCalories":240.13349945598097,"rmseProtein":11.469854444395088,"meanCalDelta":-49.36585365853659,"meanProtDelta":2.604878048780488,"scatterCalories":[{"x":500,"y":370},{"x":200,"y":0},{"x":500,"y":685},{"x":1000,"y":270},{"x":150,"y":240},{"x":200,"y":0},{"x":900,"y":690},{"x":200,"y":350},{"x":500,"y":113},{"x":60,"y":40},{"x":600,"y":735},{"x":340,"y":190},{"x":120,"y":200},{"x":80,"y":0},{"x":120,"y":90},{"x":460,"y":860},{"x":400,"y":207},{"x":340,"y":290},{"x":150,"y":360},{"x":540,"y":800},{"x":740,"y":1100},{"x":340,"y":250},{"x":160,"y":220},{"x":800,"y":600},{"x":150,"y":120},{"x":400,"y":0},{"x":120,"y":170},{"x":300,"y":140},{"x":46,"y":60},{"x":60,"y":20},{"x":120,"y":150},{"x":60,"y":240},{"x":300,"y":300},{"x":900,"y":180},{"x":380,"y":500},{"x":240,"y":250},{"x":200,"y":200},{"x":360,"y":350},{"x":90,"y":240},{"x":308,"y":200},{"x":550,"y":180}],"scatterProtein":[{"x":25,"y":11},{"x":0,"y":0},{"x":10,"y":38},{"x":13,"y":20},{"x":12,"y":10},{"x":0,"y":0},{"x":45,"y":60},{"x":5,"y":12.5},{"x":0,"y":0},{"x":0,"y":0},{"x":15,"y":35},{"x":7,"y":5.5},{"x":0,"y":1},{"x":0,"y":0},{"x":0,"y":0.5},{"x":15,"y":26.5},{"x":0,"y":3.5},{"x":20,"y":23},{"x":0,"y":12},{"x":20,"y":27},{"x":35,"y":68},{"x":10,"y":8},{"x":0,"y":2},{"x":25,"y":20},{"x":0,"y":5},{"x":0,"y":0},{"x":0,"y":10},{"x":8,"y":5},{"x":1,"y":1.4},{"x":0,"y":0},{"x":0,"y":5},{"x":0,"y":5.6},{"x":0,"y":11},{"x":45,"y":8},{"x":18,"y":20},{"x":11,"y":15},{"x":3,"y":4},{"x":21,"y":14},{"x":4,"y":8},{"x":6.7,"y":7},{"x":27,"y":6}],"avgParseMs":34264.434130434776,"medianParseMs":32577.5,"minParseMs":6216.31,"maxParseMs":105119.43,"totalParseMs":1576163.9699999997},{"name":"gptoss","errors":0,"okCount":46,"maeCalories":171.3695652173913,"maeProtein":6.599130434782608,"rmseCalories":246.86170569598363,"rmseProtein":9.79433021435494,"meanCalDelta":-39.7608695652174,"meanProtDelta":-0.013913043478260882,"scatterCalories":[{"x":500,"y":258},{"x":200,"y":500},{"x":500,"y":260},{"x":1000,"y":340},{"x":150,"y":190},{"x":410,"y":363},{"x":200,"y":0},{"x":900,"y":250},{"x":200,"y":262},{"x":500,"y":110},{"x":60,"y":40},{"x":600,"y":490},{"x":340,"y":190},{"x":120,"y":200},{"x":80,"y":0},{"x":120,"y":61.2},{"x":460,"y":424},{"x":400,"y":300},{"x":120,"y":442},{"x":340,"y":230},{"x":150,"y":480},{"x":540,"y":480},{"x":740,"y":794},{"x":700,"y":449},{"x":340,"y":350},{"x":160,"y":970},{"x":800,"y":655},{"x":150,"y":115},{"x":400,"y":360},{"x":120,"y":22.8},{"x":300,"y":155},{"x":46,"y":60},{"x":60,"y":387},{"x":108,"y":290},{"x":120,"y":160},{"x":60,"y":200},{"x":300,"y":270},{"x":900,"y":567},{"x":380,"y":350},{"x":240,"y":450},{"x":200,"y":190},{"x":360,"y":304},{"x":90,"y":196},{"x":308,"y":160},{"x":120,"y":78},{"x":550,"y":210}],"scatterProtein":[{"x":25,"y":6.7},{"x":0,"y":15},{"x":10,"y":12},{"x":13,"y":11},{"x":12,"y":7.5},{"x":15,"y":12},{"x":0,"y":0},{"x":45,"y":20},{"x":5,"y":10},{"x":0,"y":0},{"x":0,"y":0.1},{"x":15,"y":16},{"x":7,"y":5},{"x":0,"y":0},{"x":0,"y":0},{"x":0,"y":0.36},{"x":15,"y":10.4},{"x":0,"y":5.3},{"x":0,"y":16},{"x":20,"y":18},{"x":0,"y":15.5},{"x":20,"y":10},{"x":35,"y":48.8},{"x":33,"y":13.700000000000001},{"x":10,"y":15},{"x":0,"y":10},{"x":25,"y":25},{"x":0,"y":3},{"x":0,"y":22},{"x":0,"y":0.8},{"x":8,"y":5},{"x":1,"y":1.4},{"x":0,"y":0},{"x":6.7,"y":6},{"x":0,"y":5.5},{"x":0,"y":5},{"x":0,"y":10},{"x":45,"y":25},{"x":18,"y":14},{"x":11,"y":22.5},{"x":3,"y":4},{"x":21,"y":11},{"x":4,"y":4.5},{"x":6.7,"y":5.5},{"x":0,"y":2.7},{"x":27,"y":4.5}],"avgParseMs":3665.2654347826087,"medianParseMs":3042.545,"minParseMs":1684.4,"maxParseMs":11786.54,"totalParseMs":168602.21},{"name":"qwen3","errors":0,"okCount":46,"maeCalories":161.69565217391303,"maeProtein":5.554347826086956,"rmseCalories":224.7451697019267,"rmseProtein":9.036676476400515,"meanCalDelta":-49.65217391304348,"meanProtDelta":0.2760869565217392,"scatterCalories":[{"x":500,"y":320},{"x":200,"y":125},{"x":500,"y":380},{"x":1000,"y":350},{"x":150,"y":190},{"x":410,"y":280},{"x":200,"y":500},{"x":900,"y":540},{"x":200,"y":280},{"x":500,"y":110},{"x":60,"y":100},{"x":600,"y":450},{"x":340,"y":190},{"x":120,"y":450},{"x":80,"y":200},{"x":120,"y":95},{"x":460,"y":500},{"x":400,"y":207},{"x":120,"y":400},{"x":340,"y":450},{"x":150,"y":450},{"x":540,"y":420},{"x":740,"y":820},{"x":700,"y":560},{"x":340,"y":450},{"x":160,"y":150},{"x":800,"y":650},{"x":150,"y":80},{"x":400,"y":0},{"x":120,"y":50},{"x":300,"y":150},{"x":46,"y":60},{"x":60,"y":99},{"x":108,"y":120},{"x":120,"y":160},{"x":60,"y":75},{"x":300,"y":390},{"x":900,"y":170},{"x":380,"y":480},{"x":240,"y":420},{"x":200,"y":207},{"x":360,"y":520},{"x":90,"y":180},{"x":308,"y":120},{"x":120,"y":80},{"x":550,"y":180}],"scatterProtein":[{"x":25,"y":10},{"x":0,"y":2.5},{"x":10,"y":18},{"x":13,"y":12},{"x":12,"y":8},{"x":15,"y":6},{"x":0,"y":20},{"x":45,"y":45},{"x":5,"y":10},{"x":0,"y":0},{"x":0,"y":1},{"x":15,"y":15},{"x":7,"y":6},{"x":0,"y":5},{"x":0,"y":10},{"x":0,"y":0.5},{"x":15,"y":15.5},{"x":0,"y":3.5},{"x":0,"y":12},{"x":20,"y":22},{"x":0,"y":15},{"x":20,"y":18},{"x":35,"y":38},{"x":33,"y":19},{"x":10,"y":15},{"x":0,"y":2},{"x":25,"y":20},{"x":0,"y":2},{"x":0,"y":0},{"x":0,"y":2},{"x":8,"y":5},{"x":1,"y":1.4},{"x":0,"y":0},{"x":6.7,"y":4},{"x":0,"y":6},{"x":0,"y":1.2},{"x":0,"y":11},{"x":45,"y":7},{"x":18,"y":22},{"x":11,"y":18},{"x":3,"y":3.5},{"x":21,"y":18},{"x":4,"y":6},{"x":6.7,"y":4},{"x":0,"y":3},{"x":27,"y":6}],"avgParseMs":6665.469782608697,"medianParseMs":5993.5599999999995,"minParseMs":1544.37,"maxParseMs":12513.29,"totalParseMs":306611.61000000004}],"chartPalette":["#2563eb","#16a34a","#ea580c","#9333ea","#dc2626","#0891b2"]}</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById('report-data').textContent);
+    const labelColor = typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e5e5' : '#171717';
+    const gridColor = 'rgba(128,128,128,0.2)';
+    Chart.defaults.color = labelColor;
+    Chart.defaults.borderColor = gridColor;
+
+    const names = DATA.models.map((m) => m.name);
+    const palette = DATA.chartPalette;
+
+    new Chart(document.getElementById('maeCal'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: 'MAE kcal',
+          data: DATA.models.map((m) => m.maeCalories ?? 0),
+          backgroundColor: names.map((_, i) => palette[i % palette.length]),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+
+    new Chart(document.getElementById('maeProt'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: 'MAE protein (g)',
+          data: DATA.models.map((m) => m.maeProtein ?? 0),
+          backgroundColor: names.map((_, i) => palette[i % palette.length]),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+
+    new Chart(document.getElementById('latencyAvg'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: 'Avg ms / row',
+          data: DATA.models.map((m) => m.avgParseMs ?? 0),
+          backgroundColor: names.map((_, i) => palette[i % palette.length]),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Milliseconds' },
+          },
+        },
+      },
+    });
+
+    function scatterChart(canvasId, key, axisLabel) {
+      const datasets = DATA.models.map((m, i) => ({
+        label: m.name,
+        data: m[key],
+        backgroundColor: palette[i % palette.length],
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }));
+      const all = DATA.models.flatMap((m) => m[key]);
+      const maxVal = Math.max(1, ...all.flatMap((p) => [p.x, p.y]));
+      const pad = maxVal * 0.05;
+      datasets.push({
+        label: 'y = x',
+        data: [{ x: 0, y: 0 }, { x: maxVal + pad, y: maxVal + pad }],
+        showLine: true,
+        pointRadius: 0,
+        borderColor: 'rgba(128,128,128,0.7)',
+        borderDash: [6, 4],
+        borderWidth: 1,
+      });
+      new Chart(document.getElementById(canvasId), {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: { display: true, text: 'Expected ' + axisLabel },
+              beginAtZero: true,
+              suggestedMax: maxVal + pad,
+            },
+            y: {
+              title: { display: true, text: 'Predicted ' + axisLabel },
+              beginAtZero: true,
+              suggestedMax: maxVal + pad,
+            },
+          },
+        },
+      });
+    }
+
+    scatterChart('scatterCal', 'scatterCalories', 'kcal');
+    scatterChart('scatterProt', 'scatterProtein', 'protein (g)');
+  </script>
+</body>
+</html>

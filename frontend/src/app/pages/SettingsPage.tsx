@@ -30,7 +30,7 @@ const SettingsPage = observer(function SettingsPage() {
   const [height, setHeight] = useState<string>("");
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>("en");
   const [nutritionGoal, setNutritionGoal] = useState<NutritionGoal>("maintain");
-  const [aiModelPreference, setAiModelPreference] = useState<AiModelPreference>("deepseek");
+  const [aiModelPreference, setAiModelPreference] = useState<AiModelPreference>("qwen3");
 
   useEffect(() => {
     void profile.read.load();

@@ -45,7 +45,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 ### `GET /me`
 
-**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `nutritionGoal`, `aiModelPreference` (`deepseek` \| `qwen3`), `updatedAt`.
+**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `nutritionGoal`, `aiModelPreference` (`deepseek` \| `qwen3` \| `gptoss` \| `alicegpt`), `updatedAt`.
 
 ### `PATCH /me`
 
