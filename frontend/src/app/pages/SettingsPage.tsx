@@ -9,9 +9,10 @@ import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
 import { useTheme } from "../components/ThemeProvider";
 import { useRequireAuth } from "../hooks/useRequireAuth";
-import type { PreferredLanguage } from "@contracts/common";
+import type { NutritionGoal, PreferredLanguage } from "@contracts/common";
 import type { UpdateProfileRequest } from "@contracts/profile";
 import { useRootStore } from "@/stores/StoreContext";
+import { NUTRITION_GOAL_OPTIONS, coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { PREFERRED_LANGUAGE_OPTIONS } from "@/utils/preferredLanguage";
 
 const SettingsPage = observer(function SettingsPage() {
@@ -27,6 +28,7 @@ const SettingsPage = observer(function SettingsPage() {
   const [weight, setWeight] = useState<string>("");
   const [height, setHeight] = useState<string>("");
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>("en");
+  const [nutritionGoal, setNutritionGoal] = useState<NutritionGoal>("maintain");
 
   useEffect(() => {
     void profile.read.load();
@@ -39,6 +41,7 @@ const SettingsPage = observer(function SettingsPage() {
     setWeight(p.weightKg != null ? String(p.weightKg) : "");
     setHeight(p.heightCm != null ? String(p.heightCm) : "");
     setPreferredLanguage(p.preferredLanguage);
+    setNutritionGoal(coerceNutritionGoal(p.nutritionGoal));
   }, [profile.read.profile]);
 
   const handleSaveProfile = () => {
@@ -47,6 +50,7 @@ const SettingsPage = observer(function SettingsPage() {
     const body: UpdateProfileRequest = {
       dailyCalorieGoal: dailyGoal,
       preferredLanguage,
+      nutritionGoal,
     };
     if (w != null && !Number.isNaN(w) && w > 0) body.weightKg = w;
     if (h != null && !Number.isNaN(h) && h > 0) body.heightCm = h;
@@ -90,6 +94,26 @@ const SettingsPage = observer(function SettingsPage() {
             ))}
           </select>
           <p className="text-xs text-muted-foreground mt-2">{t("settings.languageHint")}</p>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="mb-4">{t("settings.goal")}</h3>
+          <label className="text-sm" htmlFor="settings-nutrition-goal">
+            {t("settings.goalLabel")}
+          </label>
+          <select
+            id="settings-nutrition-goal"
+            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-sm"
+            value={nutritionGoal}
+            onChange={(e) => setNutritionGoal(e.target.value as NutritionGoal)}
+          >
+            {NUTRITION_GOAL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {t(opt.labelKey)}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground mt-2">{t("settings.goalHint")}</p>
         </Card>
 
         <Card className="p-4">

@@ -7,7 +7,13 @@ import { addDays } from "../lib/dates.ts";
 import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
 import { env } from "../env.ts";
+import { NutritionGoalSchema } from "../contracts/common.ts";
 import { generateFallbackTipMessage, generateTipMessageWithAi } from "../services/ai.ts";
+
+function coerceNutritionGoal(raw: string) {
+  const parsed = NutritionGoalSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "maintain";
+}
 
 function userIdFromRequest(request: FastifyRequest): string | null {
   const payload = request.user as { sub?: string } | undefined;
@@ -119,6 +125,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         clientTimeZone: parsed.data.clientTimeZone,
         localTimeHm: parsed.data.localTimeHm,
         preferredLanguage: parsed.data.preferredLanguage,
+        nutritionGoal: coerceNutritionGoal(user.nutritionGoal),
       };
 
       let message = "";

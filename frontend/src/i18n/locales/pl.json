@@ -41,8 +41,15 @@
     "tt": "Tatarski",
     "kk": "Kazachski"
   },
+  "goals": {
+    "maintain": "Utrzymanie wagi",
+    "muscle_gain": "Budowa masy mięśniowej",
+    "fat_loss": "Redukcja tkanki tłuszczowej",
+    "recomposition": "Rekompozycja"
+  },
   "main": {
     "title": "Licznik kalorii",
+    "goal": "Cel:",
     "tip": "Wskazówka",
     "regenerateTip": "Nowa wskazówka",
     "caloriesToday": "Kalorie dziś",
@@ -74,6 +81,9 @@
     "language": "Język",
     "languageLabel": "Język aplikacji",
     "languageHint": "Interfejs, dzienne wskazówki i opisy jedzenia z AI.",
+    "goal": "Cel żywieniowy",
+    "goalLabel": "Twój cel",
+    "goalHint": "Wpływa na dzienne wskazówki i szacowanie niejednoznacznych produktów przez AI (wraz z celem kalorii).",
     "appearance": "Wygląd",
     "darkMode": "Tryb ciemny",
     "enabled": "Włączony",

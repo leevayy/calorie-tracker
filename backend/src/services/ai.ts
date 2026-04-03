@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { PreferredLanguage } from "../contracts/common.ts";
+import type { NutritionGoal, PreferredLanguage } from "../contracts/common.ts";
 import { ParsedFoodSuggestionSchema } from "../contracts/ai-food.ts";
 import { env } from "../env.ts";
 
@@ -206,8 +206,12 @@ function normalizeParseFoodText(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function buildParseFoodCacheKey(text: string, preferredLanguage: PreferredLanguage): string {
-  return `${PARSE_FOOD_CACHE_VERSION}:${resolveModelUri()}:${preferredLanguage}:${normalizeParseFoodText(text)}`;
+function buildParseFoodCacheKey(
+  text: string,
+  preferredLanguage: PreferredLanguage,
+  nutritionGoal: NutritionGoal,
+): string {
+  return `${PARSE_FOOD_CACHE_VERSION}:${resolveModelUri()}:${preferredLanguage}:${nutritionGoal}:${normalizeParseFoodText(text)}`;
 }
 
 function cloneSuggestions(suggestions: ParsedFoodSuggestion[]): ParsedFoodSuggestion[] {
@@ -252,19 +256,39 @@ const OUTPUT_LANGUAGE_NAMES: Record<PreferredLanguage, string> = {
   kk: "Kazakh",
 };
 
-function buildNutritionParserSystem(preferredLanguage: PreferredLanguage): string {
+/** English hints for the parser; output language is still governed by section 9. */
+const NUTRITION_GOAL_PARSER_HINTS: Record<NutritionGoal, string> = {
+  maintain:
+    "User goal: maintain weight and general health. Prefer balanced, varied estimates; do not assume extreme restriction unless the food clearly warrants it.",
+  muscle_gain:
+    "User goal: gain muscle (caloric surplus). Favor realistic high-protein plates with adequate dietary fat when estimating mixed meals; avoid systematically underestimating energy for ambiguous portions.",
+  fat_loss:
+    "User goal: fat loss (caloric deficit). When portions are vague, lean slightly conservative on calories while staying honest for obviously energy-dense foods.",
+  recomposition:
+    "User goal: recomposition (typically mild deficit, high protein). Emphasize protein-forward estimates and moderate healthy fats; do not inflate calories for clearly lean meals.",
+};
+
+function buildNutritionParserSystem(
+  preferredLanguage: PreferredLanguage,
+  nutritionGoal: NutritionGoal,
+): string {
   const langName = OUTPUT_LANGUAGE_NAMES[preferredLanguage];
+  const goalHint = NUTRITION_GOAL_PARSER_HINTS[nutritionGoal];
   return `${NutritionParserPrompt}
 
-9. OUTPUT LANGUAGE
+9. USER NUTRITION GOAL (ESTIMATION BIAS)
+- ${goalHint}
+
+10. OUTPUT LANGUAGE
 - Food descriptions (the "description" field) and portion text must be in ${langName} (BCP-style tag: ${preferredLanguage}).`;
 }
 
 async function generateParseFoodSuggestions(
   text: string,
   preferredLanguage: PreferredLanguage,
+  nutritionGoal: NutritionGoal,
 ): Promise<ParsedFoodSuggestion[]> {
-  const raw = await aiChat(text, buildNutritionParserSystem(preferredLanguage));
+  const raw = await aiChat(text, buildNutritionParserSystem(preferredLanguage, nutritionGoal));
   const parsed = NutritionParserResponseSchema.parse(JSON.parse(extractFirstJsonObject(raw)));
 
   return parsed.foods.map((food) =>
@@ -282,8 +306,9 @@ async function generateParseFoodSuggestions(
 export async function parseFoodTextWithAi(
   text: string,
   preferredLanguage: PreferredLanguage,
+  nutritionGoal: NutritionGoal,
 ): Promise<ParsedFoodSuggestion[]> {
-  const cacheKey = buildParseFoodCacheKey(text, preferredLanguage);
+  const cacheKey = buildParseFoodCacheKey(text, preferredLanguage, nutritionGoal);
 
   const cached = getCachedParseFoodSuggestions(cacheKey);
   if (cached) {
@@ -295,7 +320,7 @@ export async function parseFoodTextWithAi(
     return cloneSuggestions(await inFlight);
   }
 
-  const requestPromise = generateParseFoodSuggestions(text, preferredLanguage);
+  const requestPromise = generateParseFoodSuggestions(text, preferredLanguage, nutritionGoal);
   parseFoodInFlight.set(cacheKey, requestPromise);
 
   try {
@@ -319,6 +344,16 @@ type TipContext = {
   clientTimeZone: string;
   localTimeHm: string;
   preferredLanguage: PreferredLanguage;
+  nutritionGoal: NutritionGoal;
+};
+
+const NUTRITION_GOAL_TIP_COACH_HINTS: Record<NutritionGoal, string> = {
+  maintain: "They want balanced eating and general health; keep advice practical and sustainable.",
+  muscle_gain:
+    "They are building muscle (surplus); encourage enough calories and protein without shaming appetite.",
+  fat_loss: "They are losing fat (deficit); be supportive about hunger and protein-forward choices.",
+  recomposition:
+    "They want recomposition (deficit + high protein); nudge protein and training recovery, not extreme cuts.",
 };
 
 function parseLocalHm(hm: string): { h: number; m: number } {
@@ -335,9 +370,11 @@ function fractionOfLocalDayElapsed(localTimeHm: string): number {
 export async function generateTipMessageWithAi(context: TipContext): Promise<string> {
   const langName = OUTPUT_LANGUAGE_NAMES[context.preferredLanguage];
   const dayFrac = fractionOfLocalDayElapsed(context.localTimeHm);
+  const goalLine = NUTRITION_GOAL_TIP_COACH_HINTS[context.nutritionGoal];
   const system = [
     `You are a concise calorie tracking coach.`,
     `Write the entire tip in ${langName} (language tag: ${context.preferredLanguage}).`,
+    `Nutrition goal context: ${goalLine}`,
     `The user's logged calendar day is ${context.date}. Their local clock is ${context.localTimeHm} in IANA zone "${context.clientTimeZone}".`,
     `About ${Math.round(dayFrac * 100)}% of their local day has passed (from local midnight to local time).`,
     `Use that timing: early in the local day, do not shame low intake; later in the day, if they are far under goal, you may give a direct, good-humored nudge to eat enough — stay supportive, not cruel.`,

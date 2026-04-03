@@ -4,6 +4,10 @@ import { z } from "zod";
 export const PreferredLanguageSchema = z.enum(["en", "ru", "pl", "tt", "kk"]);
 export type PreferredLanguage = z.infer<typeof PreferredLanguageSchema>;
 
+/** User-selected nutrition target; steers AI tips and food parsing assumptions. */
+export const NutritionGoalSchema = z.enum(["maintain", "muscle_gain", "fat_loss", "recomposition"]);
+export type NutritionGoal = z.infer<typeof NutritionGoalSchema>;
+
 /** YYYY-MM-DD */
 export const IsoDateSchema = z
   .string()

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { PreferredLanguageSchema } from "../contracts/common.ts";
+import { NutritionGoalSchema, PreferredLanguageSchema } from "../contracts/common.ts";
 import {
   UpdateProfileRequestSchema,
   UserProfileResponseSchema,
@@ -18,6 +18,11 @@ function userIdFromRequest(request: FastifyRequest): string | null {
 function coercePreferredLanguage(raw: string) {
   const parsed = PreferredLanguageSchema.safeParse(raw);
   return parsed.success ? parsed.data : "en";
+}
+
+function coerceNutritionGoal(raw: string) {
+  const parsed = NutritionGoalSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "maintain";
 }
 
 export async function registerProfileRoutes(app: FastifyInstance): Promise<void> {
@@ -52,6 +57,7 @@ export async function registerProfileRoutes(app: FastifyInstance): Promise<void>
         weightKg: user.weightKg ?? undefined,
         heightCm: user.heightCm ?? undefined,
         preferredLanguage: coercePreferredLanguage(user.preferredLanguage),
+        nutritionGoal: coerceNutritionGoal(user.nutritionGoal),
         updatedAt: user.updatedAt.toISOString(),
       });
 
@@ -93,6 +99,7 @@ export async function registerProfileRoutes(app: FastifyInstance): Promise<void>
           weightKg: parsed.data.weightKg ?? current.weightKg,
           heightCm: parsed.data.heightCm ?? current.heightCm,
           preferredLanguage: parsed.data.preferredLanguage ?? current.preferredLanguage,
+          nutritionGoal: parsed.data.nutritionGoal ?? current.nutritionGoal,
           updatedAt: new Date(),
         })
         .where(eq(usersTable.id, userId));
@@ -111,6 +118,7 @@ export async function registerProfileRoutes(app: FastifyInstance): Promise<void>
         weightKg: updated.weightKg ?? undefined,
         heightCm: updated.heightCm ?? undefined,
         preferredLanguage: coercePreferredLanguage(updated.preferredLanguage),
+        nutritionGoal: coerceNutritionGoal(updated.nutritionGoal),
         updatedAt: updated.updatedAt.toISOString(),
       });
 

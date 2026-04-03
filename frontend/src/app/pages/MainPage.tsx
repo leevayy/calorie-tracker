@@ -16,6 +16,7 @@ import { Input } from "../components/ds/Input";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
 import { localIsoDate } from "@/utils/date";
+import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -42,6 +43,7 @@ const MainPage = observer(function MainPage() {
   const preferredLanguage = coercePreferredLanguage(
     profile.read.profile?.preferredLanguage ?? i18n.language,
   );
+  const nutritionGoal = coerceNutritionGoal(profile.read.profile?.nutritionGoal);
 
   useEffect(() => {
     void profile.read.load();
@@ -51,7 +53,7 @@ const MainPage = observer(function MainPage() {
   useEffect(() => {
     if (foodLog.dayRead.fetchState !== "success" || !foodLog.dayRead.data) return;
     if (profile.read.fetchState === "loading") return;
-    const key = `${today}|${preferredLanguage}`;
+    const key = `${today}|${preferredLanguage}|${nutritionGoal}`;
     if (tipAutoKeyRef.current === key) return;
     tipAutoKeyRef.current = key;
     void dailyTip.fetchTip(
@@ -63,6 +65,7 @@ const MainPage = observer(function MainPage() {
     foodLog.dayRead.data,
     profile.read.fetchState,
     preferredLanguage,
+    nutritionGoal,
     today,
     dailyTip,
   ]);
@@ -175,7 +178,8 @@ const MainPage = observer(function MainPage() {
       ) : null}
 
       <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
-        <div className="flex justify-center gap-6 mb-6">
+        <div className="flex flex-col items-center gap-2 mb-6">
+          <div className="flex justify-center gap-6">
           <button
             type="button"
             onClick={() => navigate("/settings")}
@@ -193,6 +197,13 @@ const MainPage = observer(function MainPage() {
           >
             <History className="h-5 w-5" />
           </button>
+          </div>
+          {profile.read.profile ? (
+            <p className="text-xs text-muted-foreground text-center px-2">
+              <span className="text-foreground/80">{t("main.goal")}</span>{" "}
+              {t(`goals.${nutritionGoal}`)}
+            </p>
+          ) : null}
         </div>
 
         <AsyncSection

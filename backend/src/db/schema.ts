@@ -8,6 +8,7 @@ export const usersTable = pgTable("users", {
   weightKg: real("weight_kg"),
   heightCm: real("height_cm"),
   preferredLanguage: text("preferred_language").notNull().default("en"),
+  nutritionGoal: text("nutrition_goal").notNull().default("maintain"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

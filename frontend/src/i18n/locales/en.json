@@ -41,8 +41,15 @@
     "tt": "Tatar",
     "kk": "Kazakh"
   },
+  "goals": {
+    "maintain": "Maintain weight",
+    "muscle_gain": "Gain muscle",
+    "fat_loss": "Lose fat",
+    "recomposition": "Recomposition"
+  },
   "main": {
     "title": "Calorie Tracker",
+    "goal": "Goal:",
     "tip": "Tip",
     "regenerateTip": "Generate a new tip",
     "caloriesToday": "Calories today",
@@ -74,6 +81,9 @@
     "language": "Language",
     "languageLabel": "App language",
     "languageHint": "Used for the interface, daily tips, and AI food descriptions.",
+    "goal": "Nutrition goal",
+    "goalLabel": "Your target",
+    "goalHint": "Shapes daily tips and how AI estimates ambiguous foods (with your calorie goal).",
     "appearance": "Appearance",
     "darkMode": "Dark mode",
     "enabled": "Enabled",
