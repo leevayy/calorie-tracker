@@ -10,6 +10,7 @@ import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { FoodSuggestion } from "../components/FoodSuggestion";
 import { MealSection } from "../components/MealSection";
+import { useVisualViewportScrollLock } from "../hooks/useVisualViewportScrollLock";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
@@ -44,6 +45,9 @@ const MainPage = observer(function MainPage() {
   const touchEndX = useRef(0);
   const tipAutoKeyRef = useRef("");
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const foodLogChatOverlayRef = useRef<HTMLDivElement>(null);
+
+  useVisualViewportScrollLock(foodLogChatOverlayRef, chatExpanded);
 
   const preferredLanguage = coercePreferredLanguage(
     profile.read.profile?.preferredLanguage ?? i18n.language,
@@ -306,31 +310,39 @@ const MainPage = observer(function MainPage() {
         </AsyncSection>
       </div>
 
-      <AnimatePresence>
-        {chatExpanded ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-20"
-            onClick={() => {
-              setChatExpanded(false);
-              setShowSuggestions(false);
-            }}
-          />
-        ) : null}
-      </AnimatePresence>
-
-      <motion.div
-        className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-30 max-w-md mx-auto"
-        animate={{
-          height: chatExpanded ? (showSuggestions ? "85vh" : "72vh") : "auto",
-        }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+      <div
+        ref={foodLogChatOverlayRef}
+        className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto w-full"
       >
+        <AnimatePresence>
+          {chatExpanded ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50"
+              onClick={() => {
+                setChatExpanded(false);
+                setShowSuggestions(false);
+              }}
+            />
+          ) : null}
+        </AnimatePresence>
+
+        <motion.div
+          className="relative z-10 w-full bg-background border-t border-border"
+          animate={{
+            height: chatExpanded
+              ? showSuggestions
+                ? "calc(var(--visual-viewport-height, 100dvh) * 0.85)"
+                : "calc(var(--visual-viewport-height, 100dvh) * 0.72)"
+              : "auto",
+          }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        >
         <div className="p-4">
           {chatExpanded && showSuggestions ? (
-            <div className="mb-4 max-h-[52vh] overflow-y-auto space-y-2">
+            <div className="mb-4 max-h-[min(52vh,calc(var(--visual-viewport-height,100dvh)*0.55))] overflow-y-auto space-y-2">
               <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                 <p className="text-sm">{t("main.recognizedFoods")}</p>
                 <button
@@ -446,7 +458,8 @@ const MainPage = observer(function MainPage() {
             </button>
           ) : null}
         </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 });
