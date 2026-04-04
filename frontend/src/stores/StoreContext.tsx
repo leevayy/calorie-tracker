@@ -1,6 +1,7 @@
 import { createContext, useContext, useRef, type ReactNode } from "react";
 import { createRootStore } from "./createRootStore";
 import type { IRootStore } from "./rootStore";
+import { SessionBootstrap } from "./SessionBootstrap";
 
 const RootStoreContext = createContext<IRootStore | null>(null);
 
@@ -9,7 +10,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   if (storeRef.current == null) {
     storeRef.current = createRootStore();
   }
-  return <RootStoreContext.Provider value={storeRef.current}>{children}</RootStoreContext.Provider>;
+  return (
+    <RootStoreContext.Provider value={storeRef.current}>
+      <SessionBootstrap store={storeRef.current}>{children}</SessionBootstrap>
+    </RootStoreContext.Provider>
+  );
 }
 
 export function useRootStore(): IRootStore {

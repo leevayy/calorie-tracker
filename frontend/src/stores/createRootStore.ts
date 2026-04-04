@@ -1,4 +1,5 @@
 import { setAccessTokenGetter } from "@/api/client";
+import { loadPersistedSession } from "./authStorage";
 import type { IRootStore } from "./rootStore";
 import { RootStore } from "./rootStore";
 
@@ -19,7 +20,18 @@ const defaultSnapshot = {
 };
 
 export function createRootStore(): IRootStore {
-  const store = RootStore.create(defaultSnapshot);
+  const persisted = loadPersistedSession();
+  const sessionSnapshot = persisted
+    ? {
+        accessToken: persisted.accessToken,
+        refreshToken: persisted.refreshToken,
+        user: persisted.user,
+      }
+    : {};
+  const store = RootStore.create({
+    ...defaultSnapshot,
+    session: sessionSnapshot,
+  });
   setAccessTokenGetter(() => store.session.accessToken || null);
   return store;
 }

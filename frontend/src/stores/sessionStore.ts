@@ -1,13 +1,23 @@
-import type { AuthResponse } from "@contracts/auth";
+import type { AuthResponse, UserSummary } from "@contracts/auth";
 import { flow, types } from "mobx-state-tree";
 import { apiLogin, apiRefresh, apiRegister } from "@/api/auth";
 import { ApiError, toApiError } from "@/api/errors";
+import { clearPersistedSession, savePersistedSession } from "./authStorage";
 import { FetchStateModel } from "./fetchState";
 
 function applyAuthResponse(self: { accessToken: string; refreshToken: string; user: unknown }, data: AuthResponse) {
   self.accessToken = data.accessToken;
   self.refreshToken = data.refreshToken ?? "";
   self.user = data.user;
+}
+
+function persistSessionFromSelf(self: { accessToken: string; refreshToken: string; user: unknown }) {
+  if (!self.accessToken || !self.refreshToken || self.user == null) return;
+  savePersistedSession({
+    accessToken: self.accessToken,
+    refreshToken: self.refreshToken,
+    user: self.user as UserSummary,
+  });
 }
 
 export const SessionStore = types
@@ -38,6 +48,7 @@ export const SessionStore = types
       self.user = undefined;
       self.authFetchState = "initial";
       self.authErrorKey = "";
+      clearPersistedSession();
     },
     resetAuthFormFeedback() {
       if (self.authFetchState === "loading") return;
@@ -51,6 +62,7 @@ export const SessionStore = types
       try {
         const data = (yield apiLogin(credentials)) as AuthResponse;
         applyAuthResponse(self, data);
+        persistSessionFromSelf(self);
         self.authFetchState = "success";
       } catch (e) {
         self.authFetchState = "error";
@@ -64,6 +76,7 @@ export const SessionStore = types
       try {
         const data = (yield apiRegister(credentials)) as AuthResponse;
         applyAuthResponse(self, data);
+        persistSessionFromSelf(self);
         self.authFetchState = "success";
       } catch (e) {
         self.authFetchState = "error";
@@ -82,6 +95,7 @@ export const SessionStore = types
       try {
         const data = (yield apiRefresh({ refreshToken: self.refreshToken })) as AuthResponse;
         applyAuthResponse(self, data);
+        persistSessionFromSelf(self);
         self.authFetchState = "success";
       } catch (e) {
         self.authFetchState = "error";
