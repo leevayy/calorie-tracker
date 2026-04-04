@@ -63,7 +63,9 @@
     "logFoodPlaceholder": "Zapisz posiłek… (np. kurczak z ryżem)",
     "addToMeal": "Dodaj do",
     "parsingFood": "Analizujemy opis…",
-    "recentLogged": "Najczęściej w tym tygodniu"
+    "recentLogged": "Najczęściej w tym tygodniu",
+    "foodLogSheetTitle": "Zapisz posiłek",
+    "closeFoodSheet": "Zamknij"
   },
   "meals": {
     "breakfast": "Śniadanie",

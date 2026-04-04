@@ -7,6 +7,7 @@ import { AsyncSection } from "../components/AsyncSection";
 import { Card } from "../components/ds/Card";
 import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
+import { Text } from "../components/ds/Text";
 import { useTheme } from "../components/ThemeProvider";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import type { AiModelPreference, NutritionGoal, PreferredLanguage } from "@contracts/common";
@@ -76,18 +77,22 @@ const SettingsPage = observer(function SettingsPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-xl">{t("settings.title")}</h1>
+        <Text as="h1" size="xl" weight="medium">
+          {t("settings.title")}
+        </Text>
       </div>
 
       <div className="p-4 space-y-4">
         <Card className="p-4">
-          <h3 className="mb-4">{t("settings.language")}</h3>
-          <label className="text-sm" htmlFor="settings-language">
+          <Text as="h3" weight="medium" className="mb-4">
+            {t("settings.language")}
+          </Text>
+          <Text as="label" htmlFor="settings-language">
             {t("settings.languageLabel")}
-          </label>
+          </Text>
           <select
             id="settings-language"
-            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-sm"
+            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-base"
             value={preferredLanguage}
             onChange={(e) => setPreferredLanguage(e.target.value as PreferredLanguage)}
           >
@@ -97,17 +102,21 @@ const SettingsPage = observer(function SettingsPage() {
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground mt-2">{t("settings.languageHint")}</p>
+          <Text variant="muted" className="mt-2">
+            {t("settings.languageHint")}
+          </Text>
         </Card>
 
         <Card className="p-4">
-          <h3 className="mb-4">{t("settings.goal")}</h3>
-          <label className="text-sm" htmlFor="settings-nutrition-goal">
+          <Text as="h3" weight="medium" className="mb-4">
+            {t("settings.goal")}
+          </Text>
+          <Text as="label" htmlFor="settings-nutrition-goal">
             {t("settings.goalLabel")}
-          </label>
+          </Text>
           <select
             id="settings-nutrition-goal"
-            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-sm"
+            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-base"
             value={nutritionGoal}
             onChange={(e) => setNutritionGoal(e.target.value as NutritionGoal)}
           >
@@ -117,17 +126,21 @@ const SettingsPage = observer(function SettingsPage() {
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground mt-2">{t("settings.goalHint")}</p>
+          <Text variant="muted" className="mt-2">
+            {t("settings.goalHint")}
+          </Text>
         </Card>
 
         <Card className="p-4">
-          <h3 className="mb-4">{t("settings.aiModel")}</h3>
-          <label className="text-sm" htmlFor="settings-ai-model">
+          <Text as="h3" weight="medium" className="mb-4">
+            {t("settings.aiModel")}
+          </Text>
+          <Text as="label" htmlFor="settings-ai-model">
             {t("settings.aiModelLabel")}
-          </label>
+          </Text>
           <select
             id="settings-ai-model"
-            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-sm"
+            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-base"
             value={aiModelPreference}
             onChange={(e) => setAiModelPreference(e.target.value as AiModelPreference)}
           >
@@ -137,11 +150,15 @@ const SettingsPage = observer(function SettingsPage() {
               </option>
             ))}
           </select>
-          <p className="text-xs text-muted-foreground mt-2">{t("settings.aiModelHint")}</p>
+          <Text variant="muted" className="mt-2">
+            {t("settings.aiModelHint")}
+          </Text>
         </Card>
 
         <Card className="p-4">
-          <h3 className="mb-4">{t("settings.appearance")}</h3>
+          <Text as="h3" weight="medium" className="mb-4">
+            {t("settings.appearance")}
+          </Text>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {darkMode ? (
@@ -150,10 +167,8 @@ const SettingsPage = observer(function SettingsPage() {
                 <Sun className="h-5 w-5 text-primary" />
               )}
               <div>
-                <p>{t("settings.darkMode")}</p>
-                <p className="text-sm text-muted-foreground">
-                  {darkMode ? t("settings.enabled") : t("settings.disabled")}
-                </p>
+                <Text>{t("settings.darkMode")}</Text>
+                <Text variant="muted">{darkMode ? t("settings.enabled") : t("settings.disabled")}</Text>
               </div>
             </div>
             <button
@@ -178,12 +193,14 @@ const SettingsPage = observer(function SettingsPage() {
           onRetry={() => void profile.read.load()}
         >
           <Card className="p-4">
-            <h3 className="mb-4">{t("settings.dailyGoals")}</h3>
+            <Text as="h3" weight="medium" className="mb-4">
+              {t("settings.dailyGoals")}
+            </Text>
             <div className="space-y-4">
               <div>
-                <label className="text-sm" htmlFor="settings-calorie-goal">
+                <Text as="label" htmlFor="settings-calorie-goal">
                   {t("settings.calorieGoal")}
-                </label>
+                </Text>
                 <Input
                   id="settings-calorie-goal"
                   type="number"
@@ -192,18 +209,22 @@ const SettingsPage = observer(function SettingsPage() {
                   onChange={(e) => setDailyGoal(Number(e.target.value))}
                   className="mt-2"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{t("settings.recommendedCalories")}</p>
+                <Text variant="muted" className="mt-1">
+                  {t("settings.recommendedCalories")}
+                </Text>
               </div>
             </div>
           </Card>
 
           <Card className="p-4">
-            <h3 className="mb-4">{t("settings.profile")}</h3>
+            <Text as="h3" weight="medium" className="mb-4">
+              {t("settings.profile")}
+            </Text>
             <div className="space-y-4">
               <div>
-                <label className="text-sm" htmlFor="settings-weight">
+                <Text as="label" htmlFor="settings-weight">
                   {t("settings.weight")}
-                </label>
+                </Text>
                 <Input
                   id="settings-weight"
                   type="number"
@@ -216,9 +237,9 @@ const SettingsPage = observer(function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm" htmlFor="settings-height">
+                <Text as="label" htmlFor="settings-height">
                   {t("settings.height")}
-                </label>
+                </Text>
                 <Input
                   id="settings-height"
                   type="number"
@@ -230,9 +251,9 @@ const SettingsPage = observer(function SettingsPage() {
                 />
               </div>
               {profile.patch.fetchState === "error" && profile.patch.errorKey ? (
-                <p className="text-sm text-destructive" role="alert">
+                <Text variant="error" role="alert">
                   {t(profile.patch.errorKey)}
-                </p>
+                </Text>
               ) : null}
               <Button
                 type="button"
@@ -248,7 +269,9 @@ const SettingsPage = observer(function SettingsPage() {
         </AsyncSection>
 
         <Card className="p-4">
-          <h3 className="mb-4">{t("settings.account")}</h3>
+          <Text as="h3" weight="medium" className="mb-4">
+            {t("settings.account")}
+          </Text>
           <Button variant="destructive" className="w-full" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
             {t("settings.signOut")}
@@ -256,9 +279,13 @@ const SettingsPage = observer(function SettingsPage() {
         </Card>
 
         <Card className="p-4">
-          <h3 className="mb-2">{t("settings.about")}</h3>
-          <p className="text-sm text-muted-foreground">{t("settings.version")}</p>
-          <p className="text-sm text-muted-foreground mt-2">{t("settings.aboutBody")}</p>
+          <Text as="h3" weight="medium" className="mb-2">
+            {t("settings.about")}
+          </Text>
+          <Text variant="muted">{t("settings.version")}</Text>
+          <Text variant="muted" className="mt-2">
+            {t("settings.aboutBody")}
+          </Text>
         </Card>
       </div>
     </div>

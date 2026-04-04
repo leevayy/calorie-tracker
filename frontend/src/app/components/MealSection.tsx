@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { Card } from "./ds/Card";
+import { Text } from "./ds/Text";
 import { motion, AnimatePresence } from "motion/react";
 import { useIsMobile } from "./ui/use-mobile";
 
@@ -50,10 +51,12 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
       >
         <div className="flex items-center gap-3">
           <div>
-            <h3 className="text-left">{title}</h3>
-            <p className="text-sm text-muted-foreground">
+            <Text as="h3" align="left" weight="medium">
+              {title}
+            </Text>
+            <Text variant="muted">
               {totalCalories} cal • P: {totalProtein}g • C: {totalCarbs}g • F: {totalFats}g
-            </p>
+            </Text>
           </div>
         </div>
         {expanded ? (
@@ -74,7 +77,9 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
           >
             <div className="p-4 pt-3 space-y-2">
               {foods.length === 0 && emptyLabel ? (
-                <p className="text-sm text-muted-foreground py-2">{emptyLabel}</p>
+                <Text variant="muted" className="py-2">
+                  {emptyLabel}
+                </Text>
               ) : null}
               {foods.map((food, idx) => {
                 const foodKey = food.id ?? String(idx);
@@ -97,10 +102,10 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
                     }}
                   >
                     <div className="flex-1">
-                      <p className="text-sm">{food.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <Text>{food.name}</Text>
+                      <Text variant="muted">
                         {food.calories} cal • P: {food.protein}g • C: {food.carbs}g • F: {food.fats}g
-                      </p>
+                      </Text>
                     </div>
                     <button
                       type="button"

@@ -1,3 +1,17 @@
+import type { MealType } from "@contracts/common";
+
+/**
+ * Guess which meal slot matches local wall time (browser timezone).
+ * Breakfast 05:00–11:00, lunch 11:00–16:00, dinner 16:00–22:00, snack otherwise.
+ */
+export function defaultMealTypeForLocalTime(at: Date = new Date()): MealType {
+  const h = at.getHours();
+  if (h >= 5 && h < 11) return "breakfast";
+  if (h >= 11 && h < 16) return "lunch";
+  if (h >= 16 && h < 22) return "dinner";
+  return "snack";
+}
+
 /** Local calendar day as YYYY-MM-DD */
 export function localIsoDate(d = new Date()): string {
   const y = d.getFullYear();

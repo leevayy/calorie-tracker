@@ -63,7 +63,9 @@
     "logFoodPlaceholder": "Азыкны языгыз… (мәсәлән, күрчәк һәм борыч)",
     "addToMeal": "Өстәргә",
     "parsingFood": "Текстны анализлыйбыз…",
-    "recentLogged": "Әлеге атнада иң еш"
+    "recentLogged": "Әлеге атнада иң еш",
+    "foodLogSheetTitle": "Азыкны языгыз",
+    "closeFoodSheet": "Ябу"
   },
   "meals": {
     "breakfast": "Иртәнге аш",

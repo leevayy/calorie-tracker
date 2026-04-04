@@ -13,7 +13,8 @@ const LinkButton = React.forwardRef<HTMLAnchorElement, LinkButtonProps>(
       <Link
         ref={ref}
         className={cn(
-          buttonVariants({ variant, size, className }),
+          buttonVariants({ variant, size }),
+          className,
           variant === "primary" && "hover:bg-gradient-to-b hover:from-[#0284c7] hover:to-[#0369a1]",
           variant === "secondary" && "hover:bg-gradient-to-b hover:from-[#e2e8f0] hover:to-[#cbd5e1] dark:hover:from-[#334155] dark:hover:to-[#475569]"
         )}

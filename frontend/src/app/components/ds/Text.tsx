@@ -2,7 +2,7 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../ui/utils";
 
-const textVariants = cva("", {
+const textVariants = cva("leading-normal", {
   variants: {
     variant: {
       body: "text-foreground",
@@ -40,18 +40,20 @@ const textVariants = cva("", {
   },
 });
 
+export type TextAs = "p" | "span" | "div" | "label" | "h1" | "h2" | "h3" | "h4" | "a";
+
 export interface TextProps
   extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof textVariants> {
-  as?: "p" | "span" | "div" | "label";
+  as?: TextAs;
 }
 
 const Text = React.forwardRef<HTMLElement, TextProps>(
   ({ className, variant, size, weight, align, as: Component = "p", ...props }, ref) => {
     return (
       <Component
-        className={cn(textVariants({ variant, size, weight, align, className }))}
-        ref={ref as any}
+        className={cn(textVariants({ variant, size, weight, align }), className)}
+        ref={ref as React.Ref<never>}
         {...props}
       />
     );

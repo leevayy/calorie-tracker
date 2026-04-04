@@ -3,6 +3,7 @@ import type { MealType } from "@contracts/common";
 import type { FrequentFoodItem } from "@contracts/food-log";
 import type { ParsedFoodSuggestion } from "@contracts/ai-food";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { User, Home, History, Settings, ChevronDown, Send, RefreshCw } from "lucide-react";
@@ -10,21 +11,22 @@ import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { FoodSuggestion } from "../components/FoodSuggestion";
 import { MealSection } from "../components/MealSection";
-import { useVisualViewportScrollLock } from "../hooks/useVisualViewportScrollLock";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import { Input } from "../components/ds/Input";
+import { Text } from "../components/ds/Text";
 import { apiGetFrequentFoods } from "@/api/foodLog";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
-import { localIsoDate, weekRangeEndingOn } from "@/utils/date";
+import { defaultMealTypeForLocalTime, localIsoDate, weekRangeEndingOn } from "@/utils/date";
 import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
-import { AnimatePresence, motion } from "motion/react";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 const CHAT_SUGGESTION_LIMIT = 3;
+
+type PendingFoodSuggestion = { id: string; food: ParsedFoodSuggestion };
 
 const MainPage = observer(function MainPage() {
   useRequireAuth();
@@ -36,18 +38,32 @@ const MainPage = observer(function MainPage() {
 
   const [chatExpanded, setChatExpanded] = useState(false);
   const [chatInput, setChatInput] = useState("");
-  const [pendingSuggestions, setPendingSuggestions] = useState<ParsedFoodSuggestion[]>([]);
+  const [pendingSuggestions, setPendingSuggestions] = useState<PendingFoodSuggestion[]>([]);
+  const pendingSuggestionIdRef = useRef(0);
+  const nextPendingSuggestionId = () => {
+    pendingSuggestionIdRef.current += 1;
+    return `pending-food-${pendingSuggestionIdRef.current}`;
+  };
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [targetMeal, setTargetMeal] = useState<MealType>("dinner");
+  const [targetMeal, setTargetMeal] = useState<MealType>(() => defaultMealTypeForLocalTime());
   const [weekFrequentFoods, setWeekFrequentFoods] = useState<FrequentFoodItem[]>([]);
 
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
   const tipAutoKeyRef = useRef("");
-  const chatInputRef = useRef<HTMLInputElement>(null);
-  const foodLogChatOverlayRef = useRef<HTMLDivElement>(null);
+  const collapsedInputRef = useRef<HTMLInputElement>(null);
+  const expandedInputRef = useRef<HTMLInputElement>(null);
 
-  useVisualViewportScrollLock(foodLogChatOverlayRef, chatExpanded);
+  const focusChatInput = useCallback(() => {
+    if (chatExpanded) expandedInputRef.current?.focus();
+    else collapsedInputRef.current?.focus();
+  }, [chatExpanded]);
+
+  useEffect(() => {
+    if (!chatExpanded) return;
+    const id = requestAnimationFrame(() => expandedInputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [chatExpanded]);
 
   const preferredLanguage = coercePreferredLanguage(
     profile.read.profile?.preferredLanguage ?? i18n.language,
@@ -113,13 +129,23 @@ const MainPage = observer(function MainPage() {
     if (aiParse.fetchState !== "success") return;
     setChatInput("");
     const list = (aiParse.data?.suggestions ?? []).slice(0, CHAT_SUGGESTION_LIMIT);
-    setPendingSuggestions(list);
-    setShowSuggestions(list.length > 0);
+    const incoming = list.map((food) => ({
+      id: nextPendingSuggestionId(),
+      food,
+    }));
+    setPendingSuggestions((prev) => [...incoming, ...prev]);
+    setShowSuggestions(true);
+    setChatExpanded(true);
+  };
+
+  const onFoodLogSheetOpenChange = (open: boolean) => {
+    setChatExpanded(open);
   };
 
   const handleAcceptFood = async (idx: number) => {
-    const food = pendingSuggestions[idx];
-    if (!food) return;
+    const entry = pendingSuggestions[idx];
+    if (!entry) return;
+    const { food } = entry;
     await foodLog.entryCreate.create(today, {
       mealType: targetMeal,
       name: food.name,
@@ -173,7 +199,9 @@ const MainPage = observer(function MainPage() {
       onTouchEnd={handleTouchEnd}
     >
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex justify-between items-center">
-        <h1 className="text-xl">{t("main.title")}</h1>
+        <Text as="h1" size="xl" weight="medium">
+          {t("main.title")}
+        </Text>
         <button
           type="button"
           title={session.user?.email}
@@ -186,7 +214,9 @@ const MainPage = observer(function MainPage() {
       {profile.read.fetchState === "error" && profile.read.errorKey ? (
         <div className="px-4 pt-2">
           <Card className="p-3 border-destructive/50 bg-destructive/5">
-            <p className="text-sm text-destructive mb-2">{t(profile.read.errorKey)}</p>
+            <Text variant="error" className="mb-2">
+              {t(profile.read.errorKey)}
+            </Text>
             <Button type="button" size="sm" variant="secondary" onClick={() => void profile.read.load()}>
               {t("states.retry")}
             </Button>
@@ -196,9 +226,9 @@ const MainPage = observer(function MainPage() {
 
       {foodLog.entryDelete.fetchState === "error" && foodLog.entryDelete.errorKey ? (
         <div className="px-4 pt-2">
-          <p className="text-sm text-destructive text-center" role="alert">
+          <Text variant="error" align="center" role="alert">
             {t(foodLog.entryDelete.errorKey)}
-          </p>
+          </Text>
         </div>
       ) : null}
 
@@ -242,7 +272,7 @@ const MainPage = observer(function MainPage() {
                 />
                 <Card className="p-4 flex flex-col justify-center min-h-[140px]">
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="text-sm text-muted-foreground">{t("main.tip")}</p>
+                    <Text variant="muted">{t("main.tip")}</Text>
                     <Button
                       type="button"
                       variant="ghost"
@@ -265,9 +295,9 @@ const MainPage = observer(function MainPage() {
                     loadingClassName="py-4"
                   >
                     {dailyTip.data?.message ? (
-                      <p className="text-sm leading-relaxed">{dailyTip.data.message}</p>
+                      <Text className="leading-relaxed">{dailyTip.data.message}</Text>
                     ) : (
-                      <p className="text-sm text-muted-foreground">{t("states.emptyTip")}</p>
+                      <Text variant="muted">{t("states.emptyTip")}</Text>
                     )}
                   </AsyncSection>
                 </Card>
@@ -305,100 +335,18 @@ const MainPage = observer(function MainPage() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">{t("states.emptyDay")}</p>
+            <Text variant="muted" align="center" className="py-8">
+              {t("states.emptyDay")}
+            </Text>
           )}
         </AsyncSection>
       </div>
 
-      <div
-        ref={foodLogChatOverlayRef}
-        className="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto w-full"
-      >
-        <AnimatePresence>
-          {chatExpanded ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/50"
-              onClick={() => {
-                setChatExpanded(false);
-                setShowSuggestions(false);
-              }}
-            />
-          ) : null}
-        </AnimatePresence>
-
-        <motion.div
-          className="relative z-10 w-full bg-background border-t border-border"
-          animate={{
-            height: chatExpanded
-              ? showSuggestions
-                ? "calc(var(--visual-viewport-height, 100dvh) * 0.85)"
-                : "calc(var(--visual-viewport-height, 100dvh) * 0.72)"
-              : "auto",
-          }}
-          transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        >
-        <div className="p-4">
-          {chatExpanded && showSuggestions ? (
-            <div className="mb-4 max-h-[min(52vh,calc(var(--visual-viewport-height,100dvh)*0.55))] overflow-y-auto space-y-2">
-              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                <p className="text-sm">{t("main.recognizedFoods")}</p>
-                <button
-                  type="button"
-                  onClick={() => setShowSuggestions(false)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {t("main.clear")}
-                </button>
-              </div>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <span>{t("main.addToMeal")}</span>
-                <select
-                  className="border border-border rounded-md bg-background text-foreground text-xs py-1 px-2"
-                  value={targetMeal}
-                  onChange={(e) => setTargetMeal(e.target.value as MealType)}
-                >
-                  {MEAL_TYPES.map((mt) => (
-                    <option key={mt} value={mt}>
-                      {t(`meals.${mt}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {pendingSuggestions.length === 0 && aiParse.fetchState === "success" ? (
-                <p className="text-sm text-muted-foreground py-2">{t("states.emptySuggestions")}</p>
-              ) : null}
-              {pendingSuggestions.map((food, idx) => (
-                <FoodSuggestion
-                  key={`${food.name}-${idx}`}
-                  food={food}
-                  onAccept={() => void handleAcceptFood(idx)}
-                  onReject={() => handleRejectFood(idx)}
-                />
-              ))}
-              {foodLog.entryCreate.fetchState === "error" && foodLog.entryCreate.errorKey ? (
-                <p className="text-sm text-destructive pt-2" role="alert">
-                  {t(foodLog.entryCreate.errorKey)}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {chatExpanded && aiParse.fetchState === "loading" ? (
-            <p className="text-sm text-muted-foreground mb-2">{t("main.parsingFood")}</p>
-          ) : null}
-
-          {chatExpanded && aiParse.fetchState === "error" && aiParse.errorKey ? (
-            <p className="text-sm text-destructive mb-2" role="alert">
-              {t(aiParse.errorKey)}
-            </p>
-          ) : null}
-
+      {!chatExpanded ? (
+        <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-border bg-background p-3 shadow-[0_-6px_24px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <form onSubmit={(e) => void handleChatSubmit(e)} className="flex gap-2">
             <Input
-              ref={chatInputRef}
+              ref={collapsedInputRef}
               placeholder={t("main.logFoodPlaceholder")}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
@@ -415,51 +363,144 @@ const MainPage = observer(function MainPage() {
               <Send className="h-4 w-4" />
             </Button>
           </form>
-
-          {chatExpanded && weekFrequentFoods.length > 0 ? (
-            <div className="mt-4 rounded-xl border border-border bg-muted/40">
-              <p className="px-4 pt-4 pb-2 text-sm font-semibold text-foreground">
-                {t("main.recentLogged")}
-              </p>
-              <ul className="pb-1">
-                {weekFrequentFoods.map((item) => (
-                  <li key={item.name} className="border-t border-border/70 first:border-t-0">
-                    <button
-                      type="button"
-                      className="w-full text-left px-4 py-4 min-h-[3.25rem] flex items-center justify-between gap-4 hover:bg-accent/90 active:bg-accent transition-colors"
-                      onClick={() => {
-                        setChatInput(item.name);
-                        chatInputRef.current?.focus();
-                      }}
-                    >
-                      <span className="text-base font-medium leading-snug break-words flex-1">
-                        {item.name}
-                      </span>
-                      <span className="text-base tabular-nums text-muted-foreground shrink-0">
-                        ×{item.count}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {chatExpanded ? (
-            <button
-              type="button"
-              onClick={() => {
-                setChatExpanded(false);
-                setShowSuggestions(false);
-              }}
-              className="w-full mt-3 py-2 text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ChevronDown className="h-4 w-4 mx-auto" />
-            </button>
-          ) : null}
         </div>
-        </motion.div>
-      </div>
+      ) : null}
+
+      <Drawer.Root
+        open={chatExpanded}
+        onOpenChange={onFoodLogSheetOpenChange}
+        fixed
+        shouldScaleBackground={false}
+      >
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(80dvh,80svh)] max-h-[min(80dvh,80svh)] w-full max-w-md flex-col rounded-t-2xl border-x border-t border-border bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] outline-none">
+            <Drawer.Title className="sr-only">{t("main.foodLogSheetTitle")}</Drawer.Title>
+            <Drawer.Handle className="mb-2 shrink-0 bg-muted" />
+            <form onSubmit={(e) => void handleChatSubmit(e)} className="flex shrink-0 gap-2 pt-2">
+              <Input
+                ref={expandedInputRef}
+                placeholder={t("main.logFoodPlaceholder")}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                className="flex-1"
+                disabled={aiParse.fetchState === "loading"}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!chatInput.trim() || aiParse.fetchState === "loading"}
+                loading={aiParse.fetchState === "loading"}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+
+            {aiParse.fetchState === "loading" ? (
+              <Text variant="muted" className="mt-2 shrink-0">
+                {t("main.parsingFood")}
+              </Text>
+            ) : null}
+
+            {aiParse.fetchState === "error" && aiParse.errorKey ? (
+              <Text variant="error" className="mt-2 shrink-0" role="alert">
+                {t(aiParse.errorKey)}
+              </Text>
+            ) : null}
+
+            <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+                {aiParse.fetchState !== "loading" && weekFrequentFoods.length > 0 ? (
+                  <div className="shrink-0 rounded-xl border border-border bg-muted/40">
+                    <Text weight="semibold" className="px-4 pt-3 pb-2">
+                      {t("main.recentLogged")}
+                    </Text>
+                    <ul className="pb-1">
+                      {weekFrequentFoods.map((item) => (
+                        <li key={item.name} className="border-t border-border/70 first:border-t-0">
+                          <button
+                            type="button"
+                            className="flex min-h-[3rem] w-full items-center justify-between gap-4 px-4 py-3 text-left transition-colors hover:bg-accent/90 active:bg-accent"
+                            onClick={() => {
+                              setChatInput(item.name);
+                              focusChatInput();
+                            }}
+                          >
+                            <Text as="span" weight="medium" className="flex-1 leading-snug break-words">
+                              {item.name}
+                            </Text>
+                            <Text as="span" variant="muted" className="shrink-0 tabular-nums">
+                              ×{item.count}
+                            </Text>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {showSuggestions ? (
+                  <div className="space-y-2 border-t border-border/60 pt-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Text weight="medium">{t("main.recognizedFoods")}</Text>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowSuggestions(false);
+                          setPendingSuggestions([]);
+                        }}
+                        className="group text-muted-foreground hover:text-foreground"
+                      >
+                        <Text as="span" variant="muted" className="group-hover:text-foreground">
+                          {t("main.clear")}
+                        </Text>
+                      </button>
+                    </div>
+                    {pendingSuggestions.length > 0 ? (
+                      <Text
+                        as="label"
+                        variant="muted"
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <Text as="span">{t("main.addToMeal")}</Text>
+                        <select
+                          className="rounded-md border border-border bg-background px-2 py-1 text-base text-foreground"
+                          value={targetMeal}
+                          onChange={(e) => setTargetMeal(e.target.value as MealType)}
+                        >
+                          {MEAL_TYPES.map((mt) => (
+                            <option key={mt} value={mt}>
+                              {t(`meals.${mt}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </Text>
+                    ) : null}
+                    {pendingSuggestions.length === 0 && aiParse.fetchState === "success" ? (
+                      <Text variant="muted" className="py-2">
+                        {t("states.emptySuggestions")}
+                      </Text>
+                    ) : null}
+                    {pendingSuggestions.map((entry, idx) => (
+                      <FoodSuggestion
+                        key={entry.id}
+                        food={entry.food}
+                        onAccept={() => void handleAcceptFood(idx)}
+                        onReject={() => handleRejectFood(idx)}
+                      />
+                    ))}
+                    {foodLog.entryCreate.fetchState === "error" && foodLog.entryCreate.errorKey ? (
+                      <Text variant="error" className="pt-2" role="alert">
+                        {t(foodLog.entryCreate.errorKey)}
+                      </Text>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </div>
   );
 });

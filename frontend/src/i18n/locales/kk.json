@@ -63,7 +63,9 @@
     "logFoodPlaceholder": "Тамақты жазыңыз… (мыс: тауық және күріш)",
     "addToMeal": "Қосу",
     "parsingFood": "Тамақты түсінеміз…",
-    "recentLogged": "Осы аптада жиі жазылған"
+    "recentLogged": "Осы аптада жиі жазылған",
+    "foodLogSheetTitle": "Тамақты жазу",
+    "closeFoodSheet": "Жабу"
   },
   "meals": {
     "breakfast": "Таңғы ас",

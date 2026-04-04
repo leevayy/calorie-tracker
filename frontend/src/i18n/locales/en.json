@@ -63,7 +63,9 @@
     "logFoodPlaceholder": "Log food… (e.g. chicken and rice)",
     "addToMeal": "Add to",
     "parsingFood": "Understanding your food…",
-    "recentLogged": "Logged today"
+    "recentLogged": "Logged today",
+    "foodLogSheetTitle": "Log food",
+    "closeFoodSheet": "Close"
   },
   "meals": {
     "breakfast": "Breakfast",

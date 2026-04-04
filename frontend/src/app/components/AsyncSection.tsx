@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "./ds/Button";
 import { Spinner } from "./ds/Spinner";
+import { Text } from "./ds/Text";
 
 export type AsyncFetchState = "initial" | "loading" | "success" | "error";
 
@@ -30,7 +31,7 @@ export function AsyncSection({
     return (
       <div className={`flex flex-col items-center justify-center gap-3 py-8 ${loadingClassName ?? ""}`}>
         <Spinner size="lg" />
-        <p className="text-sm text-muted-foreground">{t("states.loading")}</p>
+        <Text variant="muted">{t("states.loading")}</Text>
       </div>
     );
   }
@@ -38,9 +39,9 @@ export function AsyncSection({
   if (fetchState === "error") {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-8 text-center px-4">
-        <p className="text-sm text-destructive" role="alert">
+        <Text variant="error" role="alert">
           {errorKey ? t(errorKey) : t("states.errorGeneric")}
-        </p>
+        </Text>
         {onRetry ? (
           <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
             {t("states.retry")}

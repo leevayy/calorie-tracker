@@ -21,7 +21,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
       },
       size: {
-        sm: "h-9 px-3 text-sm",
+        sm: "h-9 px-3 text-base",
         md: "h-11 px-4",
         lg: "h-13 px-6",
         icon: "h-11 w-11",
@@ -56,7 +56,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          buttonVariants({ variant, size, state: buttonState, className }),
+          buttonVariants({ variant, size, state: buttonState }),
+          className,
           variant === "primary" && !disabled && !loading && "hover:bg-gradient-to-r hover:from-[#0284c7]/90 hover:to-[#0369a1]/90",
           variant === "secondary" && !disabled && !loading && "hover:bg-gradient-to-r hover:from-[#e2e8f0]/80 hover:to-[#cbd5e1]/80 dark:hover:from-[#334155]/80 dark:hover:to-[#475569]/80"
         )}
@@ -64,8 +65,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         {...props}
       >
-        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-        {children}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
       </button>
     );
   }

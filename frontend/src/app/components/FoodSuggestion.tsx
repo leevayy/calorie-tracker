@@ -1,6 +1,7 @@
 import { Check, X } from "lucide-react";
 import { Card } from "./ds/Card";
 import { Button } from "./ds/Button";
+import { Text } from "./ds/Text";
 
 interface FoodItem {
   name: string;
@@ -22,13 +23,13 @@ export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps
     <Card className="p-3">
       <div className="flex items-start gap-3">
         <div className="flex-1">
-          <p className="font-medium">{food.name}</p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <Text weight="medium">{food.name}</Text>
+          <Text variant="muted" className="mt-1">
             {food.portion} • {food.calories} cal
-          </p>
-          <p className="text-xs text-muted-foreground">
+          </Text>
+          <Text variant="muted">
             P: {food.protein}g • C: {food.carbs}g • F: {food.fats}g
-          </p>
+          </Text>
         </div>
         <div className="flex gap-2">
           <Button

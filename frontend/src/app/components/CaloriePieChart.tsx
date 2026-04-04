@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { Card } from "./ds/Card";
+import { Text } from "./ds/Text";
 
 interface CaloriePieChartProps {
   consumed: number;
@@ -38,11 +39,17 @@ export function CaloriePieChart({ consumed, goal, caption = "Calories today" }: 
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-2xl font-semibold">{consumed}</p>
-          <p className="text-xs text-muted-foreground">/ {goal}</p>
+          <Text size="2xl" weight="semibold" className="leading-none">
+            {consumed}
+          </Text>
+          <Text variant="muted" className="leading-none">
+            / {goal}
+          </Text>
         </div>
       </div>
-      <p className="text-xs text-center text-muted-foreground mt-2">{caption}</p>
+      <Text variant="muted" align="center" className="mt-2">
+        {caption}
+      </Text>
     </Card>
   );
 }

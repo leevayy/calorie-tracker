@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import { useRootStore } from "@/stores/StoreContext";
 import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
+import { Text } from "../components/ds/Text";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ds/Card";
 
 const AuthPage = observer(function AuthPage() {
@@ -46,14 +47,14 @@ const AuthPage = observer(function AuthPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {showError ? (
-              <p className="text-sm text-destructive" role="alert">
+              <Text variant="error" role="alert">
                 {t(session.authErrorKey)}
-              </p>
+              </Text>
             ) : null}
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="auth-email">
+              <Text as="label" htmlFor="auth-email">
                 {t("auth.email")}
-              </label>
+              </Text>
               <Input
                 id="auth-email"
                 type="email"
@@ -65,9 +66,9 @@ const AuthPage = observer(function AuthPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm" htmlFor="auth-password">
+              <Text as="label" htmlFor="auth-password">
                 {t("auth.password")}
-              </label>
+              </Text>
               <Input
                 id="auth-password"
                 type="password"
@@ -85,12 +86,10 @@ const AuthPage = observer(function AuthPage() {
           </form>
 
           <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="text-sm text-primary hover:underline"
-            >
-              {isLogin ? t("auth.toggleToSignUp") : t("auth.toggleToSignIn")}
+            <button type="button" onClick={toggleMode} className="hover:underline">
+              <Text as="span" variant="primary">
+                {isLogin ? t("auth.toggleToSignUp") : t("auth.toggleToSignIn")}
+              </Text>
             </button>
           </div>
         </CardContent>

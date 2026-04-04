@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { Card } from "../components/ds/Card";
+import { Text } from "../components/ds/Text";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useRootStore } from "@/stores/StoreContext";
@@ -59,7 +60,9 @@ const HistoryPage = observer(function HistoryPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-xl">{t("history.title")}</h1>
+        <Text as="h1" size="xl" weight="medium">
+          {t("history.title")}
+        </Text>
       </div>
 
       <div className="p-4 space-y-4">
@@ -70,39 +73,47 @@ const HistoryPage = observer(function HistoryPage() {
           empty={isEmptySuccess}
           emptyContent={
             <Card className="p-8">
-              <p className="text-sm text-muted-foreground text-center">{t("states.emptyHistory")}</p>
+              <Text variant="muted" align="center">
+                {t("states.emptyHistory")}
+              </Text>
             </Card>
           }
         >
           <Card className="p-4">
-            <h2 className="mb-4">{t("history.weeklySummary")}</h2>
+            <Text as="h2" weight="medium" className="mb-4">
+              {t("history.weeklySummary")}
+            </Text>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <p className="text-sm text-muted-foreground">{t("history.average")}</p>
-                <p className="text-2xl font-semibold tabular-nums">{displayAverage}</p>
-                <p className="text-xs text-muted-foreground">{t("history.calPerDay")}</p>
+                <Text variant="muted">{t("history.average")}</Text>
+                <Text size="2xl" weight="semibold" className="tabular-nums leading-tight">
+                  {displayAverage}
+                </Text>
+                <Text variant="muted">{t("history.calPerDay")}</Text>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{t("history.vsGoal")}</p>
+                <Text variant="muted">{t("history.vsGoal")}</Text>
                 <div className="flex items-center gap-2">
                   {difference > 0 ? (
                     <TrendingUp className="h-5 w-5 text-destructive" />
                   ) : (
                     <TrendingDown className="h-5 w-5 text-success" />
                   )}
-                  <p className="text-2xl font-semibold tabular-nums">{displayVsGoal}</p>
+                  <Text size="2xl" weight="semibold" className="tabular-nums leading-tight">
+                    {displayVsGoal}
+                  </Text>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <Text variant="muted">
                   {difference > 0 ? t("history.over") : t("history.under")}
-                </p>
+                </Text>
               </div>
             </div>
 
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <XAxis dataKey="date" stroke="currentColor" className="text-xs" tickLine={false} />
-                  <YAxis stroke="currentColor" className="text-xs" tickLine={false} domain={["auto", "auto"]} />
+                  <XAxis dataKey="date" stroke="currentColor" className="text-sm" tickLine={false} />
+                  <YAxis stroke="currentColor" className="text-sm" tickLine={false} domain={["auto", "auto"]} />
                   <Tooltip
                     formatter={(value) => (typeof value === "number" ? Math.round(value) : value)}
                     contentStyle={{
@@ -132,23 +143,25 @@ const HistoryPage = observer(function HistoryPage() {
           </Card>
 
           <div className="space-y-2">
-            <h3>{t("history.dailyBreakdown")}</h3>
+            <Text as="h3" weight="medium">
+              {t("history.dailyBreakdown")}
+            </Text>
             {[...chartData].reverse().map((day) => (
               <Card key={day.iso} className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p>{day.date}</p>
-                    <p className="text-sm text-muted-foreground tabular-nums">
+                    <Text>{day.date}</Text>
+                    <Text variant="muted" className="tabular-nums">
                       {Math.round(day.calories)} / {Math.round(day.goal)} {t("history.calShort")}
-                    </p>
+                    </Text>
                   </div>
                   <div className="text-right">
-                    <p
+                    <Text
                       className={`tabular-nums ${day.calories > day.goal ? "text-destructive" : "text-success"}`}
                     >
                       {day.calories > day.goal ? "+" : ""}
                       {Math.round(day.calories - day.goal)} {t("history.calShort")}
-                    </p>
+                    </Text>
                     <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden mt-2">
                       <div
                         className="h-full bg-primary rounded-full transition-all"

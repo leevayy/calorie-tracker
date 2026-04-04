@@ -12,7 +12,7 @@ const inputVariants = cva(
         success: "border-success focus-visible:ring-success",
       },
       size: {
-        sm: "h-9 text-sm",
+        sm: "h-9 text-base",
         md: "h-11",
         lg: "h-13",
       },
@@ -33,7 +33,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         type={type}
-        className={cn(inputVariants({ variant, size, className }))}
+        className={cn(inputVariants({ variant, size }), className)}
         ref={ref}
         {...props}
       />

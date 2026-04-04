@@ -17,10 +17,12 @@ export default function DesignSystemPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl mb-2">Calorie Tracker Design System</h1>
-            <p className="text-muted-foreground">
+            <Text as="h1" size="3xl" weight="medium" className="mb-2">
+              Calorie Tracker Design System
+            </Text>
+            <Text variant="muted">
               A mobile-first, opinionated design system with Ice Blue theme
-            </p>
+            </Text>
           </div>
           <Button onClick={toggleTheme} variant="outline">
             {theme === "dark" ? "Light Mode" : "Dark Mode"}
@@ -37,23 +39,23 @@ export default function DesignSystemPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <div className="h-20 rounded-lg bg-primary mb-2" />
-                <p className="text-sm font-medium">Primary</p>
-                <p className="text-xs text-muted-foreground">Ice Blue</p>
+                <Text weight="medium">Primary</Text>
+                <Text variant="muted">Ice Blue</Text>
               </div>
               <div>
                 <div className="h-20 rounded-lg bg-secondary mb-2" />
-                <p className="text-sm font-medium">Secondary</p>
-                <p className="text-xs text-muted-foreground">Neutral</p>
+                <Text weight="medium">Secondary</Text>
+                <Text variant="muted">Neutral</Text>
               </div>
               <div>
                 <div className="h-20 rounded-lg bg-success mb-2" />
-                <p className="text-sm font-medium">Success</p>
-                <p className="text-xs text-muted-foreground">Green</p>
+                <Text weight="medium">Success</Text>
+                <Text variant="muted">Green</Text>
               </div>
               <div>
                 <div className="h-20 rounded-lg bg-destructive mb-2" />
-                <p className="text-sm font-medium">Destructive</p>
-                <p className="text-xs text-muted-foreground">Red</p>
+                <Text weight="medium">Destructive</Text>
+                <Text variant="muted">Red</Text>
               </div>
             </div>
           </CardContent>
@@ -70,7 +72,9 @@ export default function DesignSystemPage() {
           <CardContent className="space-y-6">
             {/* Variants */}
             <div>
-              <h4 className="mb-3">Variants</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Variants
+              </Text>
               <div className="flex flex-wrap gap-3">
                 <Button variant="primary">Primary</Button>
                 <Button variant="secondary">Secondary</Button>
@@ -83,7 +87,9 @@ export default function DesignSystemPage() {
 
             {/* Sizes */}
             <div>
-              <h4 className="mb-3">Sizes</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Sizes
+              </Text>
               <div className="flex flex-wrap items-center gap-3">
                 <Button size="sm">Small</Button>
                 <Button size="md">Medium</Button>
@@ -96,7 +102,9 @@ export default function DesignSystemPage() {
 
             {/* States */}
             <div>
-              <h4 className="mb-3">States</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                States
+              </Text>
               <div className="flex flex-wrap gap-3">
                 <Button state="initial">Initial</Button>
                 <Button loading>Loading</Button>
@@ -114,7 +122,9 @@ export default function DesignSystemPage() {
 
             {/* Link Buttons */}
             <div>
-              <h4 className="mb-3">Link Buttons</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Link Buttons
+              </Text>
               <div className="flex flex-wrap gap-3">
                 <LinkButton to="/" variant="primary">
                   Primary Link
@@ -139,7 +149,9 @@ export default function DesignSystemPage() {
           <CardContent className="space-y-6">
             {/* Variants */}
             <div className="space-y-3">
-              <h4>Variants</h4>
+              <Text as="h4" weight="medium">
+                Variants
+              </Text>
               <Input placeholder="Default input" variant="default" />
               <Input placeholder="Success input" variant="success" />
               <Input placeholder="Error input" variant="error" />
@@ -147,7 +159,9 @@ export default function DesignSystemPage() {
 
             {/* Sizes */}
             <div className="space-y-3">
-              <h4>Sizes</h4>
+              <Text as="h4" weight="medium">
+                Sizes
+              </Text>
               <Input placeholder="Small input" size="sm" />
               <Input placeholder="Medium input" size="md" />
               <Input placeholder="Large input" size="lg" />
@@ -155,7 +169,9 @@ export default function DesignSystemPage() {
 
             {/* States */}
             <div className="space-y-3">
-              <h4>States</h4>
+              <Text as="h4" weight="medium">
+                States
+              </Text>
               <Input placeholder="Normal state" />
               <Input placeholder="Disabled state" disabled />
               <Input placeholder="With value" value="Example text" readOnly />
@@ -179,9 +195,7 @@ export default function DesignSystemPage() {
                   <CardDescription>A simple card component</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">
-                    Cards provide a clean container for grouping related content.
-                  </p>
+                  <Text>Cards provide a clean container for grouping related content.</Text>
                 </CardContent>
               </Card>
 
@@ -191,9 +205,7 @@ export default function DesignSystemPage() {
                   <CardDescription>With custom border color</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">
-                    You can customize cards with different border colors.
-                  </p>
+                  <Text>You can customize cards with different border colors.</Text>
                 </CardContent>
               </Card>
             </div>
@@ -211,18 +223,18 @@ export default function DesignSystemPage() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <p className="text-sm mb-2 text-muted-foreground">
+                <Text variant="muted" className="mb-2">
                   Hover over buttons to see the gradient effect
-                </p>
+                </Text>
                 <div className="flex gap-3">
                   <Button variant="primary">Hover Me</Button>
                   <Button variant="secondary">Or Me</Button>
                 </div>
               </div>
               <div>
-                <p className="text-sm mb-2 text-muted-foreground">
+                <Text variant="muted" className="mb-2">
                   Active states have slight scale animation
-                </p>
+                </Text>
                 <Button variant="primary">Click Me</Button>
               </div>
             </div>
@@ -241,19 +253,19 @@ export default function DesignSystemPage() {
             <div className="space-y-3">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10 text-success">
                 <Check className="h-5 w-5" />
-                <span>Success state - action completed</span>
+                <Text as="span">Success state - action completed</Text>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 text-destructive">
                 <X className="h-5 w-5" />
-                <span>Error state - something went wrong</span>
+                <Text as="span">Error state - something went wrong</Text>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/10 text-warning">
                 <AlertCircle className="h-5 w-5" />
-                <span>Warning state - requires attention</span>
+                <Text as="span">Warning state - requires attention</Text>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 text-primary">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Loading state - please wait</span>
+                <Text as="span">Loading state - please wait</Text>
               </div>
             </div>
           </CardContent>
@@ -267,30 +279,28 @@ export default function DesignSystemPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h1>Heading 1</h1>
-              <p className="text-sm text-muted-foreground">
-                Used for page titles and major sections
-              </p>
+              <Text as="h1" weight="medium">
+                Heading 1
+              </Text>
+              <Text variant="muted">Used for page titles and major sections</Text>
             </div>
             <div>
-              <h2>Heading 2</h2>
-              <p className="text-sm text-muted-foreground">
-                Used for card titles and subsections
-              </p>
+              <Text as="h2" weight="medium">
+                Heading 2
+              </Text>
+              <Text variant="muted">Used for card titles and subsections</Text>
             </div>
             <div>
-              <h3>Heading 3</h3>
-              <p className="text-sm text-muted-foreground">
-                Used for smaller headings
-              </p>
+              <Text as="h3" weight="medium">
+                Heading 3
+              </Text>
+              <Text variant="muted">Used for smaller headings</Text>
             </div>
             <div>
-              <p>Body text with normal weight and comfortable line height.</p>
+              <Text>Body text with normal weight and comfortable line height.</Text>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">
-                Muted text for secondary information and descriptions.
-              </p>
+              <Text variant="muted">Muted text for secondary information and descriptions.</Text>
             </div>
           </CardContent>
         </Card>
@@ -305,19 +315,19 @@ export default function DesignSystemPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <div className="h-20 bg-primary rounded-sm mb-2" />
-                <p className="text-sm">Small (6px)</p>
+                <Text>Small (6px)</Text>
               </div>
               <div>
                 <div className="h-20 bg-primary rounded-md mb-2" />
-                <p className="text-sm">Medium (8px)</p>
+                <Text>Medium (8px)</Text>
               </div>
               <div>
                 <div className="h-20 bg-primary rounded-lg mb-2" />
-                <p className="text-sm">Large (10px)</p>
+                <Text>Large (10px)</Text>
               </div>
               <div>
                 <div className="h-20 bg-primary rounded-xl mb-2" />
-                <p className="text-sm">XL (14px)</p>
+                <Text>XL (14px)</Text>
               </div>
             </div>
           </CardContent>
@@ -351,15 +361,21 @@ export default function DesignSystemPage() {
             <div className="flex items-center gap-6">
               <div className="text-center">
                 <Spinner size="sm" />
-                <p className="text-xs text-muted-foreground mt-2">Small</p>
+                <Text variant="muted" className="mt-2">
+                  Small
+                </Text>
               </div>
               <div className="text-center">
                 <Spinner size="md" />
-                <p className="text-xs text-muted-foreground mt-2">Medium</p>
+                <Text variant="muted" className="mt-2">
+                  Medium
+                </Text>
               </div>
               <div className="text-center">
                 <Spinner size="lg" />
-                <p className="text-xs text-muted-foreground mt-2">Large</p>
+                <Text variant="muted" className="mt-2">
+                  Large
+                </Text>
               </div>
             </div>
           </CardContent>
@@ -369,12 +385,16 @@ export default function DesignSystemPage() {
         <Card>
           <CardHeader>
             <CardTitle>Text Component</CardTitle>
-            <CardDescription>Unified typography system with 14px base size and Inter font</CardDescription>
+            <CardDescription>
+              Unified typography with 15px base (1rem), comfortable line height, and Inter font
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Variants */}
             <div className="space-y-2">
-              <h4 className="mb-3">Variants</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Variants
+              </Text>
               <Text variant="body">Body text (default)</Text>
               <Text variant="muted">Muted text for secondary information</Text>
               <Text variant="primary">Primary colored text</Text>
@@ -385,19 +405,23 @@ export default function DesignSystemPage() {
 
             {/* Sizes */}
             <div className="space-y-2">
-              <h4 className="mb-3">Sizes</h4>
-              <Text size="xs">Extra small text (12px)</Text>
-              <Text size="sm">Small text (13px)</Text>
-              <Text size="base">Base text (14px - default)</Text>
-              <Text size="lg">Large text (16px)</Text>
-              <Text size="xl">Extra large text (18px)</Text>
-              <Text size="2xl">2XL text (24px)</Text>
-              <Text size="3xl">3XL text (30px)</Text>
+              <Text as="h4" weight="medium" className="mb-3">
+                Sizes
+              </Text>
+              <Text size="xs">Extra small (text-xs)</Text>
+              <Text size="sm">Small (text-sm)</Text>
+              <Text size="base">Base (1rem, default)</Text>
+              <Text size="lg">Large (text-lg)</Text>
+              <Text size="xl">Extra large (text-xl)</Text>
+              <Text size="2xl">2XL (text-2xl)</Text>
+              <Text size="3xl">3XL (text-3xl)</Text>
             </div>
 
             {/* Weights */}
             <div className="space-y-2">
-              <h4 className="mb-3">Weights</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Weights
+              </Text>
               <Text weight="normal">Normal weight (400)</Text>
               <Text weight="medium">Medium weight (500)</Text>
               <Text weight="semibold">Semibold weight (600)</Text>
@@ -405,7 +429,9 @@ export default function DesignSystemPage() {
 
             {/* Alignment */}
             <div className="space-y-2">
-              <h4 className="mb-3">Alignment</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Alignment
+              </Text>
               <Text align="left">Left aligned text</Text>
               <Text align="center">Center aligned text</Text>
               <Text align="right">Right aligned text</Text>
@@ -413,12 +439,14 @@ export default function DesignSystemPage() {
 
             {/* Combinations */}
             <div className="space-y-2">
-              <h4 className="mb-3">Combinations</h4>
+              <Text as="h4" weight="medium" className="mb-3">
+                Combinations
+              </Text>
               <Text size="lg" weight="medium" variant="primary">
                 Large, medium weight, primary colored text
               </Text>
-              <Text size="sm" variant="muted" weight="normal">
-                Small, muted, normal weight text for descriptions
+              <Text variant="muted" weight="normal">
+                Muted body text for descriptions
               </Text>
             </div>
           </CardContent>

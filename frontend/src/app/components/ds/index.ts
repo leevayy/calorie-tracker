@@ -15,4 +15,4 @@ export type { BadgeProps } from "./Badge";
 export { Spinner } from "./Spinner";
 
 export { Text, textVariants } from "./Text";
-export type { TextProps } from "./Text";
+export type { TextProps, TextAs } from "./Text";
