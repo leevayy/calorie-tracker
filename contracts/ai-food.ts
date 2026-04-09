@@ -2,7 +2,7 @@ import { z } from "zod";
 import { FoodMacrosSchema, PreferredLanguageSchema } from "./common.ts";
 
 export const ParseFoodRequestSchema = z.object({
-  text: z.string().min(1).max(2000),
+  text: z.string().min(1).max(10000),
   preferredLanguage: PreferredLanguageSchema,
 });
 export type ParseFoodRequest = z.infer<typeof ParseFoodRequestSchema>;

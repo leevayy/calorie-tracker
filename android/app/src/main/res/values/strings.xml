@@ -69,4 +69,14 @@
     <string name="state_empty_tip">No tip yet</string>
     <string name="state_empty_day">No log for today</string>
     <string name="state_empty_history">No history yet. Log meals to see trends.</string>
+
+    <string name="nav_reference">Foods</string>
+    <string name="reference_title">Reference Foods</string>
+    <string name="reference_add_title">Add reference food</string>
+    <string name="reference_name">Food name</string>
+    <string name="reference_cal">Calories</string>
+    <string name="reference_portion">Portion</string>
+    <string name="reference_add">Add</string>
+    <string name="reference_list_title">Your foods (%1$d)</string>
+    <string name="reference_empty">No reference foods yet. Add your first one above.</string>
 </resources>

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.calorie.tracker.data.api.ApiClient
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 
 private val Context.dataStore by preferencesDataStore(name = "session")
 
@@ -24,13 +25,27 @@ class SessionStore(private val context: Context) {
             prefs[userEmailKey] = email
         }
         ApiClient.accessToken = accessToken
+        ApiClient.refreshToken = refreshToken
     }
 
     suspend fun restore(): Boolean {
         val prefs = context.dataStore.data.first()
         val token = prefs[accessTokenKey] ?: return false
+        val rt = prefs[refreshTokenKey]
         ApiClient.accessToken = token
+        ApiClient.refreshToken = rt
         return true
+    }
+
+    fun setupRefreshCallback() {
+        ApiClient.onTokenRefreshed = { newAccess, newRefresh ->
+            runBlocking {
+                context.dataStore.edit { prefs ->
+                    prefs[accessTokenKey] = newAccess
+                    newRefresh?.let { prefs[refreshTokenKey] = it }
+                }
+            }
+        }
     }
 
     suspend fun getAccessToken(): String? =
@@ -47,5 +62,6 @@ class SessionStore(private val context: Context) {
     suspend fun clear() {
         context.dataStore.edit { it.clear() }
         ApiClient.accessToken = null
+        ApiClient.refreshToken = null
     }
 }

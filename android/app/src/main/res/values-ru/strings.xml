@@ -69,4 +69,14 @@
     <string name="state_empty_tip">Нет совета</string>
     <string name="state_empty_day">Нет записей за сегодня</string>
     <string name="state_empty_history">Пока нет истории. Записывайте приёмы пищи.</string>
+
+    <string name="nav_reference">Блюда</string>
+    <string name="reference_title">Эталонные блюда</string>
+    <string name="reference_add_title">Добавить блюдо</string>
+    <string name="reference_name">Название</string>
+    <string name="reference_cal">Калории</string>
+    <string name="reference_portion">Порция</string>
+    <string name="reference_add">Добавить</string>
+    <string name="reference_list_title">Ваши блюда (%1$d)</string>
+    <string name="reference_empty">Нет эталонных блюд. Добавьте первое выше.</string>
 </resources>

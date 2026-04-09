@@ -3,12 +3,15 @@ package com.calorie.tracker.ui.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.calorie.tracker.data.api.ApiClient
+import com.calorie.tracker.data.local.ReferenceFoodDb
+import com.calorie.tracker.data.local.ReferenceFoodEntity
 import com.calorie.tracker.data.model.CreateFoodEntryBody
 import com.calorie.tracker.data.model.DailyTipResponse
 import com.calorie.tracker.data.model.DayLogResponse
 import com.calorie.tracker.data.model.FrequentFoodItem
 import com.calorie.tracker.data.model.ParseFoodRequest
 import com.calorie.tracker.data.model.ParsedFoodSuggestion
+import com.calorie.tracker.util.FoodSearchEngine
 import com.calorie.tracker.util.buildDailyTipRequest
 import com.calorie.tracker.util.defaultMealTypeForLocalTime
 import com.calorie.tracker.util.localIsoDate
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 data class MainUiState(
     val today: String = localIsoDate(),
@@ -39,6 +43,8 @@ data class MainUiState(
 class MainViewModel : ViewModel() {
     private val _state = MutableStateFlow(MainUiState())
     val state = _state.asStateFlow()
+
+    var referenceFoodDb: ReferenceFoodDb? = null
 
     fun loadDay() {
         val day = _state.value.today
@@ -106,14 +112,36 @@ class MainViewModel : ViewModel() {
     fun setTargetMeal(v: String) { _state.update { it.copy(targetMeal = v) } }
     fun setSheetOpen(v: Boolean) { _state.update { it.copy(sheetOpen = v) } }
 
+    private suspend fun buildFewShotContext(query: String): String {
+        val db = referenceFoodDb ?: return ""
+        val allFoods = db.dao().getAllSync()
+        if (allFoods.isEmpty()) return ""
+
+        val matches = FoodSearchEngine.findTopMatches(query, allFoods, 20)
+        if (matches.isEmpty()) return ""
+
+        val examples = matches.joinToString("\n") { food ->
+            val cal = food.calories.roundToInt()
+            val p = food.protein.roundToInt()
+            val c = food.carbs.roundToInt()
+            val f = food.fats.roundToInt()
+            """Input: "${food.name}" -> {"foods":[{"description":"${food.name}","estimated_portion":"${food.portion}","nutrients":[{"name":"calories","amount":$cal,"unit":"kcal"},{"name":"protein","amount":$p,"unit":"g"},{"name":"fat","amount":$f,"unit":"g"},{"name":"carbohydrates","amount":$c,"unit":"g"}]}]}"""
+        }
+
+        return "[REFERENCE]\n$examples\n[END REFERENCE]\n\n"
+    }
+
     fun parseFood() {
         val text = _state.value.chatInput.trim()
         if (text.isEmpty()) return
         _state.update { it.copy(parseLoading = true, parseError = null) }
         viewModelScope.launch {
             try {
+                val fewShot = buildFewShotContext(text)
+                val enrichedText = fewShot + text
+
                 val res = ApiClient.aiFood.parseFood(
-                    ParseFoodRequest(text, _state.value.preferredLanguage)
+                    ParseFoodRequest(enrichedText, _state.value.preferredLanguage)
                 )
                 if (res.isSuccessful) {
                     val items = res.body()?.suggestions ?: emptyList()

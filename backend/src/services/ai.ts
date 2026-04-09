@@ -76,6 +76,15 @@ Optional:
   carbohydrates -> carbs
   fat -> fats
 
+9. REFERENCE NUTRITION DATA (FEW-SHOT EXAMPLES)
+- The user message MAY contain a [REFERENCE] ... [END REFERENCE] block before the actual food text.
+- This block contains verified nutrition data the user manually curated.
+- When a food in the user's input matches or closely resembles a reference entry, you MUST use the reference values as ground truth.
+- Adjust only for portion differences (e.g., if reference is per 100g and user says 200g, double the values).
+- When the food does NOT match any reference entry, estimate normally using rules 1-6.
+- NEVER invent or hallucinate reference entries; only use what is given.
+- Each reference entry shows: food name -> expected JSON output. Mimic this pattern precisely.
+
 Schema:
 {
   "foods": [
@@ -302,10 +311,10 @@ export function buildNutritionParserSystem(
   const goalHint = NUTRITION_GOAL_PARSER_HINTS[nutritionGoal];
   return `${NutritionParserPrompt}
 
-9. USER NUTRITION GOAL (ESTIMATION BIAS)
+10. USER NUTRITION GOAL (ESTIMATION BIAS)
 - ${goalHint}
 
-10. OUTPUT LANGUAGE
+11. OUTPUT LANGUAGE
 - Food descriptions (the "description" field) and portion text must be in ${langName} (BCP-style tag: ${preferredLanguage}).`;
 }
 

@@ -33,13 +33,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.calorie.tracker.R
+import com.calorie.tracker.data.local.ReferenceFoodDb
 import kotlin.math.roundToInt
 
 @Composable
-fun MainScreen(viewModel: MainViewModel) {
+fun MainScreen(viewModel: MainViewModel, referenceFoodDb: ReferenceFoodDb? = null) {
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
+        viewModel.referenceFoodDb = referenceFoodDb
         viewModel.loadProfile()
         viewModel.loadDay()
     }
