@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Calorie Tracker</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="auth_sign_in_subtitle">Sign in to your account</string>
+    <string name="auth_sign_up_subtitle">Create a new account</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_sign_in">Sign In</string>
+    <string name="auth_sign_up">Sign Up</string>
+    <string name="auth_toggle_to_sign_up">Don\'t have an account? Sign up</string>
+    <string name="auth_toggle_to_sign_in">Already have an account? Sign in</string>
+
+    <string name="main_calories_today">Calories today</string>
+    <string name="main_tip">Tip</string>
+    <string name="main_regenerate_tip">Generate a new tip</string>
+    <string name="main_log_food_placeholder">Log food… (e.g. chicken and rice)</string>
+    <string name="main_recent_logged">Logged recently</string>
+    <string name="main_recognized_foods">Recognized foods</string>
+    <string name="main_clear">Clear</string>
+    <string name="main_add_to_meal">Add to</string>
+
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_snack">Snack</string>
+
+    <string name="history_title">History</string>
+    <string name="history_weekly_summary">Weekly summary</string>
+    <string name="history_average">Average</string>
+    <string name="history_vs_goal">vs goal</string>
+    <string name="history_over">over</string>
+    <string name="history_under">under</string>
+    <string name="history_cal_per_day">cal / day</string>
+    <string name="history_daily_breakdown">Daily breakdown</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_label">App language</string>
+    <string name="settings_language_hint">Used for the interface, daily tips, and AI food descriptions.</string>
+    <string name="settings_goal">Nutrition goal</string>
+    <string name="settings_goal_label">Your target</string>
+    <string name="settings_ai_model">AI model</string>
+    <string name="settings_ai_model_label">Assistant model</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_dark_mode">Dark mode</string>
+    <string name="settings_daily_goals">Daily goals</string>
+    <string name="settings_calorie_goal">Daily calorie goal</string>
+    <string name="settings_recommended_calories">Typical range: 1800–2500 kcal</string>
+    <string name="settings_profile">Profile</string>
+    <string name="settings_weight">Weight (kg)</string>
+    <string name="settings_height">Height (cm)</string>
+    <string name="settings_save">Save profile</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_sign_out">Sign out</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Calorie Tracker v1.0.0</string>
+    <string name="settings_about_body">A calorie tracking app with AI-assisted food logging.</string>
+
+    <string name="goal_maintain">Maintain weight</string>
+    <string name="goal_muscle_gain">Gain muscle</string>
+    <string name="goal_fat_loss">Lose fat</string>
+    <string name="goal_recomposition">Recomposition</string>
+
+    <string name="state_empty_tip">No tip yet</string>
+    <string name="state_empty_day">No log for today</string>
+    <string name="state_empty_history">No history yet. Log meals to see trends.</string>
+</resources>

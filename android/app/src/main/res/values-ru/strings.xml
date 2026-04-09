@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Счётчик калорий</string>
+
+    <string name="nav_home">Главная</string>
+    <string name="nav_history">История</string>
+    <string name="nav_settings">Настройки</string>
+
+    <string name="auth_sign_in_subtitle">Войдите в аккаунт</string>
+    <string name="auth_sign_up_subtitle">Создайте новый аккаунт</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_sign_in">Войти</string>
+    <string name="auth_sign_up">Регистрация</string>
+    <string name="auth_toggle_to_sign_up">Нет аккаунта? Зарегистрироваться</string>
+    <string name="auth_toggle_to_sign_in">Уже есть аккаунт? Войти</string>
+
+    <string name="main_calories_today">Калории сегодня</string>
+    <string name="main_tip">Совет</string>
+    <string name="main_regenerate_tip">Новый совет</string>
+    <string name="main_log_food_placeholder">Записать еду… (напр. курица с рисом)</string>
+    <string name="main_recent_logged">Недавно записано</string>
+    <string name="main_recognized_foods">Распознанная еда</string>
+    <string name="main_clear">Очистить</string>
+    <string name="main_add_to_meal">Добавить в</string>
+
+    <string name="meal_breakfast">Завтрак</string>
+    <string name="meal_lunch">Обед</string>
+    <string name="meal_dinner">Ужин</string>
+    <string name="meal_snack">Перекус</string>
+
+    <string name="history_title">История</string>
+    <string name="history_weekly_summary">Итоги недели</string>
+    <string name="history_average">Среднее</string>
+    <string name="history_vs_goal">от цели</string>
+    <string name="history_over">больше</string>
+    <string name="history_under">меньше</string>
+    <string name="history_cal_per_day">кал / день</string>
+    <string name="history_daily_breakdown">По дням</string>
+
+    <string name="settings_title">Настройки</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_language_label">Язык приложения</string>
+    <string name="settings_language_hint">Используется для интерфейса, советов и описаний еды.</string>
+    <string name="settings_goal">Цель питания</string>
+    <string name="settings_goal_label">Ваша цель</string>
+    <string name="settings_ai_model">Модель ИИ</string>
+    <string name="settings_ai_model_label">Модель ассистента</string>
+    <string name="settings_appearance">Оформление</string>
+    <string name="settings_dark_mode">Тёмная тема</string>
+    <string name="settings_daily_goals">Дневные цели</string>
+    <string name="settings_calorie_goal">Дневная цель калорий</string>
+    <string name="settings_recommended_calories">Обычно: 1800–2500 ккал</string>
+    <string name="settings_profile">Профиль</string>
+    <string name="settings_weight">Вес (кг)</string>
+    <string name="settings_height">Рост (см)</string>
+    <string name="settings_save">Сохранить</string>
+    <string name="settings_account">Аккаунт</string>
+    <string name="settings_sign_out">Выйти</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_version">Счётчик калорий v1.0.0</string>
+    <string name="settings_about_body">Приложение для подсчёта калорий с ИИ-помощником.</string>
+
+    <string name="goal_maintain">Поддержание веса</string>
+    <string name="goal_muscle_gain">Набор мышц</string>
+    <string name="goal_fat_loss">Сжигание жира</string>
+    <string name="goal_recomposition">Рекомпозиция</string>
+
+    <string name="state_empty_tip">Нет совета</string>
+    <string name="state_empty_day">Нет записей за сегодня</string>
+    <string name="state_empty_history">Пока нет истории. Записывайте приёмы пищи.</string>
+</resources>
