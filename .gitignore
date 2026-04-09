@@ -28,3 +28,4 @@ android/local.properties
 android/*.apk
 android/.idea/
 android/captures/
+*.keystore

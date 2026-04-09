@@ -30,15 +30,25 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Generate signing keystore
+        run: |
+          keytool -genkeypair \
+            -keystore app/release.keystore \
+            -alias release \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=CalorieTracker, O=CalorieTracker, C=US"
+
       - name: Build Release APK
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease -PAPI_BASE_URL="${API_BASE_URL}" -PRELEASE_STORE_PASSWORD=android -PRELEASE_KEY_ALIAS=release -PRELEASE_KEY_PASSWORD=android
         env:
           API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Rename APK
         run: |
           VERSION="${GITHUB_REF_NAME#android-}"
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "calorie-tracker-${VERSION}.apk"
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          cp "$APK" "calorie-tracker-${VERSION}.apk"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
