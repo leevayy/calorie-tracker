@@ -12,6 +12,7 @@ import { CaloriePieChart } from "../components/CaloriePieChart";
 import { FoodSuggestion } from "../components/FoodSuggestion";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
+import { useAppTabChat } from "../context/AppTabChatContext";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import { Input } from "../components/ds/Input";
@@ -36,7 +37,7 @@ const MainPage = observer(function MainPage() {
 
   const today = useMemo(() => localIsoDate(), []);
 
-  const [chatExpanded, setChatExpanded] = useState(false);
+  const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
   const [pendingSuggestions, setPendingSuggestions] = useState<PendingFoodSuggestion[]>([]);
   const pendingSuggestionIdRef = useRef(0);
@@ -48,8 +49,6 @@ const MainPage = observer(function MainPage() {
   const [targetMeal, setTargetMeal] = useState<MealType>(() => defaultMealTypeForLocalTime());
   const [weekFrequentFoods, setWeekFrequentFoods] = useState<FrequentFoodItem[]>([]);
 
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
   const tipAutoKeyRef = useRef("");
   const collapsedInputRef = useRef<HTMLInputElement>(null);
   const expandedInputRef = useRef<HTMLInputElement>(null);
@@ -103,20 +102,6 @@ const MainPage = observer(function MainPage() {
       { force: true },
     );
   }, [foodLog.dayRead.data, dailyTip, today, preferredLanguage]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    touchEndX.current = e.changedTouches[0].clientX;
-    const swipeThreshold = 100;
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) navigate("/history");
-      else navigate("/settings");
-    }
-  };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,11 +178,7 @@ const MainPage = observer(function MainPage() {
   }, [today, dayData]);
 
   return (
-    <div
-      className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex justify-between items-center">
         <Text as="h1" size="xl" weight="medium">
           {t("main.title")}
@@ -365,12 +346,12 @@ const MainPage = observer(function MainPage() {
       <Drawer.Root
         open={chatExpanded}
         onOpenChange={onFoodLogSheetOpenChange}
-        fixed
         shouldScaleBackground={false}
+        repositionInputs={false}
       >
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(80dvh,80svh)] max-h-[min(80dvh,80svh)] w-full max-w-md flex-col rounded-t-2xl border-x border-t border-border bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] outline-none">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-x border-t border-border bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] outline-none">
             <Drawer.Title className="sr-only">{t("main.foodLogSheetTitle")}</Drawer.Title>
             <Drawer.Handle className="mb-2 shrink-0 bg-muted" />
             <form onSubmit={(e) => void handleChatSubmit(e)} className="flex shrink-0 gap-2 pt-2">
