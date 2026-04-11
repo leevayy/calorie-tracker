@@ -16,12 +16,12 @@ export const HistoryRangeStore = types
     },
   }))
   .actions((self) => ({
-    loadRange: flow(function* (from: string, to: string) {
+    loadRange: flow(function* (from: string, to: string, today: string) {
       if (self.fetchState === "loading") return;
       self.fetchState = "loading";
       self.errorKey = "";
       try {
-        const data = (yield apiGetHistory(from, to)) as HistoryRangeResponse;
+        const data = (yield apiGetHistory(from, to, today)) as HistoryRangeResponse;
         self.data = data;
         self.fetchState = "success";
       } catch (e) {

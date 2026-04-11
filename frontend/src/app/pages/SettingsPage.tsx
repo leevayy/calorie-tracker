@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Moon, Sun, LogOut } from "lucide-react";
+import { Moon, Sun, LogOut } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { Card } from "../components/ds/Card";
 import { Button } from "../components/ds/Button";
@@ -68,21 +68,8 @@ const SettingsPage = observer(function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate("/app")}
-          className="p-2 -ml-2 rounded-full hover:bg-accent transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <Text as="h1" size="xl" weight="medium">
-          {t("settings.title")}
-        </Text>
-      </div>
-
-      <div className="p-4 space-y-4">
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
         <Card className="p-4">
           <Text as="h3" weight="medium" className="mb-4">
             {t("settings.language")}

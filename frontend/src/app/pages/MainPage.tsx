@@ -5,8 +5,7 @@ import type { ParsedFoodSuggestion } from "@contracts/ai-food";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
-import { User, Home, History, Settings, ChevronDown, Send, RefreshCw } from "lucide-react";
+import { ChevronDown, Send, RefreshCw } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { FoodSuggestion } from "../components/FoodSuggestion";
@@ -32,8 +31,7 @@ type PendingFoodSuggestion = { id: string; food: ParsedFoodSuggestion };
 const MainPage = observer(function MainPage() {
   useRequireAuth();
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const { session, profile, foodLog, dailyTip, aiParse } = useRootStore();
+  const { profile, foodLog, dailyTip, aiParse } = useRootStore();
 
   const today = useMemo(() => localIsoDate(), []);
 
@@ -178,20 +176,7 @@ const MainPage = observer(function MainPage() {
   }, [today, dayData]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex justify-between items-center">
-        <Text as="h1" size="xl" weight="medium">
-          {t("main.title")}
-        </Text>
-        <button
-          type="button"
-          title={session.user?.email}
-          className="p-2 rounded-full hover:bg-accent transition-colors"
-        >
-          <User className="h-5 w-5" />
-        </button>
-      </div>
-
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background">
       {profile.read.fetchState === "error" && profile.read.errorKey ? (
         <div className="px-4 pt-2">
           <Card className="p-3 border-destructive/50 bg-destructive/5">
@@ -213,27 +198,7 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-20">
-        <div className="flex justify-center gap-6 mb-6">
-          <button
-            type="button"
-            onClick={() => navigate("/settings")}
-            className="p-2 rounded-full hover:bg-accent transition-colors text-muted-foreground"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
-          <button type="button" className="p-2 rounded-full bg-primary text-primary-foreground">
-            <Home className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/history")}
-            className="p-2 rounded-full hover:bg-accent transition-colors text-muted-foreground"
-          >
-            <History className="h-5 w-5" />
-          </button>
-        </div>
-
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))] pt-4">
         <AsyncSection
           fetchState={dayFetch}
           errorKey={foodLog.dayRead.errorKey}

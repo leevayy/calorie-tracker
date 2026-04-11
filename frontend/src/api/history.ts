@@ -3,8 +3,8 @@ import { HistoryRangeResponseSchema } from "@contracts/history";
 import { apiClient } from "./client";
 import { ApiError, parseResponse } from "./errors";
 
-export async function apiGetHistory(from: string, to: string): Promise<HistoryRangeResponse> {
-  const params = new URLSearchParams({ from, to });
+export async function apiGetHistory(from: string, to: string, today: string): Promise<HistoryRangeResponse> {
+  const params = new URLSearchParams({ from, to, today });
   const res = await apiClient.get(`/api/v1/history?${params.toString()}`);
   if (res.status !== 200) {
     if (res.status === 401) throw new ApiError("errors.http_401", res.status);

@@ -1,8 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
-import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { Card } from "../components/ds/Card";
 import { Text } from "../components/ds/Text";
@@ -14,19 +13,19 @@ import { localIsoDate, parseIsoDateLocal } from "@/utils/date";
 const HistoryPage = observer(function HistoryPage() {
   useRequireAuth();
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const { history } = useRootStore();
 
-  const { from, to } = useMemo(() => {
+  const { from, to, today } = useMemo(() => {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - 6);
-    return { from: localIsoDate(start), to: localIsoDate(end) };
+    const toDate = localIsoDate(end);
+    return { from: localIsoDate(start), to: toDate, today: toDate };
   }, []);
 
   useEffect(() => {
-    void history.loadRange(from, to);
-  }, [history, from, to]);
+    void history.loadRange(from, to, today);
+  }, [history, from, to, today]);
 
   const chartData = useMemo(() => {
     const days = history.data?.days ?? [];
@@ -38,10 +37,17 @@ const HistoryPage = observer(function HistoryPage() {
     }));
   }, [history.data?.days, i18n.language]);
 
+  const daysForAverageFallback = useMemo(() => {
+    const days = history.data?.days ?? [];
+    return days.filter((d) => d.calories > 0 && d.date !== today);
+  }, [history.data?.days, today]);
+
   const weeklyAverage =
     history.data?.weeklyAverageCalories ??
-    (chartData.length
-      ? Math.round(chartData.reduce((s, d) => s + d.calories, 0) / chartData.length)
+    (daysForAverageFallback.length
+      ? Math.round(
+          daysForAverageFallback.reduce((s, d) => s + d.calories, 0) / daysForAverageFallback.length,
+        )
       : 0);
 
   const weeklyGoal = chartData[0]?.goal ?? history.data?.days[0]?.goal ?? 0;
@@ -51,25 +57,12 @@ const HistoryPage = observer(function HistoryPage() {
   const isEmptySuccess = history.fetchState === "success" && chartData.length === 0;
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border p-4 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate("/app")}
-          className="p-2 -ml-2 rounded-full hover:bg-accent transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <Text as="h1" size="xl" weight="medium">
-          {t("history.title")}
-        </Text>
-      </div>
-
-      <div className="p-4 space-y-4">
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
         <AsyncSection
           fetchState={history.fetchState}
           errorKey={history.errorKey}
-          onRetry={() => void history.loadRange(from, to)}
+          onRetry={() => void history.loadRange(from, to, today)}
           empty={isEmptySuccess}
           emptyContent={
             <Card className="p-8">
