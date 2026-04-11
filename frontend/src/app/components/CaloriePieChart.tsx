@@ -1,23 +1,21 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import type { MacroGramTotals } from "@/utils/macroTotals";
-import { DayMacrosLabels } from "./DayMacrosLabels";
+import { cn } from "./ui/utils";
 import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
 
 interface CaloriePieChartProps {
   consumed: number;
   goal: number;
-  /** Footer label under the chart row */
+  /** Footer label under the pie */
   caption?: string;
-  /** When set, shown to the right of the pie (Б / Ж / У + grams) */
-  macros?: MacroGramTotals | null;
+  className?: string;
 }
 
 export function CaloriePieChart({
   consumed,
   goal,
   caption = "Calories today",
-  macros,
+  className,
 }: CaloriePieChartProps) {
   const remaining = Math.max(0, goal - consumed);
   const data = [
@@ -28,15 +26,9 @@ export function CaloriePieChart({
   const COLORS = ["#0ea5e9", "#e2e8f0"];
 
   return (
-    <Card className="p-4">
-      <div className={`flex gap-4 ${macros ? "flex-row items-center" : "flex-col items-center"}`}>
-        <div
-          className={
-            macros
-              ? "relative h-[140px] w-full min-w-0 max-w-[200px] shrink-0"
-              : "relative h-[140px] w-full shrink-0"
-          }
-        >
+    <Card className={cn("flex h-full flex-col p-4", className)}>
+      <div className="flex w-full flex-1 flex-col items-center justify-center">
+        <div className="relative h-[140px] w-full shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -63,15 +55,10 @@ export function CaloriePieChart({
             </Text>
           </div>
         </div>
-        {macros ? (
-          <div className="ml-auto shrink-0">
-            <DayMacrosLabels totals={macros} />
-          </div>
-        ) : null}
+        <Text variant="muted" align="center" className="mt-2 w-full">
+          {caption}
+        </Text>
       </div>
-      <Text variant="muted" align="center" className="mt-2">
-        {caption}
-      </Text>
     </Card>
   );
 }

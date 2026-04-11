@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, Send, RefreshCw } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
+import { DayMacrosLabels } from "../components/DayMacrosLabels";
 import { FoodSuggestion } from "../components/FoodSuggestion";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
@@ -157,7 +158,6 @@ const MainPage = observer(function MainPage() {
   };
 
   const dayData = foodLog.dayRead.data;
-  const dayMacros = useMemo(() => (dayData ? sumDayMacros(dayData) : null), [dayData]);
   const dayFetch = foodLog.dayRead.fetchState;
   const deleteBusy = foodLog.entryDelete.fetchState === "loading";
 
@@ -208,13 +208,26 @@ const MainPage = observer(function MainPage() {
         >
           {dayData ? (
             <>
-              <div className="flex flex-col gap-4 mb-6">
-                <CaloriePieChart
-                  consumed={dayData.totalCalories}
-                  goal={dayData.calorieGoal}
-                  caption={t("main.caloriesToday")}
-                  macros={dayMacros}
-                />
+              <div className="mb-6 flex flex-col gap-4">
+                {/* Две колонки одной высоты: grid тянет ячейки по высоте ряда */}
+                <div className="grid min-h-0 grid-cols-2 gap-3 sm:gap-4">
+                  <CaloriePieChart
+                    className="min-h-0 min-w-0 h-full"
+                    consumed={dayData.totalCalories}
+                    goal={dayData.calorieGoal}
+                    caption={t("main.caloriesToday")}
+                  />
+                  <Card className="flex h-full min-h-0 min-w-0 flex-col p-4">
+                    <div className="flex w-full flex-1 flex-col items-center justify-center">
+                      <div className="box-border h-[140px] w-[140px] shrink-0 rounded-[var(--radius)] px-2.5 py-1.5">
+                        <DayMacrosLabels totals={sumDayMacros(dayData)} />
+                      </div>
+                      <Text variant="muted" align="center" className="mt-2 w-full">
+                        {t("main.macrosSummary")}
+                      </Text>
+                    </div>
+                  </Card>
+                </div>
                 <Card className="p-4 flex flex-col">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <Text variant="muted">{t("main.tip")}</Text>

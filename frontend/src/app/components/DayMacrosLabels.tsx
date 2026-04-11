@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { MacroGramTotals } from "@/utils/macroTotals";
 import { formatMacroGrams } from "@/utils/macroTotals";
+import { cn } from "./ui/utils";
 import { Text } from "./ds/Text";
 
 type DayMacrosLabelsProps = {
@@ -8,28 +9,38 @@ type DayMacrosLabelsProps = {
   className?: string;
 };
 
-/** Compact Б / Ж / У (or localized letters) with gram values in two rows */
+/**
+ * Три строки Б/Ж/У в фиксированном блоке (родитель задаёт размер, напр. 140×140).
+ * Сетка `grid-rows-3` и разделители — как у таблицы.
+ */
 export function DayMacrosLabels({ totals, className }: DayMacrosLabelsProps) {
   const { t } = useTranslation();
-  const labels = [t("macros.proteinLetter"), t("macros.fatsLetter"), t("macros.carbsLetter")] as const;
-  const values = [totals.protein, totals.fats, totals.carbs].map(formatMacroGrams);
+  const rows = [
+    { letter: t("macros.proteinLetter"), value: formatMacroGrams(totals.protein) },
+    { letter: t("macros.fatsLetter"), value: formatMacroGrams(totals.fats) },
+    { letter: t("macros.carbsLetter"), value: formatMacroGrams(totals.carbs) },
+  ];
 
   return (
-    <div className={className}>
-      <div className="flex justify-between gap-4 tabular-nums">
-        {labels.map((letter, i) => (
-          <Text key={i} variant="muted" size="xs" className="min-w-[2rem] text-center">
-            {letter}
+    <div
+      className={cn(
+        "grid h-full w-full min-h-0 min-w-0 grid-rows-3 divide-y divide-border/60",
+        className,
+      )}
+    >
+      {rows.map((row, i) => (
+        <div
+          key={i}
+          className="flex min-h-0 min-w-0 items-center justify-between gap-2 px-0.5 tabular-nums"
+        >
+          <Text variant="muted" size="sm">
+            {row.letter}
           </Text>
-        ))}
-      </div>
-      <div className="mt-0.5 flex justify-between gap-4 tabular-nums">
-        {values.map((v, i) => (
-          <Text key={i} size="sm" weight="medium" className="min-w-[2rem] text-center">
-            {v}
+          <Text size="sm" weight="medium">
+            {row.value}
           </Text>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
