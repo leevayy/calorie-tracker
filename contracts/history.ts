@@ -5,6 +5,10 @@ export const DailyHistoryPointSchema = z.object({
   date: IsoDateSchema,
   calories: z.number().nonnegative(),
   goal: z.number().positive(),
+  /** Grams consumed that day (0 if omitted — старые ответы API без макросов) */
+  protein: z.number().nonnegative().default(0),
+  carbs: z.number().nonnegative().default(0),
+  fats: z.number().nonnegative().default(0),
 });
 export type DailyHistoryPoint = z.infer<typeof DailyHistoryPointSchema>;
 

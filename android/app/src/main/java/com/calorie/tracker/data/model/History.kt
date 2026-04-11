@@ -6,7 +6,10 @@ import kotlinx.serialization.Serializable
 data class DailyHistoryPoint(
     val date: String,
     val calories: Double,
-    val goal: Double
+    val goal: Double,
+    val protein: Double = 0.0,
+    val carbs: Double = 0.0,
+    val fats: Double = 0.0,
 )
 
 @Serializable

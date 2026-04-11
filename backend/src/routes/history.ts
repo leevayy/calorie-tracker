@@ -48,6 +48,9 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
         .select({
           day: foodEntriesTable.day,
           calories: sql<number>`coalesce(sum(${foodEntriesTable.calories}), 0)`.as("calories"),
+          protein: sql<number>`coalesce(sum(${foodEntriesTable.protein}), 0)`.as("protein"),
+          carbs: sql<number>`coalesce(sum(${foodEntriesTable.carbs}), 0)`.as("carbs"),
+          fats: sql<number>`coalesce(sum(${foodEntriesTable.fats}), 0)`.as("fats"),
         })
         .from(foodEntriesTable)
         .where(
@@ -59,13 +62,29 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
         )
         .groupBy(foodEntriesTable.day);
 
-      const calorieByDay = new Map(aggregateRows.map((row) => [row.day, Number(row.calories)]));
+      const rowByDay = new Map(
+        aggregateRows.map((row) => [
+          row.day,
+          {
+            calories: Number(row.calories),
+            protein: Number(row.protein),
+            carbs: Number(row.carbs),
+            fats: Number(row.fats),
+          },
+        ]),
+      );
 
-      const points = daysInRange.map((date) => ({
-        date,
-        calories: calorieByDay.get(date) ?? 0,
-        goal: user.dailyCalorieGoal,
-      }));
+      const points = daysInRange.map((date) => {
+        const row = rowByDay.get(date);
+        return {
+          date,
+          calories: row?.calories ?? 0,
+          goal: user.dailyCalorieGoal,
+          protein: row?.protein ?? 0,
+          carbs: row?.carbs ?? 0,
+          fats: row?.fats ?? 0,
+        };
+      });
 
       const today = parsed.data.today;
       const pointsForAverage = points.filter(
@@ -86,6 +105,7 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
         weeklyAverageCalories,
       });
 
+      reply.header("Cache-Control", "no-store, private");
       return reply.status(200).send(response);
     },
   );

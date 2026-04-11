@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.calorie.tracker.R
+import com.calorie.tracker.ui.components.DayMacrosRow
 import com.calorie.tracker.ui.theme.Sky500
 import com.calorie.tracker.ui.theme.Slate400
 import java.time.LocalDate
@@ -151,6 +152,12 @@ fun HistoryScreen(viewModel: HistoryViewModel) {
                                 "${day.calories.roundToInt()} / ${day.goal.roundToInt()} cal",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            DayMacrosRow(
+                                modifier = Modifier.padding(top = 8.dp),
+                                protein = day.protein,
+                                fats = day.fats,
+                                carbs = day.carbs
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {

@@ -37,6 +37,9 @@
     <string name="history_under">меньше</string>
     <string name="history_cal_per_day">кал / день</string>
     <string name="history_daily_breakdown">По дням</string>
+    <string name="macro_protein_letter">Б</string>
+    <string name="macro_fats_letter">Ж</string>
+    <string name="macro_carbs_letter">У</string>
 
     <string name="settings_title">Настройки</string>
     <string name="settings_language">Язык</string>

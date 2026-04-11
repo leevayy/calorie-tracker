@@ -37,6 +37,9 @@
     <string name="history_under">under</string>
     <string name="history_cal_per_day">cal / day</string>
     <string name="history_daily_breakdown">Daily breakdown</string>
+    <string name="macro_protein_letter">P</string>
+    <string name="macro_fats_letter">F</string>
+    <string name="macro_carbs_letter">C</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_language">Language</string>

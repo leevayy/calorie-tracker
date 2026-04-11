@@ -43,6 +43,14 @@ data class DayLogResponse(
     val meals: MealBuckets
 )
 
+/** Б / Ж / У totals in grams (protein, fats, carbs). */
+fun DayLogResponse.sumMacros(): Triple<Double, Double, Double> {
+    val all = meals.breakfast + meals.lunch + meals.dinner + meals.snack
+    return all.fold(Triple(0.0, 0.0, 0.0)) { acc, e ->
+        Triple(acc.first + e.protein, acc.second + e.fats, acc.third + e.carbs)
+    }
+}
+
 @Serializable
 data class FrequentFoodItem(val name: String, val count: Int)
 

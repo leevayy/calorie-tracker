@@ -34,6 +34,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.calorie.tracker.R
 import com.calorie.tracker.data.local.ReferenceFoodDb
+import com.calorie.tracker.data.model.sumMacros
+import com.calorie.tracker.ui.components.DayMacrosRow
 import kotlin.math.roundToInt
 
 @Composable
@@ -71,12 +73,24 @@ fun MainScreen(viewModel: MainViewModel, referenceFoodDb: ReferenceFoodDb? = nul
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        CalorieRing(
-                            consumed = dayLog.totalCalories.roundToInt(),
-                            goal = dayLog.calorieGoal.roundToInt(),
-                            label = stringResource(R.string.main_calories_today),
-                            modifier = Modifier.weight(1f)
-                        )
+                        val (p, f, c) = dayLog.sumMacros()
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CalorieRing(
+                                consumed = dayLog.totalCalories.roundToInt(),
+                                goal = dayLog.calorieGoal.roundToInt(),
+                                label = stringResource(R.string.main_calories_today),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            DayMacrosRow(
+                                modifier = Modifier.padding(top = 8.dp),
+                                protein = p,
+                                fats = f,
+                                carbs = c
+                            )
+                        }
 
                         Card(
                             modifier = Modifier.weight(1f),
