@@ -1,29 +1,43 @@
 import { Check, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { ParsedFoodSuggestion } from "@contracts/ai-food";
+import { Badge } from "./ds/Badge";
 import { Card } from "./ds/Card";
 import { Button } from "./ds/Button";
 import { Text } from "./ds/Text";
 
-interface FoodItem {
-  name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fats: number;
-  portion: string;
+function confidenceBadgeVariant(c: number): "success" | "warning" | "secondary" {
+  if (c >= 0.72) return "success";
+  if (c >= 0.42) return "warning";
+  return "secondary";
 }
 
 interface FoodSuggestionProps {
-  food: FoodItem;
+  food: ParsedFoodSuggestion;
   onAccept: () => void;
   onReject: () => void;
 }
 
 export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps) {
+  const { t } = useTranslation();
+  const conf =
+    typeof food.confidence === "number" && Number.isFinite(food.confidence)
+      ? Math.min(1, Math.max(0, food.confidence))
+      : null;
+  const pct = conf !== null ? Math.round(conf * 100) : null;
+
   return (
     <Card className="p-3">
       <div className="flex items-start gap-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <Text weight="medium">{food.name}</Text>
+          {conf !== null && pct !== null ? (
+            <Badge variant={confidenceBadgeVariant(conf)} size="lg" className="mt-1.5">
+              <Text as="span" size="sm" weight="medium" className="text-inherit tabular-nums">
+                {t("main.aiConfidence", { pct })}
+              </Text>
+            </Badge>
+          ) : null}
           <Text variant="muted" className="mt-1">
             {food.portion} • {food.calories} cal
           </Text>
@@ -31,7 +45,7 @@ export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps
             P: {food.protein}g • C: {food.carbs}g • F: {food.fats}g
           </Text>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button
             variant="ghost"
             size="icon"

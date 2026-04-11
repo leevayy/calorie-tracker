@@ -232,11 +232,7 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <div
-        className={`flex-1 overflow-y-auto px-4 pt-4 ${
-          chatExpanded ? (showSuggestions ? "pb-[78vh]" : "pb-[58vh]") : "pb-20"
-        }`}
-      >
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-20">
         <div className="flex justify-center gap-6 mb-6">
           <button
             type="button"

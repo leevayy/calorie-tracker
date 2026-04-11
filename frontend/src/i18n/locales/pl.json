@@ -65,7 +65,8 @@
     "parsingFood": "Analizujemy opis…",
     "recentLogged": "Najczęściej w tym tygodniu",
     "foodLogSheetTitle": "Zapisz posiłek",
-    "closeFoodSheet": "Zamknij"
+    "closeFoodSheet": "Zamknij",
+    "aiConfidence": "Pewność szacunku: {{pct}}%"
   },
   "meals": {
     "breakfast": "Śniadanie",

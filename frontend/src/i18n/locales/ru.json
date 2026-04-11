@@ -65,7 +65,8 @@
     "parsingFood": "Разбираем описание…",
     "recentLogged": "Чаще всего на этой неделе",
     "foodLogSheetTitle": "Записать еду",
-    "closeFoodSheet": "Закрыть"
+    "closeFoodSheet": "Закрыть",
+    "aiConfidence": "Уверенность в оценке: {{pct}}%"
   },
   "meals": {
     "breakfast": "Завтрак",

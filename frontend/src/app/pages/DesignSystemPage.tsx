@@ -348,6 +348,17 @@ export default function DesignSystemPage() {
               <Badge variant="warning">Warning</Badge>
               <Badge variant="outline">Outline</Badge>
             </div>
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <Badge size="sm" variant="secondary">
+                sm
+              </Badge>
+              <Badge size="md" variant="secondary">
+                md
+              </Badge>
+              <Badge size="lg" variant="secondary">
+                lg
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 

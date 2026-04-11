@@ -65,7 +65,8 @@
     "parsingFood": "Текстны анализлыйбыз…",
     "recentLogged": "Әлеге атнада иң еш",
     "foodLogSheetTitle": "Азыкны языгыз",
-    "closeFoodSheet": "Ябу"
+    "closeFoodSheet": "Ябу",
+    "aiConfidence": "Бәя ышаныч: {{pct}}%"
   },
   "meals": {
     "breakfast": "Иртәнге аш",

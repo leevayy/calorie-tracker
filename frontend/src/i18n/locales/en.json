@@ -65,7 +65,8 @@
     "parsingFood": "Understanding your food…",
     "recentLogged": "Logged today",
     "foodLogSheetTitle": "Log food",
-    "closeFoodSheet": "Close"
+    "closeFoodSheet": "Close",
+    "aiConfidence": "Estimate confidence: {{pct}}%"
   },
   "meals": {
     "breakfast": "Breakfast",

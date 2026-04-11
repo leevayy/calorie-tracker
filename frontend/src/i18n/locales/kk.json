@@ -65,7 +65,8 @@
     "parsingFood": "Тамақты түсінеміз…",
     "recentLogged": "Осы аптада жиі жазылған",
     "foodLogSheetTitle": "Тамақты жазу",
-    "closeFoodSheet": "Жабу"
+    "closeFoodSheet": "Жабу",
+    "aiConfidence": "Баға сенімділігі: {{pct}}%"
   },
   "meals": {
     "breakfast": "Таңғы ас",
