@@ -1,4 +1,4 @@
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { DailyTipRequestSchema, DailyTipResponseSchema } from "../contracts/daily-tip.ts";
 import { db } from "../db/client.ts";
@@ -8,7 +8,12 @@ import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "
 import { toJsonSchema } from "../lib/zod-schema.ts";
 import { env } from "../env.ts";
 import { AiModelPreferenceSchema, NutritionGoalSchema } from "../contracts/common.ts";
-import { generateFallbackTipMessage, generateTipMessageWithAi } from "../services/ai.ts";
+import {
+  appendMinimalActionableToFallback,
+  generateFallbackTipMessage,
+  generateTipMessageWithAi,
+  type RecentLog,
+} from "../services/ai.ts";
 
 function coerceNutritionGoal(raw: string) {
   const parsed = NutritionGoalSchema.safeParse(raw);
@@ -18,6 +23,18 @@ function coerceNutritionGoal(raw: string) {
 function coerceAiModelPreference(raw: string) {
   const parsed = AiModelPreferenceSchema.safeParse(raw);
   return parsed.success ? parsed.data : "qwen3";
+}
+
+function coerceMealType(raw: string): RecentLog["mealType"] | undefined {
+  switch (raw) {
+    case "breakfast":
+    case "lunch":
+    case "dinner":
+    case "snack":
+      return raw;
+    default:
+      return undefined;
+  }
 }
 
 function userIdFromRequest(request: FastifyRequest): string | null {
@@ -118,6 +135,30 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
       const community = communityRows[0];
       const hasCommunityStats = (community?.sampleSize ?? 0) >= env.DAILY_TIP_K_ANONYMITY_MIN;
 
+      const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+      const recentEntryRows = await db
+        .select({
+          createdAt: foodEntriesTable.createdAt,
+          calories: foodEntriesTable.calories,
+          protein: foodEntriesTable.protein,
+          carbs: foodEntriesTable.carbs,
+          fats: foodEntriesTable.fats,
+          mealType: foodEntriesTable.mealType,
+        })
+        .from(foodEntriesTable)
+        .where(and(eq(foodEntriesTable.userId, userId), gte(foodEntriesTable.createdAt, seventyTwoHoursAgo)))
+        .orderBy(desc(foodEntriesTable.createdAt))
+        .limit(10);
+
+      const recentLogs: RecentLog[] = [...recentEntryRows].reverse().map((row) => ({
+        timestamp: row.createdAt.toISOString(),
+        calories: Number(row.calories ?? 0),
+        proteinG: Number(row.protein ?? 0),
+        carbsG: Number(row.carbs ?? 0),
+        fatsG: Number(row.fats ?? 0),
+        mealType: coerceMealType(row.mealType),
+      }));
+
       const context = {
         date: parsed.data.date,
         consumedCalories: Number(todayAggregate.calories ?? 0),
@@ -131,6 +172,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         localTimeHm: parsed.data.localTimeHm,
         preferredLanguage: parsed.data.preferredLanguage,
         nutritionGoal: coerceNutritionGoal(user.nutritionGoal),
+        recentLogs,
       };
 
       let message = "";
@@ -138,10 +180,16 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         try {
           message = await generateTipMessageWithAi(context, coerceAiModelPreference(user.aiModelPreference));
         } catch {
-          message = generateFallbackTipMessage(context);
+          message = appendMinimalActionableToFallback(
+            generateFallbackTipMessage(context),
+            context.preferredLanguage,
+          );
         }
       } else {
-        message = generateFallbackTipMessage(context);
+        message = appendMinimalActionableToFallback(
+          generateFallbackTipMessage(context),
+          context.preferredLanguage,
+        );
       }
 
       const response = DailyTipResponseSchema.parse({

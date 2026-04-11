@@ -406,7 +406,16 @@ export async function parseFoodTextWithAi(
   }
 }
 
-type TipContext = {
+export type RecentLog = {
+  timestamp: string;
+  calories: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatsG?: number;
+  mealType?: "breakfast" | "lunch" | "dinner" | "snack";
+};
+
+export type TipContext = {
   date: string;
   consumedCalories: number;
   calorieGoal: number;
@@ -419,7 +428,311 @@ type TipContext = {
   localTimeHm: string;
   preferredLanguage: PreferredLanguage;
   nutritionGoal: NutritionGoal;
+  /** Last 24–72h window, typically 5–10 most recent entries (newest last). */
+  recentLogs: RecentLog[];
 };
+
+export type BehaviorSignals = {
+  hoursSinceLastMeal: number | null;
+  mealsToday: number;
+  lastMealCalories: number | null;
+  avgProteinRecent: number | null;
+  lowProteinStreak: boolean;
+  lateDayEatingPattern: boolean;
+  undereatingTrend: boolean;
+  erraticEating: boolean;
+};
+
+export type PrimaryInsight = {
+  type: string;
+  confidence: number;
+};
+
+const TIP_CONFIDENCE_THRESHOLD = 0.6;
+const TIP_ACTION_VERB_CONFIDENCE = 0.6;
+const TIP_MAX_CHARS = 220;
+const PROTEIN_LOW_G = 20;
+const LATE_LOCAL_HOUR = 18;
+const LATE_CAL_FRACTION = 0.55;
+const UNDER_EAT_GOAL_RATIO = 0.78;
+const ERRATIC_CAL_CV = 0.5;
+const ERRATIC_GAP_STDEV_H = 4;
+
+function localCalendarFields(
+  instant: Date,
+  timeZone: string,
+): { ymd: string; hour: number; minute: number } {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(instant);
+  const map: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== "literal") map[p.type] = p.value;
+  }
+  const y = map.year ?? "1970";
+  const mo = map.month ?? "01";
+  const d = map.day ?? "01";
+  return {
+    ymd: `${y}-${mo}-${d}`,
+    hour: Number.parseInt(map.hour ?? "0", 10),
+    minute: Number.parseInt(map.minute ?? "0", 10),
+  };
+}
+
+function mean(nums: number[]): number {
+  if (nums.length === 0) return 0;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+
+function stdDev(nums: number[]): number {
+  if (nums.length < 2) return 0;
+  const m = mean(nums);
+  return Math.sqrt(mean(nums.map((x) => (x - m) ** 2)));
+}
+
+export function deriveBehaviorSignals(context: TipContext, now: Date = new Date()): BehaviorSignals {
+  const logs = [...context.recentLogs].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  );
+  const tz = context.clientTimeZone;
+
+  if (logs.length === 0) {
+    return {
+      hoursSinceLastMeal: null,
+      mealsToday: 0,
+      lastMealCalories: null,
+      avgProteinRecent: null,
+      lowProteinStreak: false,
+      lateDayEatingPattern: false,
+      undereatingTrend: false,
+      erraticEating: false,
+    };
+  }
+
+  const last = logs[logs.length - 1]!;
+  const lastTs = new Date(last.timestamp);
+  const hoursSinceLastMeal = Number.isFinite(lastTs.getTime())
+    ? Math.max(0, (now.getTime() - lastTs.getTime()) / 3_600_000)
+    : null;
+
+  let mealsToday = 0;
+  for (const log of logs) {
+    const { ymd } = localCalendarFields(new Date(log.timestamp), tz);
+    if (ymd === context.date) mealsToday += 1;
+  }
+
+  const proteinVals = logs
+    .map((l) => (typeof l.proteinG === "number" && Number.isFinite(l.proteinG) ? l.proteinG : null))
+    .filter((x): x is number => x !== null);
+  const avgProteinRecent = proteinVals.length > 0 ? mean(proteinVals) : null;
+
+  const lastDesc = [...logs].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  );
+  const lastThreeProt = lastDesc
+    .slice(0, 3)
+    .map((l) => (typeof l.proteinG === "number" && Number.isFinite(l.proteinG) ? l.proteinG : null))
+    .filter((x): x is number => x !== null);
+  let lowProteinStreak = false;
+  if (lastThreeProt.length >= 2) {
+    const check = lastThreeProt.slice(0, Math.min(3, lastThreeProt.length));
+    lowProteinStreak = check.length >= 2 && check.every((p) => p < PROTEIN_LOW_G);
+  }
+
+  let totalCals = 0;
+  let lateCals = 0;
+  for (const log of logs) {
+    const { hour } = localCalendarFields(new Date(log.timestamp), tz);
+    totalCals += log.calories;
+    if (hour >= LATE_LOCAL_HOUR) lateCals += log.calories;
+  }
+  const lateDayEatingPattern =
+    totalCals >= 400 && lateCals / totalCals >= LATE_CAL_FRACTION;
+
+  let undereatingTrend = false;
+  if (
+    context.weeklyAverageCalories !== null &&
+    context.weeklyAverageCalories < context.calorieGoal * UNDER_EAT_GOAL_RATIO
+  ) {
+    undereatingTrend = true;
+  } else {
+    const byDay = new Map<string, number>();
+    for (const log of logs) {
+      const { ymd } = localCalendarFields(new Date(log.timestamp), tz);
+      byDay.set(ymd, (byDay.get(ymd) ?? 0) + log.calories);
+    }
+    const dailyTotals = [...byDay.values()];
+    if (dailyTotals.length >= 2) {
+      const avgDay = mean(dailyTotals);
+      if (avgDay < context.calorieGoal * 0.75) undereatingTrend = true;
+    }
+  }
+
+  let erraticEating = false;
+  if (logs.length >= 4) {
+    const calsOnly = logs.map((l) => l.calories);
+    const m = mean(calsOnly);
+    const cv = m > 0 ? stdDev(calsOnly) / m : 0;
+    if (cv >= ERRATIC_CAL_CV) erraticEating = true;
+  }
+  if (!erraticEating && logs.length >= 3) {
+    const sorted = [...logs].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+    );
+    const gapsH: number[] = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const dt =
+        (new Date(sorted[i]!.timestamp).getTime() - new Date(sorted[i - 1]!.timestamp).getTime()) /
+        3_600_000;
+      if (Number.isFinite(dt) && dt > 0) gapsH.push(dt);
+    }
+    if (gapsH.length >= 2 && stdDev(gapsH) >= ERRATIC_GAP_STDEV_H) erraticEating = true;
+  }
+
+  return {
+    hoursSinceLastMeal,
+    mealsToday,
+    lastMealCalories: typeof last.calories === "number" ? last.calories : null,
+    avgProteinRecent,
+    lowProteinStreak,
+    lateDayEatingPattern,
+    undereatingTrend,
+    erraticEating,
+  };
+}
+
+function confidenceFromLogs(logCount: number, strength: number): number {
+  const dataFactor = 0.5 + 0.5 * Math.min(1, logCount / 5);
+  return Math.round(Math.min(1, strength * dataFactor) * 100) / 100;
+}
+
+export function pickPrimaryInsight(
+  context: TipContext,
+  signals: BehaviorSignals,
+  dayFrac: number,
+): PrimaryInsight {
+  const n = context.recentLogs.length;
+  const rawDelta = context.calorieGoal - context.consumedCalories;
+
+  const longFast =
+    n >= 1 &&
+    signals.hoursSinceLastMeal !== null &&
+    signals.hoursSinceLastMeal >= 12 &&
+    dayFrac >= 0.42 &&
+    (signals.mealsToday === 0 || signals.hoursSinceLastMeal >= 14);
+  const noMealsTodayLate = n >= 1 && signals.mealsToday === 0 && dayFrac >= 0.45;
+  if (longFast || noMealsTodayLate) {
+    const strength = noMealsTodayLate && dayFrac >= 0.55 ? 0.92 : longFast ? 0.85 : 0.72;
+    return { type: "fasting_late_day", confidence: confidenceFromLogs(n, strength) };
+  }
+
+  if (dayFrac >= 0.55 && rawDelta > context.calorieGoal * 0.35) {
+    return { type: "large_deficit_late_day", confidence: confidenceFromLogs(n, 0.8) };
+  }
+
+  if (signals.lowProteinStreak) {
+    return { type: "low_protein_pattern", confidence: confidenceFromLogs(n, 0.74) };
+  }
+
+  if (signals.lateDayEatingPattern) {
+    return { type: "late_day_eating", confidence: confidenceFromLogs(n, 0.64) };
+  }
+
+  if (signals.undereatingTrend) {
+    return { type: "undereating_trend", confidence: confidenceFromLogs(n, 0.62) };
+  }
+
+  if (signals.erraticEating) {
+    return { type: "erratic_eating", confidence: confidenceFromLogs(n, 0.58) };
+  }
+
+  return { type: "goal_balance_generic", confidence: confidenceFromLogs(n, 0.44) };
+}
+
+function takeFirstSentence(text: string): string {
+  const t = text.trim();
+  const m = t.match(/^[\s\S]+?[.!?](?=\s|$)/);
+  return m ? m[0].trim() : t;
+}
+
+const ACTION_VERB_RE: Record<PreferredLanguage, RegExp> = {
+  en: /\b(try|add|eat|plan|have|choose|include|drink|swap|pack|prep|aim|schedule|log|track|grab|finish|balance|spread|shift|consider|start|keep|build|prioritize)\b/i,
+  ru: /\b(добав|съеш|выпей|заплан|выбери|включ|запиш|следи|постарай|старай|сделай|прими|намеч|перенес|смести|сократи|увелич)\b/i,
+  pl: /\b(spróbuj|dodaj|zjedz|wypij|zaplanuj|wybierz|załóż|zrób|śledź|zadbaj|priorytet|zmień)\b/i,
+  tt: /\b(өстә|көчер|керт|куллан|яз|күрсәт|күзәт|башла|тәмин|сакла)\b/i,
+  kk: /\b(қос|же|іш|жоспарла|таңда|жаз|бақ|баста|орында|сақта)\b/i,
+};
+
+function hasLikelyActionVerb(text: string, lang: PreferredLanguage): boolean {
+  return ACTION_VERB_RE[lang].test(text);
+}
+
+const ACTION_TAIL: Record<PreferredLanguage, string> = {
+  en: " Try one concrete tweak at your next meal.",
+  ru: " Попробуйте один шаг уже в следующем приёме пищи.",
+  pl: " Wypróbuj jedną konkretną zmianę przy następnym posiłku.",
+  tt: " Киләсе ашауда бер гына адымны сынап карагыз.",
+  kk: " Келесі тағамда бір нақты қадамды байқап көріңіз.",
+};
+
+function validateAndClampTipText(
+  raw: string,
+  options: { requireActionVerb: boolean; preferredLanguage: PreferredLanguage },
+): string {
+  let t = takeFirstSentence(raw).replace(/\s+/g, " ").trim();
+  if (!t) return t;
+  if (options.requireActionVerb && !hasLikelyActionVerb(t, options.preferredLanguage)) {
+    t = `${t.replace(/[.!?]+$/, "")}${ACTION_TAIL[options.preferredLanguage]}`;
+    t = takeFirstSentence(t).replace(/\s+/g, " ").trim();
+  }
+  if (t.length > TIP_MAX_CHARS) {
+    t = `${t.slice(0, TIP_MAX_CHARS - 1).trimEnd()}…`;
+  }
+  return t;
+}
+
+const MINIMAL_ACTION_APPEND: Record<PreferredLanguage, string> = {
+  en: " Log your next meal so tips stay on target.",
+  ru: " Запишите следующий приём — советы станут точнее.",
+  pl: " Zapisz następny posiłek, by wskazówki były trafniejsze.",
+  tt: " Киләсе ашауны языгыз — киңәшләр дә нәрсәгә таяна.",
+  kk: " Келесі тағамды жазыңыз — кеңестер дәлірек болады.",
+};
+
+export function appendMinimalActionableToFallback(
+  base: string,
+  preferredLanguage: PreferredLanguage,
+): string {
+  const extra = MINIMAL_ACTION_APPEND[preferredLanguage];
+  const combined = `${base.replace(/\s+$/, "")}${extra}`;
+  if (combined.length <= TIP_MAX_CHARS) return combined;
+  return `${combined.slice(0, TIP_MAX_CHARS - 1).trimEnd()}…`;
+}
+
+function insightCoachNote(type: string): string {
+  switch (type) {
+    case "fasting_late_day":
+      return "Long gap since eating and/or no meals logged today while the local day is well underway; prioritize a timely meal.";
+    case "large_deficit_late_day":
+      return "Calorie intake is far under goal late in the local day; suggest a realistic way to close the gap without shame.";
+    case "low_protein_pattern":
+      return "Recent entries show consistently low protein; suggest a concrete protein add-on.";
+    case "late_day_eating":
+      return "Most calories cluster late (evening); suggest a small shift (e.g., earlier snack or front-loading).";
+    case "undereating_trend":
+      return "Recent days average under the calorie goal; suggest a gentle, sustainable bump.";
+    case "erratic_eating":
+      return "Meal sizes or timing swing a lot; suggest stabilizing with one simple habit.";
+    default:
+      return "Ground the tip in calorie goal vs intake and the user's nutrition goal; one practical nudge.";
+  }
+}
 
 const NUTRITION_GOAL_TIP_COACH_HINTS: Record<NutritionGoal, string> = {
   maintain: "They want balanced eating and general health; keep advice practical and sustainable.",
@@ -445,22 +758,57 @@ export async function generateTipMessageWithAi(
   context: TipContext,
   aiModelPreference: AiModelPreference,
 ): Promise<string> {
-  const langName = OUTPUT_LANGUAGE_NAMES[context.preferredLanguage];
+  const signals = deriveBehaviorSignals(context);
   const dayFrac = fractionOfLocalDayElapsed(context.localTimeHm);
+  const primaryInsight = pickPrimaryInsight(context, signals, dayFrac);
+
+  const bypassBehaviorAi =
+    context.recentLogs.length === 0 || primaryInsight.confidence < TIP_CONFIDENCE_THRESHOLD;
+  if (bypassBehaviorAi) {
+    return appendMinimalActionableToFallback(
+      generateFallbackTipMessage(context),
+      context.preferredLanguage,
+    );
+  }
+
+  const langName = OUTPUT_LANGUAGE_NAMES[context.preferredLanguage];
   const goalLine = NUTRITION_GOAL_TIP_COACH_HINTS[context.nutritionGoal];
+  const payload = {
+    context,
+    signals,
+    primaryInsight,
+  };
+  const highLogConfidence = primaryInsight.confidence >= 0.75;
   const system = [
     `You are a concise calorie tracking coach.`,
     `Write the entire tip in ${langName} (language tag: ${context.preferredLanguage}).`,
     `Nutrition goal context: ${goalLine}`,
     `The user's logged calendar day is ${context.date}. Their local clock is ${context.localTimeHm} in IANA zone "${context.clientTimeZone}".`,
     `About ${Math.round(dayFrac * 100)}% of their local day has passed (from local midnight to local time).`,
-    `Use that timing: early in the local day, do not shame low intake; later in the day, if they are far under goal, you may give a direct, good-humored nudge to eat enough — stay supportive, not cruel.`,
-    `Return one short tip sentence, under 220 characters.`,
-    `Reference progress vs calorie goal and, if present in the JSON, community average.`,
-    `Do not include markdown or bullet points.`,
+    `Structured preprocessing already picked a primary insight (type "${primaryInsight.type}", confidence ${primaryInsight.confidence.toFixed(2)}).`,
+    `Focus the tip on that insight: ${insightCoachNote(primaryInsight.type)}`,
+    highLogConfidence
+      ? `You may use fields in "recentLogs" in context for specifics (timing, meal type, macros).`
+      : `Rely mainly on summary fields and signals; use recentLogs only lightly since confidence is moderate.`,
+    `Return exactly ONE short sentence, at most ${TIP_MAX_CHARS} characters.`,
+    `When confidence is high (>= ~0.75), include ONE concrete next action (food choice, timing, or macro tweak).`,
+    `When confidence is moderate, stay safe and general but still practical.`,
+    `Do not include markdown, bullet points, or multiple sentences.`,
   ].join("\n");
 
-  return aiChat(JSON.stringify(context), system, aiModelPreference);
+  const raw = await aiChat(JSON.stringify(payload), system, aiModelPreference);
+  const requireVerb = primaryInsight.confidence > TIP_ACTION_VERB_CONFIDENCE;
+  const validated = validateAndClampTipText(raw, {
+    requireActionVerb: requireVerb,
+    preferredLanguage: context.preferredLanguage,
+  });
+  if (!validated.trim()) {
+    return appendMinimalActionableToFallback(
+      generateFallbackTipMessage(context),
+      context.preferredLanguage,
+    );
+  }
+  return validated;
 }
 
 const FALLBACK_TIP: Record<
