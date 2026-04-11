@@ -1,0 +1,20 @@
+---
+description: Prefer established libraries and shared components for non-trivial logic; use judgment
+alwaysApply: true
+---
+
+# Dependencies and reuse (common sense)
+
+**Bias toward existing solutions** when the work is error-prone, security-sensitive, or easy to get wrong: parsing (dates, i18n, markup), cryptography, HTTP clients with correct behavior, accessibility-heavy widgets, virtualization, etc. Prefer **installing a well-maintained library** or **importing an existing component/hook** from the repo or the design stack over hand-rolling.
+
+**When to keep it local**
+
+- A few lines that wrap existing project utilities or APIs.
+- Logic that is domain-specific and clearer inlined than abstracted.
+- Adding a dependency whose API is heavier than the problem (extra bundle, learning cost, or lock-in) without a clear win.
+
+**Balance**
+
+- Align with **patterns already in this repo** (same HTTP layer, same UI kit, same state management).
+- One focused dependency beats a fragile custom implementation; a trivial helper does not need a package.
+- If unsure: check whether the frontend/back end already depends on something suitable before adding a new name.

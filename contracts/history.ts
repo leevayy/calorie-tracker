@@ -19,5 +19,7 @@ export type HistoryRangeResponse = z.infer<typeof HistoryRangeResponseSchema>;
 export const HistoryQuerySchema = z.object({
   from: IsoDateSchema,
   to: IsoDateSchema,
+  /** Client's local calendar date (YYYY-MM-DD); excluded from the average along with empty days. */
+  today: IsoDateSchema.optional(),
 });
 export type HistoryQuery = z.infer<typeof HistoryQuerySchema>;

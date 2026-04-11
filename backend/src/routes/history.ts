@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { HistoryQuerySchema, HistoryRangeResponseSchema } from "../contracts/history.ts";
 import { db } from "../db/client.ts";
@@ -67,9 +67,16 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
         goal: user.dailyCalorieGoal,
       }));
 
+      const today = parsed.data.today;
+      const pointsForAverage = points.filter(
+        (p) => p.calories > 0 && (today === undefined || p.date !== today),
+      );
       const weeklyAverageCalories =
-        points.length > 0
-          ? Math.round(points.reduce((sum, point) => sum + point.calories, 0) / points.length)
+        pointsForAverage.length > 0
+          ? Math.round(
+              pointsForAverage.reduce((sum, point) => sum + point.calories, 0) /
+                pointsForAverage.length,
+            )
           : 0;
 
       const response = HistoryRangeResponseSchema.parse({

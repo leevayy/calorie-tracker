@@ -28,11 +28,12 @@ class HistoryViewModel : ViewModel() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             try {
-                val res = ApiClient.history.getHistory(from, to)
+                val res = ApiClient.history.getHistory(from, to, to)
                 if (res.isSuccessful && res.body() != null) {
                     val body = res.body()!!
+                    val daysForAvg = body.days.filter { it.calories > 0 && it.date != to }
                     val avg = body.weeklyAverageCalories
-                        ?: if (body.days.isNotEmpty()) body.days.sumOf { it.calories } / body.days.size
+                        ?: if (daysForAvg.isNotEmpty()) daysForAvg.sumOf { it.calories } / daysForAvg.size
                         else 0.0
                     _state.update { it.copy(loading = false, days = body.days, weeklyAverage = avg) }
                 } else {

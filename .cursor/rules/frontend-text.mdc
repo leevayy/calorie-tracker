@@ -1,0 +1,30 @@
+---
+description: Use the design-system Text component for visible copy in the web app
+globs: frontend/**/*.tsx
+alwaysApply: false
+---
+
+# UI text: use `Text`
+
+For **user-visible text** in the React frontend, use the design-system `Text` component (`@/app/components/ds/Text` or the project’s usual import path), not raw `<p>`, `<span>`, or bare strings in layout-only wrappers.
+
+```tsx
+// ❌ Avoid
+<p className="text-muted-foreground">{t("…")}</p>
+<span className="font-medium">{label}</span>
+
+// ✅ Prefer
+<Text variant="muted">{t("…")}</Text>
+<Text weight="medium">{label}</Text>
+```
+
+**Semantics:** set `as` when needed (`as="h1"`, `as="label"`, etc.). Use `Text` props (`variant`, `size`, `weight`, `align`) before ad-hoc `className`; add `className` only for layout or one-off tweaks.
+
+**Reasonable exceptions**
+
+- **No visible text:** decorative icons-only controls; empty containers.
+- **Native attributes:** `placeholder`, `title`, `aria-*`, `alt` on inputs/images — use normal strings.
+- **Third-party components** that require a string child and do not accept a custom text component — keep the string; prefer wrapping surrounding UI in `Text` where it fits.
+- **Very small inline pieces** inside a larger `Text` (e.g. a single styled word) may stay as `<span>` with minimal classes if splitting would hurt readability; default is still `Text` where it stays clear.
+
+When adding or changing copy, match existing `Text` usage in the same file or screen.

@@ -9,6 +9,7 @@ interface HistoryApi {
     @GET("api/v1/history")
     suspend fun getHistory(
         @Query("from") from: String,
-        @Query("to") to: String
+        @Query("to") to: String,
+        @Query("today") today: String,
     ): Response<HistoryRangeResponse>
 }
