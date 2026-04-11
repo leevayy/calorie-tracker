@@ -1,7 +1,7 @@
 import type { DailyTipRequest, DailyTipResponse } from "@contracts/daily-tip";
 import { flow, types } from "mobx-state-tree";
 import { apiPostDailyTip } from "@/api/dailyTip";
-import { ApiError, toApiError } from "@/api/errors";
+import { errorMessageKey } from "@/api/errors";
 import { FetchStateModel } from "./fetchState";
 
 export const DailyTipStore = types
@@ -26,7 +26,7 @@ export const DailyTipStore = types
         self.fetchState = "success";
       } catch (e) {
         self.fetchState = "error";
-        self.errorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.errorKey = errorMessageKey(e);
       }
     }),
   }));

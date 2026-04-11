@@ -1,7 +1,7 @@
 import type { ParseFoodRequest, ParseFoodResponse } from "@contracts/ai-food";
 import { flow, types } from "mobx-state-tree";
 import { apiParseFood } from "@/api/aiFood";
-import { ApiError, toApiError } from "@/api/errors";
+import { errorMessageKey } from "@/api/errors";
 import { FetchStateModel } from "./fetchState";
 
 export const AiParseFoodStore = types
@@ -26,7 +26,7 @@ export const AiParseFoodStore = types
         self.fetchState = "success";
       } catch (e) {
         self.fetchState = "error";
-        self.errorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.errorKey = errorMessageKey(e);
       }
     }),
   }));

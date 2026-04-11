@@ -1,7 +1,7 @@
 import type { AuthResponse, UserSummary } from "@contracts/auth";
 import { flow, types } from "mobx-state-tree";
 import { apiLogin, apiRefresh, apiRegister } from "@/api/auth";
-import { ApiError, toApiError } from "@/api/errors";
+import { errorMessageKey } from "@/api/errors";
 import { clearPersistedSession, savePersistedSession } from "./authStorage";
 import { FetchStateModel } from "./fetchState";
 
@@ -66,7 +66,7 @@ export const SessionStore = types
         self.authFetchState = "success";
       } catch (e) {
         self.authFetchState = "error";
-        self.authErrorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.authErrorKey = errorMessageKey(e);
       }
     }),
     register: flow(function* (credentials: { email: string; password: string }) {
@@ -80,7 +80,7 @@ export const SessionStore = types
         self.authFetchState = "success";
       } catch (e) {
         self.authFetchState = "error";
-        self.authErrorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.authErrorKey = errorMessageKey(e);
       }
     }),
     refresh: flow(function* () {
@@ -99,7 +99,7 @@ export const SessionStore = types
         self.authFetchState = "success";
       } catch (e) {
         self.authFetchState = "error";
-        self.authErrorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.authErrorKey = errorMessageKey(e);
       }
     }),
   }));

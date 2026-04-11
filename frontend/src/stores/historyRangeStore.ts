@@ -1,7 +1,7 @@
 import type { HistoryRangeResponse } from "@contracts/history";
 import { flow, types } from "mobx-state-tree";
 import { apiGetHistory } from "@/api/history";
-import { ApiError, toApiError } from "@/api/errors";
+import { errorMessageKey } from "@/api/errors";
 import { FetchStateModel } from "./fetchState";
 
 export const HistoryRangeStore = types
@@ -26,7 +26,7 @@ export const HistoryRangeStore = types
         self.fetchState = "success";
       } catch (e) {
         self.fetchState = "error";
-        self.errorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.errorKey = errorMessageKey(e);
       }
     }),
   }));

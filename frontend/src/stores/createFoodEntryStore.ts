@@ -1,7 +1,7 @@
 import type { CreateFoodEntryBody, FoodEntryResponse } from "@contracts/food-log";
 import { flow, getRoot, types } from "mobx-state-tree";
 import { apiCreateFoodEntry } from "@/api/foodLog";
-import { ApiError, toApiError } from "@/api/errors";
+import { errorMessageKey } from "@/api/errors";
 import { FetchStateModel } from "./fetchState";
 
 type RootWithFoodLog = {
@@ -30,7 +30,7 @@ export const CreateFoodEntryStore = types
         self.fetchState = "success";
       } catch (e) {
         self.fetchState = "error";
-        self.errorKey = e instanceof ApiError ? e.messageKey : toApiError(e).messageKey;
+        self.errorKey = errorMessageKey(e);
       }
     }),
   }));
