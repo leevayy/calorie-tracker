@@ -46,7 +46,7 @@ function sumNutrients(suggestions) {
 async function main() {
   const date = process.argv[2];
   const sub = process.argv[3] ?? "";
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!date || !/^\d{4}-\d{2}-\d{2}(-\d+)?$/.test(date)) {
     console.error("Usage: node scripts/analyze-runs.mjs <YYYY-MM-DD> [subfolder]");
     console.error("Example: node scripts/analyze-runs.mjs 2026-04-03");
     console.error("Example: node scripts/analyze-runs.mjs 2026-04-03 debug");

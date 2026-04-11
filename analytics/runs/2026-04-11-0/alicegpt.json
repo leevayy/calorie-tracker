@@ -1,0 +1,929 @@
+{
+  "systemPrompt": "You are a nutrition parser and estimator.\n\nYour task:\nConvert the user input into structured nutrition data. Do not adjust estimates based on the eater's personal goals (you are not given any); estimate what was likely eaten from the text alone.\n\nSTRICT RULES:\n\n1. FOOD GROUPING\n- If the input is a recipe or mixed dish -> output ONE food item (the dish as a whole).\n- DO NOT list individual ingredients separately.\n- If clearly separate foods are listed -> output multiple items.\n\n2. PORTION\n- Infer portion from the text.\n- Prefer realistic, human-style units:\n  \"~350g\", \"1 bowl\", \"2 pcs\", \"1 plate\"\n- Use grams only when reasonably inferable.\n- Respect scale (small vs large portions).\n\n3. NUTRITION ESTIMATION\n- Estimate:\n  - protein (g)\n  - carbohydrates (g)\n  - fat (g)\n- Then compute calories strictly:\n  calories = protein*4 + carbohydrates*4 + fat*9\n- Adjust macros until calories are internally consistent (±5%).\n\n4. REAL-WORLD FOOD PRIORS (IMPORTANT)\nUse typical values when unclear:\n- Oils/butter: 100% fat, very calorie-dense\n- Lean meats: high protein, low fat\n- Mixed dishes: include hidden fats (oil, sauces)\n\n5. SANITY CHECKS (CRITICAL)\n- Large portions (>500g) should rarely be <600 kcal unless very low-fat\n- Fat-heavy foods must not have unrealistically low fat grams\n- If meat/fish present -> protein should not be very low\n- Avoid impossible macro combinations\n- Reconcile inconsistencies before finalizing\n\n6. REFERENCE DATA (HIGHEST PRIORITY)\n- The input MAY include a [REFERENCE] ... [END REFERENCE] block.\n- If a food matches a reference entry:\n  → Use it as ground truth\n  → Only scale for portion differences\n- NEVER override or invent reference data\n\n7. REQUIRED NUTRIENTS\nAlways include:\n- calories (kcal)\n- protein (g)\n- fat (g)\n- carbohydrates (g)\n\nOptional:\n- fiber (g)\n\n8. PER-ITEM FIELDS\n- \"name\": short, clean label of the food (user-facing)\n- \"description\": brief internal notes:\n  - portion assumptions\n  - interpretation decisions\n  - ambiguity resolution\n- Keep description concise but informative\n\n9. OUTPUT FORMAT\n- Return ONE JSON object\n- No markdown, no comments, no extra text\n\nSchema:\n{\n  \"foods\": [\n    {\n      \"name\": string,\n      \"description\": string,\n      \"estimated_portion\"?: string,\n      \"nutrients\": [\n        { \"name\": \"calories\", \"amount\": number, \"unit\": \"kcal\" },\n        { \"name\": \"protein\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"fat\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"carbohydrates\", \"amount\": number, \"unit\": \"g\" },\n        { \"name\": \"fiber\", \"amount\": number, \"unit\": \"g\" }\n      ],\n      \"confidence\"?: number\n    }\n  ],\n  \"notes\"?: string\n}\n\n10. OUTPUT LANGUAGE\n- The \"name\" field, the \"description\" working notes, and \"estimated_portion\" must be in Russian (BCP-style tag: ru).",
+  "meta": {
+    "language": "ru",
+    "nutritionGoal": "maintain",
+    "trainingDataPath": "C:/Users/meow/projects/calorie-tracker/analytics/trainingData.json",
+    "createdAtIso": "2026-04-11T12:49:02.198Z"
+  },
+  "timingSummary": {
+    "rowCount": 46,
+    "totalMs": 130321.22,
+    "avgMs": 2833.07,
+    "minMs": 2202.42,
+    "maxMs": 5051.04,
+    "medianMs": 2643.36
+  },
+  "results": [
+    {
+      "query": "овсянка с клубникой и сахаром стакан овсянки три ложки сахара",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 25
+      },
+      "suggestions": [
+        {
+          "name": "овсянка с клубникой и сахаром",
+          "calories": 250,
+          "protein": 8,
+          "carbs": 45,
+          "fats": 3,
+          "portion": "1 стакан",
+          "description": "стакан овсянки, три ложки сахара, небольшое количество клубники"
+        }
+      ],
+      "durationMs": 2590.71
+    },
+    {
+      "query": "пять хуба буб",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Хуба Буб",
+          "calories": 250,
+          "protein": 10,
+          "carbs": 30,
+          "fats": 5,
+          "portion": "5 шт.",
+          "description": "Не удалось определить, что именно представляет собой блюдо 'хуба буб', поэтому невозможно точно оценить его состав. Предположим, что это блюдо средней калорийности."
+        }
+      ],
+      "durationMs": 2826.53
+    },
+    {
+      "query": "хорошая тарелка солянки",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 10
+      },
+      "suggestions": [
+        {
+          "name": "солянка",
+          "calories": 320,
+          "protein": 15,
+          "carbs": 25,
+          "fats": 20,
+          "portion": "1 тарелка (~350г)",
+          "description": "Предполагается большая тарелка густого супа с мясом, колбасой, солёными огурцами и маслинами. Порция типичная для обеда."
+        }
+      ],
+      "durationMs": 2699.96
+    },
+    {
+      "query": "чипсы из индейки бутылка пива",
+      "expectedResult": {
+        "calories": 1000,
+        "protein": 13
+      },
+      "suggestions": [
+        {
+          "name": "Чипсы из индейки",
+          "calories": 250,
+          "protein": 10,
+          "carbs": 5,
+          "fats": 20,
+          "portion": "50 г",
+          "description": "Предполагается небольшая упаковка чипсов, типичное содержание белка для мясных чипсов, умеренное количество жира"
+        },
+        {
+          "name": "Пиво",
+          "calories": 220,
+          "protein": 6,
+          "carbs": 24,
+          "fats": 0,
+          "portion": "500 мл",
+          "description": "Стандартная бутылка пива, типичное содержание углеводов для светлого пива"
+        }
+      ],
+      "durationMs": 4731.91
+    },
+    {
+      "query": "арахисовая паста",
+      "expectedResult": {
+        "calories": 150,
+        "protein": 12
+      },
+      "suggestions": [
+        {
+          "name": "арахисовая паста",
+          "calories": 194,
+          "protein": 7.2,
+          "carbs": 5.3,
+          "fats": 16.7,
+          "portion": "30 г",
+          "description": "Стандартная порция арахисовой пасты составляет около 30 г. Арахисовая паста содержит значительное количество жиров и белка."
+        }
+      ],
+      "durationMs": 2725.76
+    },
+    {
+      "query": "бутербродики вафля",
+      "expectedResult": {
+        "calories": 410,
+        "protein": 15
+      },
+      "suggestions": [
+        {
+          "name": "Бутерброды с вафлей",
+          "calories": 300,
+          "protein": 5,
+          "carbs": 35,
+          "fats": 15,
+          "portion": "2 шт.",
+          "description": "Предполагается, что это вафельные коржи с начинкой или покрытием, например, с маслом или шоколадом. Порция типична для перекуса."
+        }
+      ],
+      "durationMs": 2661.15
+    },
+    {
+      "query": "5 хуба буб",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 0
+      },
+      "suggestions": [],
+      "error": "[\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      0,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      1,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      2,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      3,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      4,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  }\n]",
+      "durationMs": 3035.93
+    },
+    {
+      "query": "шашлычок",
+      "expectedResult": {
+        "calories": 900,
+        "protein": 45
+      },
+      "suggestions": [
+        {
+          "name": "шашлык",
+          "calories": 540,
+          "protein": 36,
+          "carbs": 0,
+          "fats": 39,
+          "portion": "1 порция (~300г)",
+          "description": "Предполагается, что это порция шашлыка из свинины среднего размера, приготовленного на углях."
+        }
+      ],
+      "durationMs": 2497.5
+    },
+    {
+      "query": "макарошки",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 5
+      },
+      "suggestions": [
+        {
+          "name": "Макароны",
+          "calories": 420,
+          "protein": 15,
+          "carbs": 80,
+          "fats": 3,
+          "portion": "~350г",
+          "description": "Предполагается стандартная порция отварных макарон без дополнительных добавок, таких как масло или соус."
+        }
+      ],
+      "durationMs": 2670.29
+    },
+    {
+      "query": "ред бул",
+      "expectedResult": {
+        "calories": 500,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Red Bull",
+          "calories": 108,
+          "protein": 0,
+          "carbs": 27,
+          "fats": 0,
+          "portion": "1 банка (~250 мл)",
+          "description": "Стандартный энергетический напиток, порция 250 мл"
+        }
+      ],
+      "durationMs": 2333.85
+    },
+    {
+      "query": "конфетка",
+      "expectedResult": {
+        "calories": 60,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "конфетка",
+          "calories": 50,
+          "protein": 0.5,
+          "carbs": 8,
+          "fats": 2,
+          "portion": "1 шт.",
+          "description": "Предполагается небольшая порция, типичная для одной конфеты."
+        }
+      ],
+      "durationMs": 2375.16
+    },
+    {
+      "query": "пловчик",
+      "expectedResult": {
+        "calories": 600,
+        "protein": 15
+      },
+      "suggestions": [
+        {
+          "name": "Пловчик",
+          "calories": 450,
+          "protein": 15,
+          "carbs": 65,
+          "fats": 12,
+          "portion": "1 порция (~350г)",
+          "description": "Не удалось определить точное содержимое блюда, предполагается, что это плов. Порция типичная для обеда."
+        }
+      ],
+      "durationMs": 2609.07
+    },
+    {
+      "query": "мюсли",
+      "expectedResult": {
+        "calories": 340,
+        "protein": 7
+      },
+      "suggestions": [
+        {
+          "name": "мюсли",
+          "calories": 210,
+          "protein": 6,
+          "carbs": 36,
+          "fats": 4,
+          "portion": "~50г",
+          "description": "Стандартная порция мюсли, предполагается, что это сухие мюсли без добавления молока или других жидкостей"
+        }
+      ],
+      "durationMs": 2425.54
+    },
+    {
+      "query": "конфетки",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "конфеты",
+          "calories": 117,
+          "protein": 0.3,
+          "carbs": 24,
+          "fats": 3.2,
+          "portion": "~30г",
+          "description": "Предполагается небольшая горсть конфет, типично высокое содержание сахара и жиров"
+        }
+      ],
+      "durationMs": 2202.42
+    },
+    {
+      "query": "хуба бубы",
+      "expectedResult": {
+        "calories": 80,
+        "protein": 0
+      },
+      "suggestions": [],
+      "error": "[\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"estimated_portion\"\n    ],\n    \"message\": \"Invalid input: expected string, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      0,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      1,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      2,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      3,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  },\n  {\n    \"expected\": \"number\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"foods\",\n      0,\n      \"nutrients\",\n      4,\n      \"amount\"\n    ],\n    \"message\": \"Invalid input: expected number, received null\"\n  }\n]",
+      "durationMs": 2685.74
+    },
+    {
+      "query": "яблоко",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Яблоко",
+          "calories": 78,
+          "protein": 0.8,
+          "carbs": 20,
+          "fats": 0.4,
+          "portion": "1 шт (~150 г)",
+          "description": "Среднее яблоко весом около 150 г"
+        }
+      ],
+      "durationMs": 2291.17
+    },
+    {
+      "query": "конфетка и плов",
+      "expectedResult": {
+        "calories": 460,
+        "protein": 15
+      },
+      "suggestions": [
+        {
+          "name": "Конфетка",
+          "calories": 50,
+          "protein": 0.5,
+          "carbs": 8,
+          "fats": 2,
+          "portion": "1 шт.",
+          "description": "Предполагается небольшая порция конфет, типично сладкая и высококалорийная"
+        },
+        {
+          "name": "Плов",
+          "calories": 600,
+          "protein": 20,
+          "carbs": 65,
+          "fats": 30,
+          "portion": "1 порция (~350г)",
+          "description": "Традиционное блюдо с рисом, мясом и овощами, обычно содержит скрытые жиры"
+        }
+      ],
+      "durationMs": 3711.32
+    },
+    {
+      "query": "мороженое",
+      "expectedResult": {
+        "calories": 400,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "мороженое",
+          "calories": 200,
+          "protein": 3,
+          "carbs": 25,
+          "fats": 12,
+          "portion": "100 г",
+          "description": "Стандартная порция мороженого составляет около 100 г. В составе мороженого обычно есть молоко, сахар и различные добавки, что делает его достаточно калорийным продуктом с высоким содержанием жиров и углеводов."
+        }
+      ],
+      "durationMs": 2784.26
+    },
+    {
+      "query": "2 хуба бубы",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Хуба буба",
+          "calories": 360,
+          "protein": 10,
+          "carbs": 40,
+          "fats": 15,
+          "portion": "2 шт.",
+          "description": "Предполагается, что хуба буба — это блюдо, порция оценивается на основе типичного размера подачи"
+        }
+      ],
+      "durationMs": 2213.38
+    },
+    {
+      "query": "2 яйца с беконом",
+      "expectedResult": {
+        "calories": 340,
+        "protein": 20
+      },
+      "suggestions": [
+        {
+          "name": "2 яйца с беконом",
+          "calories": 380,
+          "protein": 14,
+          "carbs": 1,
+          "fats": 32,
+          "portion": "2 яйца + ~60г бекона",
+          "description": "Предполагается, что в блюде 2 яйца и примерно 50-70 г бекона. Бекон добавляет значительное количество жира."
+        }
+      ],
+      "durationMs": 2639.31
+    },
+    {
+      "query": "3 хуба бубы",
+      "expectedResult": {
+        "calories": 150,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Хуба буба",
+          "calories": 180,
+          "protein": 2,
+          "carbs": 30,
+          "fats": 5,
+          "portion": "3 шт.",
+          "description": "Предполагается, что хуба буба — это десерт, порция оценивается как небольшая, около 3 штук"
+        }
+      ],
+      "durationMs": 2541.15
+    },
+    {
+      "query": "два бутера супчик",
+      "expectedResult": {
+        "calories": 540,
+        "protein": 20
+      },
+      "suggestions": [
+        {
+          "name": "Бутерброды",
+          "calories": 360,
+          "protein": 12,
+          "carbs": 45,
+          "fats": 15,
+          "portion": "2 шт.",
+          "description": "Предполагается два бутерброда со стандартным количеством хлеба и масла/колбасы/сыра"
+        },
+        {
+          "name": "Суп",
+          "calories": 200,
+          "protein": 8,
+          "carbs": 25,
+          "fats": 5,
+          "portion": "1 тарелка (~350 г)",
+          "description": "Стандартный обед из супа, примерно одна тарелка"
+        }
+      ],
+      "durationMs": 4167.67
+    },
+    {
+      "query": "4 яйца с беконом 4 куска хлеба",
+      "expectedResult": {
+        "calories": 740,
+        "protein": 35
+      },
+      "suggestions": [
+        {
+          "name": "Яичница с беконом",
+          "calories": 560,
+          "protein": 36,
+          "carbs": 2,
+          "fats": 38,
+          "portion": "4 яйца, 4 куска",
+          "description": "4 яйца и 4 куска бекона, типичное содержание белка, жира и углеводов"
+        },
+        {
+          "name": "Хлеб",
+          "calories": 240,
+          "protein": 8,
+          "carbs": 48,
+          "fats": 2,
+          "portion": "4 куска",
+          "description": "4 куска хлеба, стандартный белый хлеб"
+        }
+      ],
+      "durationMs": 5004.95
+    },
+    {
+      "query": "овсянка с клубникой и сахаром бутербродики",
+      "expectedResult": {
+        "calories": 700,
+        "protein": 33
+      },
+      "suggestions": [
+        {
+          "name": "овсянка с клубникой и сахаром",
+          "calories": 250,
+          "protein": 8,
+          "carbs": 38,
+          "fats": 4,
+          "portion": "1 порция (~300г)",
+          "description": "Предполагается, что это порция овсяной каши с добавлением клубники и сахара. Оценка основана на типичных пропорциях ингредиентов в готовом блюде."
+        },
+        {
+          "name": "бутербродики",
+          "calories": 180,
+          "protein": 7,
+          "carbs": 12,
+          "fats": 9,
+          "portion": "2 шт (~100г)",
+          "description": "Предполагается, что это небольшие бутерброды, возможно, с маслом или сыром. Оценка основана на типичном размере и составе."
+        }
+      ],
+      "durationMs": 5051.04
+    },
+    {
+      "query": "бутерброды",
+      "expectedResult": {
+        "calories": 340,
+        "protein": 10
+      },
+      "suggestions": [
+        {
+          "name": "Бутерброды",
+          "calories": 300,
+          "protein": 15,
+          "carbs": 25,
+          "fats": 18,
+          "portion": "2 бутерброда (~100г)",
+          "description": "Предполагается, что бутерброды состоят из хлеба и сливочного масла с добавлением ветчины или сыра. Порция включает несколько бутербродов."
+        }
+      ],
+      "durationMs": 2912.75
+    },
+    {
+      "query": "печеньки",
+      "expectedResult": {
+        "calories": 160,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "печенье",
+          "calories": 120,
+          "protein": 1.5,
+          "carbs": 20,
+          "fats": 5,
+          "portion": "30 г",
+          "description": "Предполагается стандартная порция печенья, около 30 г, типичное содержание макронутриентов для печенья"
+        }
+      ],
+      "durationMs": 2647.41
+    },
+    {
+      "query": "огромная порция макарох",
+      "expectedResult": {
+        "calories": 800,
+        "protein": 25
+      },
+      "suggestions": [
+        {
+          "name": "Макароны",
+          "calories": 1600,
+          "protein": 32,
+          "carbs": 288,
+          "fats": 8,
+          "portion": "~800г",
+          "description": "Огромная порция, предполагается большое количество углеводов и умеренное количество белка и жира"
+        }
+      ],
+      "durationMs": 2488.79
+    },
+    {
+      "query": "салатик",
+      "expectedResult": {
+        "calories": 150,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "салат",
+          "calories": 150,
+          "protein": 3,
+          "carbs": 6,
+          "fats": 12,
+          "portion": "1 порция (~200 г)",
+          "description": "Предполагается стандартный овощной салат с маслом или соусом. Порция типичная для обеда или ужина."
+        }
+      ],
+      "durationMs": 2703.62
+    },
+    {
+      "query": "пол база",
+      "expectedResult": {
+        "calories": 400,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Половина базы",
+          "calories": 300,
+          "protein": 15,
+          "carbs": 35,
+          "fats": 10,
+          "portion": "неопределенно",
+          "description": "Не удалось определить, что именно подразумевается под 'база', поэтому невозможно точно оценить состав и калорийность. Предположим, что это блюдо средней калорийности и питательности."
+        }
+      ],
+      "durationMs": 2890.79
+    },
+    {
+      "query": "какава",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Какао",
+          "calories": 120,
+          "protein": 3,
+          "carbs": 22,
+          "fats": 2,
+          "portion": "1 чашка (~250 мл)",
+          "description": "Стандартная порция какао, предполагается использование сухого какао-порошка и сахара с небольшим количеством молока."
+        }
+      ],
+      "durationMs": 2652.63
+    },
+    {
+      "query": "овсянка",
+      "expectedResult": {
+        "calories": 300,
+        "protein": 8
+      },
+      "suggestions": [
+        {
+          "name": "овсянка",
+          "calories": 120,
+          "protein": 4,
+          "carbs": 22,
+          "fats": 2,
+          "portion": "1 порция (~300 г)",
+          "description": "Предполагается стандартная порция овсянки, приготовленной на воде"
+        }
+      ],
+      "durationMs": 2420.25
+    },
+    {
+      "query": "персик",
+      "expectedResult": {
+        "calories": 46,
+        "protein": 1
+      },
+      "suggestions": [
+        {
+          "name": "персик",
+          "calories": 58,
+          "protein": 0.9,
+          "carbs": 13.2,
+          "fats": 0.3,
+          "portion": "1 шт. (~150 г)",
+          "description": "Предполагается один средний персик весом около 150 г"
+        }
+      ],
+      "durationMs": 2773.89
+    },
+    {
+      "query": "сахар",
+      "expectedResult": {
+        "calories": 60,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Сахар",
+          "calories": 80,
+          "protein": 0,
+          "carbs": 20,
+          "fats": 0,
+          "portion": "~20 г",
+          "description": "Предполагается, что порция сахара указана в типичных для употребления пределах"
+        }
+      ],
+      "durationMs": 2373.16
+    },
+    {
+      "query": "картофельный суп",
+      "expectedResult": {
+        "calories": 108,
+        "protein": 6.7
+      },
+      "suggestions": [
+        {
+          "name": "Картофельный суп",
+          "calories": 150,
+          "protein": 4,
+          "carbs": 25,
+          "fats": 3,
+          "portion": "1 тарелка (~350г)",
+          "description": "Предполагается средняя порция картофельного супа, приготовленного на овощном или легком курином бульоне с картофелем и другими овощами."
+        }
+      ],
+      "durationMs": 2601.5
+    },
+    {
+      "query": "пара кусков хлеба",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Куски хлеба",
+          "calories": 160,
+          "protein": 5,
+          "carbs": 30,
+          "fats": 0.5,
+          "portion": "2 куска",
+          "description": "Предполагается, что это два куска белого хлеба стандартного размера."
+        }
+      ],
+      "durationMs": 2586.15
+    },
+    {
+      "query": "вафля",
+      "expectedResult": {
+        "calories": 60,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "Вафля",
+          "calories": 117,
+          "protein": 2.4,
+          "carbs": 16.8,
+          "fats": 4.5,
+          "portion": "~30г",
+          "description": "Стандартная вафля, типичное содержание калорий и макронутриентов для подобного продукта"
+        }
+      ],
+      "durationMs": 2517.5
+    },
+    {
+      "query": "салат 3 куска хлеба",
+      "expectedResult": {
+        "calories": 300,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "салат",
+          "calories": 100,
+          "protein": 2,
+          "carbs": 15,
+          "fats": 3,
+          "portion": "1 порция",
+          "description": "не указан тип салата, предполагается средний по калорийности овощной салат без добавления масла"
+        },
+        {
+          "name": "хлеб",
+          "calories": 270,
+          "protein": 9,
+          "carbs": 54,
+          "fats": 2,
+          "portion": "3 куска (~150г)",
+          "description": "предполагается белый хлеб, 3 куска примерно 150 г"
+        }
+      ],
+      "durationMs": 4024.18
+    },
+    {
+      "query": "арахис",
+      "expectedResult": {
+        "calories": 900,
+        "protein": 45
+      },
+      "suggestions": [
+        {
+          "name": "Арахис",
+          "calories": 166,
+          "protein": 6.2,
+          "carbs": 6,
+          "fats": 14.7,
+          "portion": "~30 г",
+          "description": "Стандартная порция арахиса, предполагается жареный без добавления соли или масла."
+        }
+      ],
+      "durationMs": 2680.48
+    },
+    {
+      "query": "блины с творогом",
+      "expectedResult": {
+        "calories": 380,
+        "protein": 18
+      },
+      "suggestions": [
+        {
+          "name": "блины с творогом",
+          "calories": 540,
+          "protein": 18,
+          "carbs": 60,
+          "fats": 25,
+          "portion": "1 порция (~300г)",
+          "description": "Стандартная порция блинов с творогом, включая тесто и начинку. Предполагается умеренное количество масла и сахара."
+        }
+      ],
+      "durationMs": 2484.64
+    },
+    {
+      "query": "колбаски",
+      "expectedResult": {
+        "calories": 240,
+        "protein": 11
+      },
+      "suggestions": [
+        {
+          "name": "Колбаски",
+          "calories": 230,
+          "protein": 15,
+          "carbs": 0,
+          "fats": 18,
+          "portion": "100 г",
+          "description": "Предполагается стандартная порция колбасок, типичное содержание белков, жиров и углеводов для колбасных изделий."
+        }
+      ],
+      "durationMs": 2484.63
+    },
+    {
+      "query": "мороженко",
+      "expectedResult": {
+        "calories": 200,
+        "protein": 3
+      },
+      "suggestions": [
+        {
+          "name": "мороженое",
+          "calories": 200,
+          "protein": 3,
+          "carbs": 25,
+          "fats": 12,
+          "portion": "100 г",
+          "description": "Стандартная порция мороженого составляет около 100 г. В мороженом обычно содержится значительное количество углеводов и жиров, а также немного белка."
+        }
+      ],
+      "durationMs": 2623.57
+    },
+    {
+      "query": "бутеры с арахисовой пастой",
+      "expectedResult": {
+        "calories": 360,
+        "protein": 21
+      },
+      "suggestions": [
+        {
+          "name": "Бутерброды с арахисовой пастой",
+          "calories": 450,
+          "protein": 15,
+          "carbs": 50,
+          "fats": 25,
+          "portion": "2 бутерброда",
+          "description": "Предполагается, что это два куска хлеба с арахисовой пастой. Учтено содержание углеводов в хлебе и высокое содержание жиров в арахисовой пасте."
+        }
+      ],
+      "durationMs": 2804.65
+    },
+    {
+      "query": "орешки",
+      "expectedResult": {
+        "calories": 90,
+        "protein": 4
+      },
+      "suggestions": [
+        {
+          "name": "Орешки",
+          "calories": 180,
+          "protein": 6,
+          "carbs": 4,
+          "fats": 15,
+          "portion": "~30 г",
+          "description": "Предполагается небольшая порция орехов, например, грецких или миндаля. Точная порция и вид орехов не указаны, поэтому используется общая оценка для орехов."
+        }
+      ],
+      "durationMs": 2661.6
+    },
+    {
+      "query": "картофельный суп",
+      "expectedResult": {
+        "calories": 308,
+        "protein": 6.7
+      },
+      "suggestions": [
+        {
+          "name": "Картофельный суп",
+          "calories": 150,
+          "protein": 6,
+          "carbs": 20,
+          "fats": 4,
+          "portion": "1 тарелка (~350г)",
+          "description": "Предполагается средняя порция картофельного супа, приготовленного на овощном или легком курином бульоне с картофелем и другими овощами."
+        }
+      ],
+      "durationMs": 2528.3
+    },
+    {
+      "query": "хлеб",
+      "expectedResult": {
+        "calories": 120,
+        "protein": 0
+      },
+      "suggestions": [
+        {
+          "name": "хлеб",
+          "calories": 99,
+          "protein": 2.5,
+          "carbs": 19,
+          "fats": 0.5,
+          "portion": "1 кусок (~30 г)",
+          "description": "стандартный кусок хлеба, около 30 г"
+        }
+      ],
+      "durationMs": 2355.27
+    },
+    {
+      "query": "орешки",
+      "expectedResult": {
+        "calories": 550,
+        "protein": 27
+      },
+      "suggestions": [
+        {
+          "name": "Орешки",
+          "calories": 196,
+          "protein": 6,
+          "carbs": 4,
+          "fats": 18,
+          "portion": "~30 г",
+          "description": "Предполагается небольшая порция орехов, например, грецких или миндаля. Точный вид орехов не указан, поэтому используется среднее значение по типичным орехам."
+        }
+      ],
+      "durationMs": 2629.69
+    }
+  ]
+}

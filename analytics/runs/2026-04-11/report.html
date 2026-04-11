@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parse-food benchmark — 2026-04-11</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 1.25rem; max-width: 1100px; }
+    h1 { font-size: 1.25rem; }
+    h2 { font-size: 1rem; margin-top: 1.75rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+    th, td { border: 1px solid #8884; padding: 0.35rem 0.5rem; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .charts { display: grid; gap: 1.5rem; }
+    @media (min-width: 720px) { .charts.two { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 900px) { .charts.metrics3 { grid-template-columns: 1fr 1fr 1fr; } }
+    .chart-box { position: relative; height: 280px; }
+    .muted { color: #666; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>Parse-food benchmark report</h1>
+  <p class="muted">C:/Users/meow/projects/calorie-tracker/analytics/runs/2026-04-11</p>
+
+  <h2>Summary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>OK rows</th>
+        <th>Errors</th>
+        <th>MAE kcal</th>
+        <th>MAE protein (g)</th>
+        <th>RMSE kcal</th>
+        <th>RMSE protein</th>
+        <th>Mean Δ kcal</th>
+        <th>Mean Δ protein</th>
+        <th>Avg parse (ms)</th>
+        <th>Median (ms)</th>
+        <th>Parse min–max (ms)</th>
+        <th>Total parse (s)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>alicegpt</td>
+        <td>45</td>
+        <td>1</td>
+        <td>141.0</td>
+        <td>6.0</td>
+        <td>217.9</td>
+        <td>9.6</td>
+        <td>-77.2</td>
+        <td>-1.6</td>
+        <td>2469.1</td>
+        <td>2267.4</td>
+        <td>1999–4215</td>
+        <td>113.58</td>
+      </tr>
+<tr>
+        <td>qwen3</td>
+        <td>46</td>
+        <td>0</td>
+        <td>184.4</td>
+        <td>7.0</td>
+        <td>269.0</td>
+        <td>10.9</td>
+        <td>-36.9</td>
+        <td>0.3</td>
+        <td>9341.0</td>
+        <td>8211.3</td>
+        <td>3070–26985</td>
+        <td>429.68</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="charts two metrics3">
+    <div>
+      <h2>MAE — calories (kcal)</h2>
+      <div class="chart-box"><canvas id="maeCal"></canvas></div>
+    </div>
+    <div>
+      <h2>MAE — protein (g)</h2>
+      <div class="chart-box"><canvas id="maeProt"></canvas></div>
+    </div>
+    <div>
+      <h2>Avg parse latency</h2>
+      <p class="muted">Wall time per training row (same rows as benchmark).</p>
+      <div class="chart-box"><canvas id="latencyAvg"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div>
+      <h2>Predicted vs expected — calories</h2>
+      <p class="muted">Each point is one training row (summed suggestions). Perfect agreement lies on the diagonal.</p>
+      <div class="chart-box" style="height:360px"><canvas id="scatterCal"></canvas></div>
+    </div>
+    <div>
+      <h2>Predicted vs expected — protein (g)</h2>
+      <div class="chart-box" style="height:360px"><canvas id="scatterProt"></canvas></div>
+    </div>
+  </div>
+
+  <script type="application/json" id="report-data">{"runDir":"C:/Users/meow/projects/calorie-tracker/analytics/runs/2026-04-11","date":"2026-04-11","subfolder":null,"models":[{"name":"alicegpt","errors":1,"okCount":45,"maeCalories":141.04666666666668,"maeProtein":5.964444444444444,"rmseCalories":217.93235494834934,"rmseProtein":9.640101428696461,"meanCalDelta":-77.17999999999999,"meanProtDelta":-1.6444444444444444,"scatterCalories":[{"x":500,"y":250},{"x":500,"y":245},{"x":1000,"y":347},{"x":150,"y":195},{"x":410,"y":350},{"x":200,"y":250},{"x":900,"y":270},{"x":200,"y":280},{"x":500,"y":218},{"x":60,"y":50},{"x":600,"y":360},{"x":340,"y":200},{"x":120,"y":225},{"x":80,"y":150},{"x":120,"y":80},{"x":460,"y":505},{"x":400,"y":200},{"x":120,"y":360},{"x":340,"y":280},{"x":150,"y":270},{"x":540,"y":510},{"x":740,"y":820},{"x":700,"y":430},{"x":340,"y":360},{"x":160,"y":120},{"x":800,"y":875},{"x":150,"y":60},{"x":400,"y":260},{"x":120,"y":80},{"x":300,"y":120},{"x":46,"y":60},{"x":60,"y":39.9},{"x":108,"y":150},{"x":120,"y":180},{"x":60,"y":117},{"x":300,"y":370},{"x":900,"y":165},{"x":380,"y":450},{"x":240,"y":230},{"x":200,"y":200},{"x":360,"y":450},{"x":90,"y":194},{"x":308,"y":150},{"x":120,"y":99},{"x":550,"y":194}],"scatterProtein":[{"x":25,"y":10},{"x":10,"y":14},{"x":13,"y":11.9},{"x":12,"y":7.2},{"x":15,"y":5},{"x":0,"y":10},{"x":45,"y":18},{"x":5,"y":9},{"x":0,"y":0},{"x":0,"y":0.5},{"x":15,"y":9},{"x":7,"y":6},{"x":0,"y":1},{"x":0,"y":3},{"x":0,"y":0.4},{"x":15,"y":12.2},{"x":0,"y":3},{"x":0,"y":6},{"x":20,"y":14},{"x":0,"y":6},{"x":20,"y":22},{"x":35,"y":44},{"x":33,"y":15},{"x":10,"y":15},{"x":0,"y":1.5},{"x":25,"y":20.5},{"x":0,"y":2},{"x":0,"y":8},{"x":0,"y":2.5},{"x":8,"y":4},{"x":1,"y":1.4},{"x":0,"y":0},{"x":6.7,"y":4},{"x":0,"y":7.2},{"x":0,"y":2.4},{"x":0,"y":14},{"x":45,"y":6.2},{"x":18,"y":18},{"x":11,"y":12},{"x":3,"y":3},{"x":21,"y":15},{"x":4,"y":6.2},{"x":6.7,"y":4},{"x":0,"y":2.1},{"x":27,"y":6.2}],"avgParseMs":2469.128695652174,"medianParseMs":2267.435,"minParseMs":1999,"maxParseMs":4214.91,"totalParseMs":113579.92000000001},{"name":"qwen3","errors":0,"okCount":46,"maeCalories":184.43478260869566,"maeProtein":7.045652173913043,"rmseCalories":269.03111182618784,"rmseProtein":10.932729083691378,"meanCalDelta":-36.869565217391305,"meanProtDelta":0.31086956521739123,"scatterCalories":[{"x":500,"y":350},{"x":200,"y":625},{"x":500,"y":350},{"x":1000,"y":350},{"x":150,"y":190},{"x":410,"y":250},{"x":200,"y":700},{"x":900,"y":350},{"x":200,"y":280},{"x":500,"y":110},{"x":60,"y":28},{"x":600,"y":450},{"x":340,"y":190},{"x":120,"y":450},{"x":80,"y":0},{"x":120,"y":95},{"x":460,"y":605},{"x":400,"y":207},{"x":120,"y":520},{"x":340,"y":336},{"x":150,"y":810},{"x":540,"y":480},{"x":740,"y":1080},{"x":700,"y":530},{"x":340,"y":450},{"x":160,"y":160},{"x":800,"y":630},{"x":150,"y":50},{"x":400,"y":0},{"x":120,"y":80},{"x":300,"y":300},{"x":46,"y":63},{"x":60,"y":16},{"x":108,"y":120},{"x":120,"y":133},{"x":60,"y":75},{"x":300,"y":260},{"x":900,"y":166},{"x":380,"y":420},{"x":240,"y":420},{"x":200,"y":207},{"x":360,"y":320},{"x":90,"y":170},{"x":308,"y":120},{"x":120,"y":80},{"x":550,"y":170}],"scatterProtein":[{"x":25,"y":8},{"x":0,"y":15},{"x":10,"y":15},{"x":13,"y":17},{"x":12,"y":8},{"x":15,"y":4},{"x":0,"y":20},{"x":45,"y":25},{"x":5,"y":10},{"x":0,"y":0},{"x":0,"y":0.3},{"x":15,"y":15},{"x":7,"y":6},{"x":0,"y":5},{"x":0,"y":0},{"x":0,"y":0.5},{"x":15,"y":18.5},{"x":0,"y":3.5},{"x":0,"y":16},{"x":20,"y":18},{"x":0,"y":24},{"x":20,"y":16},{"x":35,"y":56},{"x":33,"y":15},{"x":10,"y":15},{"x":0,"y":2},{"x":25,"y":22.5},{"x":0,"y":2},{"x":0,"y":0},{"x":0,"y":3},{"x":8,"y":10},{"x":1,"y":1.4},{"x":0,"y":0},{"x":6.7,"y":3},{"x":0,"y":4.5},{"x":0,"y":1},{"x":0,"y":8},{"x":45,"y":7},{"x":18,"y":18},{"x":11,"y":24},{"x":3,"y":3.5},{"x":21,"y":12},{"x":4,"y":6},{"x":6.7,"y":3},{"x":0,"y":3},{"x":27,"y":6}],"avgParseMs":9340.977391304352,"medianParseMs":8211.27,"minParseMs":3069.62,"maxParseMs":26985.28,"totalParseMs":429684.9600000002}],"chartPalette":["#2563eb","#16a34a","#ea580c","#9333ea","#dc2626","#0891b2"]}</script>
+  <script>
+    const DATA = JSON.parse(document.getElementById('report-data').textContent);
+    const labelColor = typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e5e5' : '#171717';
+    const gridColor = 'rgba(128,128,128,0.2)';
+    Chart.defaults.color = labelColor;
+    Chart.defaults.borderColor = gridColor;
+
+    const names = DATA.models.map((m) => m.name);
+    const palette = DATA.chartPalette;
+
+    new Chart(document.getElementById('maeCal'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: 'MAE kcal',
+          data: DATA.models.map((m) => m.maeCalories ?? 0),
+          backgroundColor: names.map((_, i) => palette[i % palette.length]),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+
+    new Chart(document.getElementById('maeProt'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: 'MAE protein (g)',
+          data: DATA.models.map((m) => m.maeProtein ?? 0),
+          backgroundColor: names.map((_, i) => palette[i % palette.length]),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+
+    new Chart(document.getElementById('latencyAvg'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: 'Avg ms / row',
+          data: DATA.models.map((m) => m.avgParseMs ?? 0),
+          backgroundColor: names.map((_, i) => palette[i % palette.length]),
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Milliseconds' },
+          },
+        },
+      },
+    });
+
+    function scatterChart(canvasId, key, axisLabel) {
+      const datasets = DATA.models.map((m, i) => ({
+        label: m.name,
+        data: m[key],
+        backgroundColor: palette[i % palette.length],
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }));
+      const all = DATA.models.flatMap((m) => m[key]);
+      const maxVal = Math.max(1, ...all.flatMap((p) => [p.x, p.y]));
+      const pad = maxVal * 0.05;
+      datasets.push({
+        label: 'y = x',
+        data: [{ x: 0, y: 0 }, { x: maxVal + pad, y: maxVal + pad }],
+        showLine: true,
+        pointRadius: 0,
+        borderColor: 'rgba(128,128,128,0.7)',
+        borderDash: [6, 4],
+        borderWidth: 1,
+      });
+      new Chart(document.getElementById(canvasId), {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              title: { display: true, text: 'Expected ' + axisLabel },
+              beginAtZero: true,
+              suggestedMax: maxVal + pad,
+            },
+            y: {
+              title: { display: true, text: 'Predicted ' + axisLabel },
+              beginAtZero: true,
+              suggestedMax: maxVal + pad,
+            },
+          },
+        },
+      });
+    }
+
+    scatterChart('scatterCal', 'scatterCalories', 'kcal');
+    scatterChart('scatterProt', 'scatterProtein', 'protein (g)');
+  </script>
+</body>
+</html>
