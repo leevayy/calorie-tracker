@@ -4,7 +4,7 @@ import { z } from "zod";
 export const PreferredLanguageSchema = z.enum(["en", "ru", "pl", "tt", "kk"]);
 export type PreferredLanguage = z.infer<typeof PreferredLanguageSchema>;
 
-/** User-selected nutrition target; steers AI tips and food parsing assumptions. */
+/** User-selected nutrition target; steers daily tips and parse-food estimation hints. */
 export const NutritionGoalSchema = z.enum(["maintain", "muscle_gain", "fat_loss", "recomposition"]);
 export type NutritionGoal = z.infer<typeof NutritionGoalSchema>;
 

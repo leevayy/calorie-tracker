@@ -27,7 +27,8 @@ const backendRoot = resolve(__dirname, "..");
 const repoRoot = resolve(backendRoot, "..");
 
 /** Keep in sync with `contracts/common.ts` `AiModelPreferenceSchema`. */
-const ALL_MODELS = ["deepseek", "qwen3", "gptoss", "alicegpt"] as const satisfies readonly AiModelPreference[];
+// const ALL_MODELS = ["deepseek", "qwen3", "gptoss", "alicegpt"] as const satisfies readonly AiModelPreference[];
+const ALL_MODELS = ["qwen3", "alicegpt"] as const satisfies readonly AiModelPreference[];
 
 /** With `--debug`, only this many training rows are used. */
 const DEBUG_ROW_LIMIT = 2;

@@ -85,10 +85,17 @@ Optional:
 - NEVER invent or hallucinate reference entries; only use what is given.
 - Each reference entry shows: food name -> expected JSON output. Mimic this pattern precisely.
 
+10. PER-ITEM METADATA (API; required shape for this app)
+- "name": short, clean label for what was eaten (user-facing).
+- "description": brief internal notes (portion assumptions, ambiguity, interpretation). Keep concise.
+- "confidence": number from 0 to 1 (subjective certainty). Include whenever possible for the client UI.
+- "estimated_portion" optional; same language as name/description.
+
 Schema:
 {
   "foods": [
     {
+      "name": string,
       "description": string,
       "estimated_portion"?: string,
       "nutrients": [
@@ -114,7 +121,8 @@ const NutritionParserResponseSchema = z.object({
   foods: z.array(
     z
       .object({
-        description: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string().optional(),
         estimated_portion: z.string().min(1).optional(),
         nutrients: z.array(NutrientSchema),
         confidence: z.number().min(0).max(1).optional(),
@@ -141,7 +149,7 @@ type ParseFoodCacheEntry = {
   suggestions: ParsedFoodSuggestion[];
 };
 
-const PARSE_FOOD_CACHE_VERSION = "v1";
+const PARSE_FOOD_CACHE_VERSION = "v4";
 const parseFoodCache = new Map<string, ParseFoodCacheEntry>();
 const parseFoodInFlight = new Map<string, Promise<ParsedFoodSuggestion[]>>();
 
@@ -169,6 +177,7 @@ async function aiChat(
   prompt: string,
   system: string,
   aiModelPreference: AiModelPreference,
+  options?: { temperature?: number },
 ): Promise<string> {
   const apiKey = env.YANDEX_AI_STUDIO_API_KEY;
   if (!apiKey) {
@@ -196,7 +205,7 @@ async function aiChat(
         { role: "system", content: system },
         { role: "user", content: prompt },
       ],
-      temperature: 0.2,
+      temperature: options?.temperature ?? 0.2,
     }),
   });
 
@@ -291,7 +300,7 @@ const OUTPUT_LANGUAGE_NAMES: Record<PreferredLanguage, string> = {
   kk: "Kazakh",
 };
 
-/** English hints for the parser; output language is still governed by section 9. */
+/** English hints for the parser; food "name" / "description" / portion language is governed by section 12. */
 const NUTRITION_GOAL_PARSER_HINTS: Record<NutritionGoal, string> = {
   maintain:
     "User goal: maintain weight and general health. Prefer balanced, varied estimates; do not assume extreme restriction unless the food clearly warrants it.",
@@ -311,11 +320,11 @@ export function buildNutritionParserSystem(
   const goalHint = NUTRITION_GOAL_PARSER_HINTS[nutritionGoal];
   return `${NutritionParserPrompt}
 
-10. USER NUTRITION GOAL (ESTIMATION BIAS)
+11. USER NUTRITION GOAL (ESTIMATION BIAS)
 - ${goalHint}
 
-11. OUTPUT LANGUAGE
-- Food descriptions (the "description" field) and portion text must be in ${langName} (BCP-style tag: ${preferredLanguage}).`;
+12. OUTPUT LANGUAGE
+- The "name" field, the "description" working notes, and "estimated_portion" must be in ${langName} (BCP-style tag: ${preferredLanguage}).`;
 }
 
 async function generateParseFoodSuggestions(
@@ -328,19 +337,27 @@ async function generateParseFoodSuggestions(
     text,
     buildNutritionParserSystem(preferredLanguage, nutritionGoal),
     aiModelPreference,
+    { temperature: 0.1 },
   );
   const parsed = NutritionParserResponseSchema.parse(JSON.parse(extractFirstJsonObject(raw)));
 
-  return parsed.foods.map((food) =>
-    ParsedFoodSuggestionSchema.parse({
-      name: food.description,
+  return parsed.foods.map((food) => {
+    const trimmed = food.description?.trim();
+    const conf =
+      typeof food.confidence === "number" && Number.isFinite(food.confidence)
+        ? Math.min(1, Math.max(0, food.confidence))
+        : undefined;
+    return ParsedFoodSuggestionSchema.parse({
+      name: food.name,
+      ...(trimmed ? { description: trimmed } : {}),
+      ...(conf !== undefined ? { confidence: conf } : {}),
       calories: getNutrientAmount(food.nutrients, "calories"),
       protein: getNutrientAmount(food.nutrients, "protein"),
       carbs: getNutrientAmount(food.nutrients, "carbohydrates"),
       fats: getNutrientAmount(food.nutrients, "fat"),
       portion: food.estimated_portion ?? "1 serving",
-    }),
-  );
+    });
+  });
 }
 
 export async function parseFoodTextWithAi(
