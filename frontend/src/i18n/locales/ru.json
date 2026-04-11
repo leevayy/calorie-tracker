@@ -41,6 +41,11 @@
     "tt": "Татарский",
     "kk": "Казахский"
   },
+  "macros": {
+    "proteinLetter": "Б",
+    "fatsLetter": "Ж",
+    "carbsLetter": "У"
+  },
   "goals": {
     "maintain": "Поддержание веса",
     "muscle_gain": "Набор мышц",

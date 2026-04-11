@@ -41,6 +41,11 @@
     "tt": "Tatar",
     "kk": "Kazakh"
   },
+  "macros": {
+    "proteinLetter": "P",
+    "fatsLetter": "F",
+    "carbsLetter": "C"
+  },
   "goals": {
     "maintain": "Maintain weight",
     "muscle_gain": "Gain muscle",

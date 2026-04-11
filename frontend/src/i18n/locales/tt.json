@@ -41,6 +41,11 @@
     "tt": "Татарчә",
     "kk": "Казакъча"
   },
+  "macros": {
+    "proteinLetter": "Б",
+    "fatsLetter": "Ж",
+    "carbsLetter": "У"
+  },
   "goals": {
     "maintain": "Авырлыкны саклау",
     "muscle_gain": "Мускул җыю",

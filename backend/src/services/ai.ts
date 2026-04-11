@@ -449,7 +449,6 @@ export type PrimaryInsight = {
 };
 
 const TIP_CONFIDENCE_THRESHOLD = 0.6;
-const TIP_ACTION_VERB_CONFIDENCE = 0.6;
 const TIP_MAX_CHARS = 220;
 const PROTEIN_LOW_G = 20;
 const LATE_LOCAL_HOUR = 18;
@@ -661,58 +660,43 @@ function takeFirstSentence(text: string): string {
   return m ? m[0].trim() : t;
 }
 
-const ACTION_VERB_RE: Record<PreferredLanguage, RegExp> = {
-  en: /\b(try|add|eat|plan|have|choose|include|drink|swap|pack|prep|aim|schedule|log|track|grab|finish|balance|spread|shift|consider|start|keep|build|prioritize)\b/i,
-  ru: /\b(добав|съеш|выпей|заплан|выбери|включ|запиш|следи|постарай|старай|сделай|прими|намеч|перенес|смести|сократи|увелич)\b/i,
-  pl: /\b(spróbuj|dodaj|zjedz|wypij|zaplanuj|wybierz|załóż|zrób|śledź|zadbaj|priorytet|zmień)\b/i,
-  tt: /\b(өстә|көчер|керт|куллан|яз|күрсәт|күзәт|башла|тәмин|сакла)\b/i,
-  kk: /\b(қос|же|іш|жоспарла|таңда|жаз|бақ|баста|орында|сақта)\b/i,
-};
-
-function hasLikelyActionVerb(text: string, lang: PreferredLanguage): boolean {
-  return ACTION_VERB_RE[lang].test(text);
-}
-
-const ACTION_TAIL: Record<PreferredLanguage, string> = {
-  en: " Try one concrete tweak at your next meal.",
-  ru: " Попробуйте один шаг уже в следующем приёме пищи.",
-  pl: " Wypróbuj jedną konkretną zmianę przy następnym posiłku.",
-  tt: " Киләсе ашауда бер гына адымны сынап карагыз.",
-  kk: " Келесі тағамда бір нақты қадамды байқап көріңіз.",
-};
-
-function validateAndClampTipText(
-  raw: string,
-  options: { requireActionVerb: boolean; preferredLanguage: PreferredLanguage },
-): string {
+function validateAndClampTipText(raw: string): string {
   let t = takeFirstSentence(raw).replace(/\s+/g, " ").trim();
   if (!t) return t;
-  if (options.requireActionVerb && !hasLikelyActionVerb(t, options.preferredLanguage)) {
-    t = `${t.replace(/[.!?]+$/, "")}${ACTION_TAIL[options.preferredLanguage]}`;
-    t = takeFirstSentence(t).replace(/\s+/g, " ").trim();
-  }
   if (t.length > TIP_MAX_CHARS) {
     t = `${t.slice(0, TIP_MAX_CHARS - 1).trimEnd()}…`;
   }
   return t;
 }
 
-const MINIMAL_ACTION_APPEND: Record<PreferredLanguage, string> = {
-  en: " Log your next meal so tips stay on target.",
-  ru: " Запишите следующий приём — советы станут точнее.",
-  pl: " Zapisz następny posiłek, by wskazówki były trafniejsze.",
-  tt: " Киләсе ашауны языгыз — киңәшләр дә нәрсәгә таяна.",
-  kk: " Келесі тағамды жазыңыз — кеңестер дәлірек болады.",
-};
-
-export function appendMinimalActionableToFallback(
-  base: string,
+/** Turns English-only factual summary into one sentence in the user's language via AI. Falls back to English if the call fails. */
+export async function localizeTipWithAi(
+  englishDraft: string,
   preferredLanguage: PreferredLanguage,
-): string {
-  const extra = MINIMAL_ACTION_APPEND[preferredLanguage];
-  const combined = `${base.replace(/\s+$/, "")}${extra}`;
-  if (combined.length <= TIP_MAX_CHARS) return combined;
-  return `${combined.slice(0, TIP_MAX_CHARS - 1).trimEnd()}…`;
+  aiModelPreference: AiModelPreference,
+): Promise<string> {
+  const clampedEnglish = validateAndClampTipText(englishDraft);
+  if (!clampedEnglish.trim()) return "";
+  if (preferredLanguage === "en") {
+    return clampedEnglish;
+  }
+  const langName = OUTPUT_LANGUAGE_NAMES[preferredLanguage];
+  const system = [
+    `You are a concise calorie tracking coach.`,
+    `Rewrite the following English summary into exactly ONE short sentence in ${langName} (language tag: ${preferredLanguage}).`,
+    `Preserve all numbers, percentages, and comparisons accurately.`,
+    `Sound natural and supportive, like a human coach.`,
+    `At most ${TIP_MAX_CHARS} characters.`,
+    `Do not include markdown, bullet points, or multiple sentences.`,
+  ].join("\n");
+  try {
+    const raw = await aiChat(clampedEnglish, system, aiModelPreference);
+    const validated = validateAndClampTipText(raw);
+    if (validated.trim()) return validated;
+  } catch {
+    // use English below
+  }
+  return clampedEnglish;
 }
 
 function insightCoachNote(type: string): string {
@@ -765,9 +749,10 @@ export async function generateTipMessageWithAi(
   const bypassBehaviorAi =
     context.recentLogs.length === 0 || primaryInsight.confidence < TIP_CONFIDENCE_THRESHOLD;
   if (bypassBehaviorAi) {
-    return appendMinimalActionableToFallback(
-      generateFallbackTipMessage(context),
+    return localizeTipWithAi(
+      buildEnglishFallbackTipMessage(context),
       context.preferredLanguage,
+      aiModelPreference,
     );
   }
 
@@ -793,107 +778,42 @@ export async function generateTipMessageWithAi(
     `Return exactly ONE short sentence, at most ${TIP_MAX_CHARS} characters.`,
     `When confidence is high (>= ~0.75), include ONE concrete next action (food choice, timing, or macro tweak).`,
     `When confidence is moderate, stay safe and general but still practical.`,
+    `Phrase it like a human coach: natural imperatives or gentle suggestions in ${langName}, with a doable step whenever the insight is specific—do not answer with diagnosis-only commentary.`,
     `Do not include markdown, bullet points, or multiple sentences.`,
   ].join("\n");
 
   const raw = await aiChat(JSON.stringify(payload), system, aiModelPreference);
-  const requireVerb = primaryInsight.confidence > TIP_ACTION_VERB_CONFIDENCE;
-  const validated = validateAndClampTipText(raw, {
-    requireActionVerb: requireVerb,
-    preferredLanguage: context.preferredLanguage,
-  });
+  const validated = validateAndClampTipText(raw);
   if (!validated.trim()) {
-    return appendMinimalActionableToFallback(
-      generateFallbackTipMessage(context),
+    return localizeTipWithAi(
+      buildEnglishFallbackTipMessage(context),
       context.preferredLanguage,
+      aiModelPreference,
     );
   }
   return validated;
 }
 
-const FALLBACK_TIP: Record<
-  PreferredLanguage,
-  (ctx: TipContext, pct: number, delta: number, deltaTextKey: "below" | "above", macroLow: boolean) => string
-> = {
-  en: (ctx, pct, delta, key, macroLow) => {
-    const deltaText =
-      key === "below" ? `${delta} kcal below your goal` : `${delta} kcal above your goal`;
-    const macroTip = macroLow
-      ? "Consider adding protein in your next meal."
-      : "Your protein intake looks solid today.";
-    const communityText =
-      ctx.communityAvgCalories == null
-        ? ""
-        : ` People in your cohort average ${Math.round(ctx.communityAvgCalories)} kcal today.`;
-    return `${pct}% of goal, ${deltaText}. ${macroTip}${communityText}`.trim();
-  },
-  ru: (ctx, pct, delta, key, macroLow) => {
-    const deltaText =
-      key === "below" ? `${delta} ккал ниже цели` : `${delta} ккал выше цели`;
-    const macroTip = macroLow
-      ? "Добавьте белка в следующий приём пищи."
-      : "С белком сегодня всё неплохо.";
-    const communityText =
-      ctx.communityAvgCalories == null
-        ? ""
-        : ` У похожих по цели в среднем ${Math.round(ctx.communityAvgCalories)} ккал сегодня.`;
-    return `${pct}% от цели, ${deltaText}. ${macroTip}${communityText}`.trim();
-  },
-  pl: (ctx, pct, delta, key, macroLow) => {
-    const deltaText =
-      key === "below" ? `${delta} kcal poniżej celu` : `${delta} kcal powyżej celu`;
-    const macroTip = macroLow
-      ? "Rozważ dodanie białka w następnym posiłku."
-      : "Dziś wygląda to nieźle z białkiem.";
-    const communityText =
-      ctx.communityAvgCalories == null
-        ? ""
-        : ` W Twojej grupie średnio ${Math.round(ctx.communityAvgCalories)} kcal dziś.`;
-    return `${pct}% celu, ${deltaText}. ${macroTip}${communityText}`.trim();
-  },
-  tt: (ctx, pct, delta, key, macroLow) => {
-    const deltaText =
-      key === "below" ? `${delta} ккал максаттан түбән` : `${delta} ккал максаттан югары`;
-    const macroTip = macroLow
-      ? "Киләсе ашауга аксым өстәп карагыз."
-      : "Бүген аксым белән әйбәт.";
-    const communityText =
-      ctx.communityAvgCalories == null
-        ? ""
-        : ` Сезнең төркемдә бүген уртача ${Math.round(ctx.communityAvgCalories)} ккал.`;
-    return `${pct}% максат, ${deltaText}. ${macroTip}${communityText}`.trim();
-  },
-  kk: (ctx, pct, delta, key, macroLow) => {
-    const deltaText =
-      key === "below" ? `${delta} ккал мақсаттан төмен` : `${delta} ккал мақсаттан жоғары`;
-    const macroTip = macroLow
-      ? "Келесі тағамда ақуыз қосуды қарастырыңыз."
-      : "Бүгін ақуыз қабылдауыңыз жақсы көрінеді.";
-    const communityText =
-      ctx.communityAvgCalories == null
-        ? ""
-        : ` Ұқсас мақсаттағы топта бүгін орташа ${Math.round(ctx.communityAvgCalories)} ккал.`;
-    return `${pct}% мақсат, ${deltaText}. ${macroTip}${communityText}`.trim();
-  },
-};
-
-export function generateFallbackTipMessage(context: TipContext): string {
+/** Deterministic English facts for tips when behavior insight is skipped or as input for {@link localizeTipWithAi}. Not locale-specific copy for the UI. */
+export function buildEnglishFallbackTipMessage(context: TipContext): string {
   const pct = Math.round((context.consumedCalories / context.calorieGoal) * 100);
   const rawDelta = context.calorieGoal - context.consumedCalories;
   const delta = Math.round(Math.abs(rawDelta));
-  const deltaKey = rawDelta >= 0 ? ("below" as const) : ("above" as const);
+  const deltaText =
+    rawDelta >= 0 ? `${delta} kcal below your goal` : `${delta} kcal above your goal`;
   const macroLow = context.proteinG < 60;
+  const macroTip = macroLow
+    ? "Consider adding protein in your next meal."
+    : "Your protein intake looks solid today.";
+  const communityText =
+    context.communityAvgCalories == null
+      ? ""
+      : ` People in your cohort average ${Math.round(context.communityAvgCalories)} kcal today.`;
+  let base = `${pct}% of goal, ${deltaText}. ${macroTip}${communityText}`.trim();
   const dayFrac = fractionOfLocalDayElapsed(context.localTimeHm);
-  const base = FALLBACK_TIP[context.preferredLanguage](context, pct, delta, deltaKey, macroLow);
   if (dayFrac >= 0.55 && rawDelta > context.calorieGoal * 0.35) {
-    const nudges: Record<PreferredLanguage, string> = {
-      en: " It's getting late locally — plan a solid meal so you don't finish the day short.",
-      ru: " День уже не в начале — спланируйте нормальный приём пищи, чтобы не недоесть.",
-      pl: " Jest już późno lokalnie — zaplanuj solidny posiłek, żeby nie kończyć dnia z deficytem.",
-      tt: " Көн инде соңына якын — көн ахырына кимчелек калдырмаска ашарыгызны планлаштырыгыз.",
-      kk: " Жергілікті уақыт бойынша кеш болып қалды — күнді қысқа қалдырмас үшін жақсы тағам жоспарлаңыз.",
-    };
-    return `${base}${nudges[context.preferredLanguage]}`;
+    base += " It's getting late locally — plan a solid meal so you don't finish the day short.";
   }
+  base += " Log your next meal so tips stay on target.";
   return base;
 }

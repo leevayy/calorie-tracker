@@ -41,6 +41,11 @@
     "tt": "Tatarski",
     "kk": "Kazachski"
   },
+  "macros": {
+    "proteinLetter": "B",
+    "fatsLetter": "T",
+    "carbsLetter": "W"
+  },
   "goals": {
     "maintain": "Utrzymanie wagi",
     "muscle_gain": "Budowa masy mięśniowej",

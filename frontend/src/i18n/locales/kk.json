@@ -41,6 +41,11 @@
     "tt": "Татарша",
     "kk": "Қазақша"
   },
+  "macros": {
+    "proteinLetter": "Б",
+    "fatsLetter": "Ж",
+    "carbsLetter": "У"
+  },
   "goals": {
     "maintain": "Салмақты сақтау",
     "muscle_gain": "Бұлшық ет жинау",

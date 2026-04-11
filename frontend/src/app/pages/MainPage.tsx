@@ -20,6 +20,7 @@ import { apiGetFrequentFoods } from "@/api/foodLog";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
 import { defaultMealTypeForLocalTime, localIsoDate, weekRangeEndingOn } from "@/utils/date";
+import { sumDayMacros } from "@/utils/macroTotals";
 import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 
@@ -156,6 +157,7 @@ const MainPage = observer(function MainPage() {
   };
 
   const dayData = foodLog.dayRead.data;
+  const dayMacros = useMemo(() => (dayData ? sumDayMacros(dayData) : null), [dayData]);
   const dayFetch = foodLog.dayRead.fetchState;
   const deleteBusy = foodLog.entryDelete.fetchState === "loading";
 
@@ -206,13 +208,14 @@ const MainPage = observer(function MainPage() {
         >
           {dayData ? (
             <>
-              <div className="grid grid-cols-[1fr_1fr] gap-4 mb-6">
+              <div className="flex flex-col gap-4 mb-6">
                 <CaloriePieChart
                   consumed={dayData.totalCalories}
                   goal={dayData.calorieGoal}
                   caption={t("main.caloriesToday")}
+                  macros={dayMacros}
                 />
-                <Card className="p-4 flex flex-col justify-center min-h-[140px]">
+                <Card className="p-4 flex flex-col">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <Text variant="muted">{t("main.tip")}</Text>
                     <Button

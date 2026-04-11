@@ -9,8 +9,8 @@ import { toJsonSchema } from "../lib/zod-schema.ts";
 import { env } from "../env.ts";
 import { AiModelPreferenceSchema, NutritionGoalSchema } from "../contracts/common.ts";
 import {
-  appendMinimalActionableToFallback,
-  generateFallbackTipMessage,
+  buildEnglishFallbackTipMessage,
+  localizeTipWithAi,
   generateTipMessageWithAi,
   type RecentLog,
 } from "../services/ai.ts";
@@ -176,20 +176,19 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
       };
 
       let message = "";
+      const aiPref = coerceAiModelPreference(user.aiModelPreference);
       if (env.YANDEX_AI_STUDIO_API_KEY) {
         try {
-          message = await generateTipMessageWithAi(context, coerceAiModelPreference(user.aiModelPreference));
+          message = await generateTipMessageWithAi(context, aiPref);
         } catch {
-          message = appendMinimalActionableToFallback(
-            generateFallbackTipMessage(context),
+          message = await localizeTipWithAi(
+            buildEnglishFallbackTipMessage(context),
             context.preferredLanguage,
+            aiPref,
           );
         }
       } else {
-        message = appendMinimalActionableToFallback(
-          generateFallbackTipMessage(context),
-          context.preferredLanguage,
-        );
+        message = buildEnglishFallbackTipMessage(context);
       }
 
       const response = DailyTipResponseSchema.parse({

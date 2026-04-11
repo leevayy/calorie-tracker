@@ -3,12 +3,14 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
+import { Badge } from "../components/ds/Badge";
 import { Card } from "../components/ds/Card";
 import { Text } from "../components/ds/Text";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useRootStore } from "@/stores/StoreContext";
 import { localIsoDate, parseIsoDateLocal } from "@/utils/date";
+import { formatMacroGrams } from "@/utils/macroTotals";
 
 const HistoryPage = observer(function HistoryPage() {
   useRequireAuth();
@@ -34,6 +36,9 @@ const HistoryPage = observer(function HistoryPage() {
       iso: d.date,
       calories: d.calories,
       goal: d.goal,
+      protein: d.protein,
+      fats: d.fats,
+      carbs: d.carbs,
     }));
   }, [history.data?.days, i18n.language]);
 
@@ -141,14 +146,25 @@ const HistoryPage = observer(function HistoryPage() {
             </Text>
             {[...chartData].reverse().map((day) => (
               <Card key={day.iso} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <Text>{day.date}</Text>
                     <Text variant="muted" className="tabular-nums">
                       {Math.round(day.calories)} / {Math.round(day.goal)} {t("history.calShort")}
                     </Text>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      <Badge size="sm" variant="secondary" className="tabular-nums">
+                        {t("macros.proteinLetter")} {formatMacroGrams(day.protein)}
+                      </Badge>
+                      <Badge size="sm" variant="secondary" className="tabular-nums">
+                        {t("macros.fatsLetter")} {formatMacroGrams(day.fats)}
+                      </Badge>
+                      <Badge size="sm" variant="secondary" className="tabular-nums">
+                        {t("macros.carbsLetter")} {formatMacroGrams(day.carbs)}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <Text
                       className={`tabular-nums ${day.calories > day.goal ? "text-destructive" : "text-success"}`}
                     >
