@@ -10,6 +10,10 @@ export const usersTable = pgTable("users", {
   preferredLanguage: text("preferred_language").notNull().default("en"),
   nutritionGoal: text("nutrition_goal").notNull().default("maintain"),
   aiModelPreference: text("ai_model_preference").notNull().default("qwen3"),
+  /** Free-form tone instruction appended to the tip system prompt. Empty string = no vibe. */
+  tipVibePrompt: text("tip_vibe_prompt").notNull().default(""),
+  /** Emoji shown as the active vibe in the UI; null when no vibe is set. */
+  tipVibeEmoji: text("tip_vibe_emoji"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

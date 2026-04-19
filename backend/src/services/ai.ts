@@ -14,6 +14,7 @@ import { pickPrimaryInsight } from "./tips/insights.ts";
 import { deriveBehaviorSignals } from "./tips/signals.ts";
 import { validateAndClampTipText } from "./tips/text.ts";
 import type { TipContext } from "./tips/types.ts";
+import { VIBE_SAFETY_GUARD } from "./tips/vibePrompts.ts";
 
 const ChatCompletionSchema = z.object({
   choices: z.array(
@@ -501,10 +502,12 @@ export async function localizeTipWithAi(
   englishDraft: string,
   preferredLanguage: PreferredLanguage,
   aiModelPreference: AiModelPreference,
+  tipVibePrompt: string = "",
 ): Promise<string> {
   const clampedEnglish = validateAndClampTipText(englishDraft);
   if (!clampedEnglish.trim()) return "";
-  if (preferredLanguage === "en") {
+  const vibe = tipVibePrompt.trim();
+  if (preferredLanguage === "en" && !vibe) {
     return clampedEnglish;
   }
   const langName = OUTPUT_LANGUAGE_NAMES[preferredLanguage];
@@ -516,6 +519,7 @@ export async function localizeTipWithAi(
     `At most 220 characters.`,
     `Do not include markdown, bullet points, or multiple sentences.`,
     `Do not suggest eating more food late at night if the summary is about rest or late night.`,
+    ...(vibe ? [`Vibe override (apply persona/tone to the rewrite, keep facts intact): ${vibe}`, VIBE_SAFETY_GUARD] : []),
   ].join("\n");
   try {
     const raw = await aiChat(clampedEnglish, system, aiModelPreference);
@@ -543,6 +547,7 @@ export async function generateTipMessageWithAi(
       buildEnglishFallbackTipMessage(context),
       context.preferredLanguage,
       aiModelPreference,
+      context.tipVibePrompt,
     );
   }
 
@@ -573,6 +578,12 @@ export async function generateTipMessageWithAi(
     `When confidence is moderate, stay safe and general but still practical.`,
     `Phrase it like a human coach: natural imperatives or gentle suggestions in ${langName}, with a doable step whenever the insight is specific—do not answer with diagnosis-only commentary.`,
     `Do not include markdown, bullet points, or multiple sentences.`,
+    ...(context.tipVibePrompt.trim()
+      ? [
+          `Vibe override (highest priority for tone/voice; never overrides safety): ${context.tipVibePrompt.trim()}`,
+          VIBE_SAFETY_GUARD,
+        ]
+      : []),
   ].join("\n");
 
   const raw = await aiChat(JSON.stringify(payload), system, aiModelPreference);
@@ -582,7 +593,42 @@ export async function generateTipMessageWithAi(
       buildEnglishFallbackTipMessage(context),
       context.preferredLanguage,
       aiModelPreference,
+      context.tipVibePrompt,
     );
   }
   return validated;
+}
+
+const FALLBACK_VIBE_EMOJI = "✨";
+const SINGLE_EMOJI_REGEX = /^\p{Extended_Pictographic}(\u200D\p{Extended_Pictographic})*\uFE0F?$/u;
+
+const PICK_EMOJI_SYSTEM = [
+  "You assign a single emoji that best represents a user-supplied 'tip vibe' (a tone/persona instruction for a nutrition coach).",
+  "OUTPUT (strict): reply with EXACTLY ONE emoji character and nothing else. No quotes, no words, no punctuation, no explanation.",
+  "Pick an emoji that visually evokes the requested persona/tone (e.g. pirate vibe -> a pirate-flag-style emoji; sweet supportive -> a heart-style emoji; drill sergeant -> a stern-face emoji).",
+  "If unsure, reply with: ✨",
+].join("\n");
+
+/** Asks the model for a single emoji that visually represents the user's vibe prompt; falls back to ✨. */
+export async function pickEmojiForVibePromptWithAi(
+  prompt: string,
+  aiModelPreference: AiModelPreference,
+): Promise<string> {
+  const trimmed = prompt.trim();
+  if (!trimmed) return FALLBACK_VIBE_EMOJI;
+  try {
+    const raw = await aiChat(trimmed, PICK_EMOJI_SYSTEM, aiModelPreference, { temperature: 0.3 });
+    const cleaned = raw.replace(/[\s"'`]+/g, "").trim();
+    if (!cleaned) return FALLBACK_VIBE_EMOJI;
+    // Try the whole cleaned string, then progressively shorter prefixes (handles ZWJ sequences).
+    const candidates = [cleaned, [...cleaned].slice(0, 3).join(""), [...cleaned].slice(0, 2).join(""), [...cleaned][0] ?? ""];
+    for (const candidate of candidates) {
+      if (candidate && SINGLE_EMOJI_REGEX.test(candidate)) {
+        return candidate;
+      }
+    }
+    return FALLBACK_VIBE_EMOJI;
+  } catch {
+    return FALLBACK_VIBE_EMOJI;
+  }
 }

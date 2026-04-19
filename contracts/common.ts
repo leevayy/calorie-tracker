@@ -12,6 +12,17 @@ export type NutritionGoal = z.infer<typeof NutritionGoalSchema>;
 export const AiModelPreferenceSchema = z.enum(["deepseek", "qwen3", "gptoss", "alicegpt"]);
 export type AiModelPreference = z.infer<typeof AiModelPreferenceSchema>;
 
+/** Max length of a user-supplied tip-vibe prompt (chars). */
+export const TIP_VIBE_PROMPT_MAX = 600;
+
+/**
+ * Source of the saved tip vibe.
+ * Presets ship a canonical default prompt the user can edit; "custom" stores any free-form prompt
+ * with an AI-picked emoji.
+ */
+export const TipVibeSlotSchema = z.enum(["toxic", "gymBro", "caveman", "custom"]);
+export type TipVibeSlot = z.infer<typeof TipVibeSlotSchema>;
+
 /** YYYY-MM-DD */
 export const IsoDateSchema = z
   .string()

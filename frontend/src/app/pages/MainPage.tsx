@@ -79,6 +79,9 @@ const MainPage = observer(function MainPage() {
     profile.read.profile?.preferredLanguage ?? i18n.language,
   );
   const nutritionGoal = coerceNutritionGoal(profile.read.profile?.nutritionGoal);
+  const tipVibeKey = (profile.read.profile?.tipVibePrompt ?? "").trim().length > 0
+    ? `${profile.read.profile?.tipVibeEmoji ?? ""}|${(profile.read.profile?.tipVibePrompt ?? "").length}`
+    : "off";
 
   useEffect(() => {
     void profile.read.load();
@@ -88,7 +91,7 @@ const MainPage = observer(function MainPage() {
   useEffect(() => {
     if (foodLog.dayRead.fetchState !== "success" || !foodLog.dayRead.data) return;
     if (profile.read.fetchState === "loading") return;
-    const key = `${today}|${preferredLanguage}|${nutritionGoal}`;
+    const key = `${today}|${preferredLanguage}|${nutritionGoal}|${tipVibeKey}`;
     if (tipAutoKeyRef.current === key) return;
     tipAutoKeyRef.current = key;
     void dailyTip.fetchTip(
@@ -101,6 +104,7 @@ const MainPage = observer(function MainPage() {
     profile.read.fetchState,
     preferredLanguage,
     nutritionGoal,
+    tipVibeKey,
     today,
     dailyTip,
   ]);

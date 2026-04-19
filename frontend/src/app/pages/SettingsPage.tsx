@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Moon, Sun, LogOut } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
+import { TipVibeSection } from "../components/TipVibeSection";
 import { Card } from "../components/ds/Card";
 import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
@@ -141,6 +142,8 @@ const SettingsPage = observer(function SettingsPage() {
             {t("settings.aiModelHint")}
           </Text>
         </Card>
+
+        <TipVibeSection />
 
         <Card className="p-4">
           <Text as="h3" weight="medium" className="mb-4">

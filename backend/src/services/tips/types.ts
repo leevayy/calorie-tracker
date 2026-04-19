@@ -26,6 +26,8 @@ export type TipContext = {
   localTimeHm: string;
   preferredLanguage: PreferredLanguage;
   nutritionGoal: NutritionGoal;
+  /** Free-form tone instruction appended to the tip system prompt; "" disables. */
+  tipVibePrompt: string;
   recentLogs: RecentLog[];
 };
 

@@ -16,6 +16,7 @@ function baseContext(over: Partial<TipContext>): TipContext {
     localTimeHm: "14:00",
     preferredLanguage: "en",
     nutritionGoal: "maintain",
+    tipVibePrompt: "",
     recentLogs: [],
     ...over,
   };

@@ -175,6 +175,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         localTimeHm: parsed.data.localTimeHm,
         preferredLanguage: parsed.data.preferredLanguage,
         nutritionGoal: coerceNutritionGoal(user.nutritionGoal),
+        tipVibePrompt: user.tipVibePrompt ?? "",
         recentLogs,
       };
 

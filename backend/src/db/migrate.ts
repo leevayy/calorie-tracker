@@ -33,6 +33,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language text NOT NULL DEFA
 ALTER TABLE users ADD COLUMN IF NOT EXISTS nutrition_goal text NOT NULL DEFAULT 'maintain';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_model_preference text NOT NULL DEFAULT 'qwen3';
 ALTER TABLE users ALTER COLUMN ai_model_preference SET DEFAULT 'qwen3';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tip_vibe_prompt text NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tip_vibe_emoji text;
 
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS meal_slug text;
 

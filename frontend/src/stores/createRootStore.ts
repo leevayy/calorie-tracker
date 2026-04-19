@@ -8,6 +8,7 @@ const defaultSnapshot = {
   profile: {
     read: {},
     patch: {},
+    setTipVibe: {},
   },
   foodLog: {
     dayRead: {},
