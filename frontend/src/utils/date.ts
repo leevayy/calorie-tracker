@@ -20,6 +20,20 @@ export function localIsoDate(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Before this local hour, "today" for logging/tips is the previous calendar day. */
+export const BEHAVIORAL_DAY_START_HOUR = 4;
+
+/**
+ * Local calendar day for food log + tips: before {@link BEHAVIORAL_DAY_START_HOUR}:00, counts as previous day.
+ */
+export function behavioralLocalIsoDate(d: Date = new Date()): string {
+  const copy = new Date(d.getTime());
+  if (copy.getHours() < BEHAVIORAL_DAY_START_HOUR) {
+    copy.setDate(copy.getDate() - 1);
+  }
+  return localIsoDate(copy);
+}
+
 /** Local wall time as HH:mm (24h) for the given instant in the browser's local zone. */
 export function localTimeHm(d = new Date()): string {
   const h = String(d.getHours()).padStart(2, "0");

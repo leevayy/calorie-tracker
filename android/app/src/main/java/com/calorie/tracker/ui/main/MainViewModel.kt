@@ -12,9 +12,9 @@ import com.calorie.tracker.data.model.FrequentFoodItem
 import com.calorie.tracker.data.model.ParseFoodRequest
 import com.calorie.tracker.data.model.ParsedFoodSuggestion
 import com.calorie.tracker.util.FoodSearchEngine
+import com.calorie.tracker.util.behavioralLocalIsoDate
 import com.calorie.tracker.util.buildDailyTipRequest
 import com.calorie.tracker.util.defaultMealTypeForLocalTime
-import com.calorie.tracker.util.localIsoDate
 import com.calorie.tracker.util.weekRangeEndingOn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 data class MainUiState(
-    val today: String = localIsoDate(),
+    val today: String = behavioralLocalIsoDate(),
     val dayLog: DayLogResponse? = null,
     val dayLoading: Boolean = false,
     val tip: DailyTipResponse? = null,
@@ -45,6 +45,15 @@ class MainViewModel : ViewModel() {
     val state = _state.asStateFlow()
 
     var referenceFoodDb: ReferenceFoodDb? = null
+
+    /** Reload day if behavioral calendar day rolled (midnight / 4:00). */
+    fun refreshBehavioralDayIfNeeded() {
+        val next = behavioralLocalIsoDate()
+        if (next != _state.value.today) {
+            _state.update { it.copy(today = next) }
+            loadDay()
+        }
+    }
 
     fun loadDay() {
         val day = _state.value.today
@@ -177,7 +186,8 @@ class MainViewModel : ViewModel() {
                         protein = suggestion.protein,
                         carbs = suggestion.carbs,
                         fats = suggestion.fats,
-                        portion = suggestion.portion
+                        portion = suggestion.portion,
+                        mealSlug = suggestion.mealSlug,
                     )
                 )
                 if (res.isSuccessful) {

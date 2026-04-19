@@ -14,6 +14,8 @@ export const ParsedFoodSuggestionSchema = FoodMacrosSchema.extend({
   description: z.string().optional(),
   /** Optional: model self-reported estimate confidence, 0–1. */
   confidence: z.number().min(0).max(1).optional(),
+  /** Optional: normalized meal slug derived inline by the parse-food model; structurally validated server-side. */
+  mealSlug: z.string().min(1).optional(),
 });
 export type ParsedFoodSuggestion = z.infer<typeof ParsedFoodSuggestionSchema>;
 

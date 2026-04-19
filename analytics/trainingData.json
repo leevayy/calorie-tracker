@@ -4,321 +4,367 @@
         "expectedResult": {
             "calories": 500,
             "protein": 25
-        }
+        },
+        "expectedSlug": "oatmeal-strawberry-sugar"
     },
     {
         "query": "пять хуба буб",
         "expectedResult": {
             "calories": 200,
             "protein": 0
-        }
+        },
+        "expectedSlug": "unknown"
     },
     {
         "query": "хорошая тарелка солянки",
         "expectedResult": {
             "calories": 500,
             "protein": 10
-        }
+        },
+        "expectedSlug": "solyanka"
     },
     {
         "query": "чипсы из индейки бутылка пива",
         "expectedResult": {
             "calories": 1000,
             "protein": 13
-        }
+        },
+        "expectedSlug": "turkey-chips-beer"
     },
     {
         "query": "арахисовая паста",
         "expectedResult": {
             "calories": 150,
             "protein": 12
-        }
+        },
+        "expectedSlug": "peanut-butter"
     },
     {
         "query": "бутербродики вафля",
         "expectedResult": {
             "calories": 410,
             "protein": 15
-        }
+        },
+        "expectedSlug": "sandwich-waffle"
     },
     {
         "query": "5 хуба буб",
         "expectedResult": {
             "calories": 200,
             "protein": 0
-        }
+        },
+        "expectedSlug": "unknown"
     },
     {
         "query": "шашлычок",
         "expectedResult": {
             "calories": 900,
             "protein": 45
-        }
+        },
+        "expectedSlug": "kebab"
     },
     {
         "query": "макарошки",
         "expectedResult": {
             "calories": 200,
             "protein": 5
-        }
+        },
+        "expectedSlug": "pasta"
     },
     {
         "query": "ред бул",
         "expectedResult": {
             "calories": 500,
             "protein": 0
-        }
+        },
+        "expectedSlug": "energy-drink"
     },
     {
         "query": "конфетка",
         "expectedResult": {
             "calories": 60,
             "protein": 0
-        }
+        },
+        "expectedSlug": "candy"
     },
     {
         "query": "пловчик",
         "expectedResult": {
             "calories": 600,
             "protein": 15
-        }
+        },
+        "expectedSlug": "pilaf"
     },
     {
         "query": "мюсли",
         "expectedResult": {
             "calories": 340,
             "protein": 7
-        }
+        },
+        "expectedSlug": "muesli"
     },
     {
         "query": "конфетки",
         "expectedResult": {
             "calories": 120,
             "protein": 0
-        }
+        },
+        "expectedSlug": "candy"
     },
     {
         "query": "хуба бубы",
         "expectedResult": {
             "calories": 80,
             "protein": 0
-        }
+        },
+        "expectedSlug": "unknown"
     },
     {
         "query": "яблоко",
         "expectedResult": {
             "calories": 120,
             "protein": 0
-        }
+        },
+        "expectedSlug": "apple"
     },
     {
         "query": "конфетка и плов",
         "expectedResult": {
             "calories": 460,
             "protein": 15
-        }
+        },
+        "expectedSlug": "candy-pilaf"
     },
     {
         "query": "мороженое",
         "expectedResult": {
             "calories": 400,
             "protein": 0
-        }
+        },
+        "expectedSlug": "ice-cream"
     },
     {
         "query": "2 хуба бубы",
         "expectedResult": {
             "calories": 120,
             "protein": 0
-        }
+        },
+        "expectedSlug": "unknown"
     },
     {
         "query": "2 яйца с беконом",
         "expectedResult": {
             "calories": 340,
             "protein": 20
-        }
+        },
+        "expectedSlug": "eggs-bacon"
     },
     {
         "query": "3 хуба бубы",
         "expectedResult": {
             "calories": 150,
             "protein": 0
-        }
+        },
+        "expectedSlug": "unknown"
     },
     {
         "query": "два бутера супчик",
         "expectedResult": {
             "calories": 540,
             "protein": 20
-        }
+        },
+        "expectedSlug": "bread-soup"
     },
     {
         "query": "4 яйца с беконом 4 куска хлеба",
         "expectedResult": {
             "calories": 740,
             "protein": 35
-        }
+        },
+        "expectedSlug": "eggs-bacon-bread"
     },
     {
         "query": "овсянка с клубникой и сахаром бутербродики",
         "expectedResult": {
             "calories": 700,
             "protein": 33
-        }
+        },
+        "expectedSlug": "oatmeal-strawberry-sandwich"
     },
     {
         "query": "бутерброды",
         "expectedResult": {
             "calories": 340,
             "protein": 10
-        }
+        },
+        "expectedSlug": "sandwich"
     },
     {
         "query": "печеньки",
         "expectedResult": {
             "calories": 160,
             "protein": 0
-        }
+        },
+        "expectedSlug": "cookies"
     },
     {
         "query": "огромная порция макарох",
         "expectedResult": {
             "calories": 800,
             "protein": 25
-        }
+        },
+        "expectedSlug": "pasta"
     },
     {
         "query": "салатик",
         "expectedResult": {
             "calories": 150,
             "protein": 0
-        }
+        },
+        "expectedSlug": "salad"
     },
     {
         "query": "пол база",
         "expectedResult": {
             "calories": 400,
             "protein": 0
-        }
+        },
+        "expectedSlug": "unknown"
     },
     {
         "query": "какава",
         "expectedResult": {
             "calories": 120,
             "protein": 0
-        }
+        },
+        "expectedSlug": "hot-chocolate"
     },
     {
         "query": "овсянка",
         "expectedResult": {
             "calories": 300,
             "protein": 8
-        }
+        },
+        "expectedSlug": "oatmeal"
     },
     {
         "query": "персик",
         "expectedResult": {
             "calories": 46,
             "protein": 1
-        }
+        },
+        "expectedSlug": "peach"
     },
     {
         "query": "сахар",
         "expectedResult": {
             "calories": 60,
             "protein": 0
-        }
+        },
+        "expectedSlug": "sugar"
     },
     {
         "query": "картофельный суп",
         "expectedResult": {
             "calories": 108,
             "protein": 6.7
-        }
+        },
+        "expectedSlug": "potato-soup"
     },
     {
         "query": "пара кусков хлеба",
         "expectedResult": {
             "calories": 120,
             "protein": 0
-        }
+        },
+        "expectedSlug": "bread"
     },
     {
         "query": "вафля",
         "expectedResult": {
             "calories": 60,
             "protein": 0
-        }
+        },
+        "expectedSlug": "waffle"
     },
     {
         "query": "салат 3 куска хлеба",
         "expectedResult": {
             "calories": 300,
             "protein": 0
-        }
+        },
+        "expectedSlug": "salad-bread"
     },
     {
         "query": "арахис",
         "expectedResult": {
             "calories": 900,
             "protein": 45
-        }
+        },
+        "expectedSlug": "peanuts"
     },
     {
         "query": "блины с творогом",
         "expectedResult": {
             "calories": 380,
             "protein": 18
-        }
+        },
+        "expectedSlug": "blini-curd"
     },
     {
         "query": "колбаски",
         "expectedResult": {
             "calories": 240,
             "protein": 11
-        }
+        },
+        "expectedSlug": "sausages"
     },
     {
         "query": "мороженко",
         "expectedResult": {
             "calories": 200,
             "protein": 3
-        }
+        },
+        "expectedSlug": "ice-cream"
     },
     {
         "query": "бутеры с арахисовой пастой",
         "expectedResult": {
             "calories": 360,
             "protein": 21
-        }
+        },
+        "expectedSlug": "peanut-butter-sandwich"
     },
     {
         "query": "орешки",
         "expectedResult": {
             "calories": 90,
             "protein": 4
-        }
+        },
+        "expectedSlug": "nuts"
     },
     {
         "query": "картофельный суп",
         "expectedResult": {
             "calories": 308,
             "protein": 6.7
-        }
+        },
+        "expectedSlug": "potato-soup"
     },
     {
         "query": "хлеб",
         "expectedResult": {
             "calories": 120,
             "protein": 0
-        }
+        },
+        "expectedSlug": "bread"
     },
     {
         "query": "орешки",
         "expectedResult": {
             "calories": 550,
             "protein": 27
-        }
+        },
+        "expectedSlug": "nuts"
     }
 ]

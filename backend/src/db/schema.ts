@@ -29,6 +29,8 @@ export const foodEntriesTable = pgTable(
     carbs: real("carbs").notNull(),
     fats: real("fats").notNull(),
     portion: text("portion"),
+    /** Normalized meal slug `[protein?]-[main]-[style?]`; see `mealSlug` service. */
+    mealSlug: text("meal_slug"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

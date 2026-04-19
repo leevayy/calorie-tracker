@@ -20,7 +20,7 @@ import { Text } from "../components/ds/Text";
 import { apiGetFrequentFoods } from "@/api/foodLog";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
-import { defaultMealTypeForLocalTime, localIsoDate, weekRangeEndingOn } from "@/utils/date";
+import { behavioralLocalIsoDate, defaultMealTypeForLocalTime, weekRangeEndingOn } from "@/utils/date";
 import { sumDayMacros } from "@/utils/macroTotals";
 import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
@@ -35,7 +35,18 @@ const MainPage = observer(function MainPage() {
   const { t, i18n } = useTranslation();
   const { profile, foodLog, dailyTip, aiParse } = useRootStore();
 
-  const today = useMemo(() => localIsoDate(), []);
+  /** Tick so behavioral "today" updates after midnight / 4:00 without full page reload. */
+  const [behavioralDayTick, setBehavioralDayTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setBehavioralDayTick((n) => n + 1);
+    const id = window.setInterval(bump, 60_000);
+    document.addEventListener("visibilitychange", bump);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", bump);
+    };
+  }, []);
+  const today = useMemo(() => behavioralLocalIsoDate(), [behavioralDayTick]);
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
@@ -139,6 +150,7 @@ const MainPage = observer(function MainPage() {
       carbs: food.carbs,
       fats: food.fats,
       portion: food.portion,
+      ...(food.mealSlug ? { mealSlug: food.mealSlug } : {}),
     });
     if (foodLog.entryCreate.fetchState === "success") {
       setPendingSuggestions((prev) => {

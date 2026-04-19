@@ -6,7 +6,9 @@
     "dev": "tsx watch src/server.ts",
     "start": "node --experimental-strip-types src/server.ts",
     "check": "tsc --noEmit",
+    "test": "vitest run",
     "db:migrate": "node --experimental-strip-types src/db/migrate.ts",
+    "backfill:meal-slugs": "tsx scripts/backfill-meal-slugs.ts",
     "benchmark:parse-food": "node --experimental-strip-types --env-file=.env .\\scripts\\parse-food-benchmark.ts"
   },
   "dependencies": {
@@ -25,6 +27,7 @@
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.5",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
   }
 }

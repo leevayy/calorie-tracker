@@ -43,6 +43,47 @@ function sumNutrients(suggestions) {
   return { cal, prot };
 }
 
+function slugMatch(expected, predicted) {
+  const e = String(expected ?? "").trim().toLowerCase();
+  const p = String(predicted ?? "").trim().toLowerCase();
+  if (!e || !p || p === "—") return false;
+  return e === p;
+}
+
+function buildSlugRows(results) {
+  const rows = [];
+  for (const row of results) {
+    if (row.error) {
+      rows.push({
+        query: row.query,
+        expectedSlug: row.expectedSlug ?? "",
+        predictedSlug: "—",
+        match: false,
+        skipped: true,
+      });
+      continue;
+    }
+    const exp = row.expectedSlug ?? "";
+    const pred = row.suggestions?.[0]?.mealSlug;
+    const predictedSlug = pred != null && String(pred).trim() !== "" ? String(pred) : "—";
+    rows.push({
+      query: row.query,
+      expectedSlug: exp,
+      predictedSlug,
+      match: slugMatch(exp, pred),
+      skipped: !String(exp).trim(),
+    });
+  }
+  let evaluated = 0;
+  let hits = 0;
+  for (const r of rows) {
+    if (r.skipped) continue;
+    evaluated += 1;
+    if (r.match) hits += 1;
+  }
+  return { rows, evaluated, hits, accuracyPct: evaluated ? (100 * hits) / evaluated : null };
+}
+
 async function main() {
   const date = process.argv[2];
   const sub = process.argv[3] ?? "";
@@ -86,6 +127,8 @@ async function main() {
     const scatterProt = [];
     const latencies = [];
     let errors = 0;
+    const { rows: slugRows, evaluated: slugEvaluated, hits: slugHits, accuracyPct: slugAccuracyPct } =
+      buildSlugRows(results);
 
     for (const row of results) {
       if (typeof row.durationMs === "number" && !Number.isNaN(row.durationMs)) {
@@ -124,12 +167,63 @@ async function main() {
       minParseMs: latencies.length ? latSorted[0] : null,
       maxParseMs: latencies.length ? latSorted[latSorted.length - 1] : null,
       totalParseMs: latencies.length ? latencies.reduce((a, b) => a + b, 0) : null,
+      slugRows,
+      slugEvaluated,
+      slugHits,
+      slugAccuracyPct,
     });
   }
 
   if (!models.length) {
     console.error("No valid model files to analyze.");
     process.exit(1);
+  }
+
+  const anySlugRows = models.some((m) => Array.isArray(m.slugRows) && m.slugRows.length > 0);
+  let slugSection = "";
+  if (anySlugRows) {
+    const m0 = models[0].slugRows ?? [];
+    const headerCells = models.map((m) => `<th>${escapeHtml(m.name)}</th>`).join("");
+    const bodyRows = [];
+    for (let i = 0; i < m0.length; i++) {
+      const qFull = m0[i]?.query ?? "";
+      const qShort = escapeHtml(qFull.length > 72 ? `${qFull.slice(0, 72)}…` : qFull);
+      const exp = escapeHtml(m0[i]?.expectedSlug || "—");
+      const cells = models
+        .map((m) => {
+          const cell = m.slugRows?.[i];
+          if (!cell) return "<td>—</td>";
+          const slug = escapeHtml(cell.predictedSlug || "—");
+          const mark = cell.skipped ? "—" : cell.match ? "✓" : "✗";
+          return `<td title="${slug}">${slug} ${mark}</td>`;
+        })
+        .join("");
+      bodyRows.push(
+        `<tr><td>${i + 1}</td><td title="${escapeHtml(qFull)}">${qShort}</td><td>${exp}</td>${cells}</tr>`,
+      );
+    }
+    slugSection = `
+  <h2>Meal slugs (first suggestion)</h2>
+  <p class="muted">Compared to <code>expectedSlug</code> in <code>analytics/trainingData.json</code>. ✓ = exact case-insensitive match on first parsed item&rsquo;s <code>mealSlug</code>.</p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Query</th>
+        <th>Expected slug</th>
+        ${headerCells}
+      </tr>
+    </thead>
+    <tbody>
+      ${bodyRows.join("\n")}
+    </tbody>
+  </table>
+  </div>`;
+  } else {
+    slugSection = `
+  <h2>Meal slugs</h2>
+  <p class="muted">No slug rows in this run (re-run <code>npm run benchmark:parse-food</code> after updating training data / parser so results include <code>expectedSlug</code> and <code>mealSlug</code>).</p>`;
   }
 
   const chartPalette = ["#2563eb", "#16a34a", "#ea580c", "#9333ea", "#dc2626", "#0891b2"];
@@ -181,6 +275,9 @@ async function main() {
         <th>RMSE protein</th>
         <th>Mean Δ kcal</th>
         <th>Mean Δ protein</th>
+        <th>Slug hits</th>
+        <th>Slug rows</th>
+        <th>Slug acc %</th>
         <th>Avg parse (ms)</th>
         <th>Median (ms)</th>
         <th>Parse min–max (ms)</th>
@@ -200,6 +297,9 @@ async function main() {
         <td>${fmt(m.rmseProtein)}</td>
         <td>${fmt(m.meanCalDelta)}</td>
         <td>${fmt(m.meanProtDelta)}</td>
+        <td>${m.slugEvaluated != null ? m.slugHits ?? "—" : "—"}</td>
+        <td>${m.slugEvaluated != null ? m.slugEvaluated : "—"}</td>
+        <td>${m.slugAccuracyPct != null ? fmt(m.slugAccuracyPct) : "—"}</td>
         <td>${fmt(m.avgParseMs)}</td>
         <td>${fmt(m.medianParseMs)}</td>
         <td>${fmtMinMax(m.minParseMs, m.maxParseMs)}</td>
@@ -209,6 +309,8 @@ async function main() {
         .join("\n")}
     </tbody>
   </table>
+
+  ${slugSection}
 
   <div class="charts two metrics3">
     <div>

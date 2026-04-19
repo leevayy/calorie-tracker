@@ -9,11 +9,22 @@ import {
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
 } from "../contracts/food-log.ts";
-import { IsoDateSchema } from "../contracts/common.ts";
+import {
+  AiModelPreferenceSchema,
+  IsoDateSchema,
+  type AiModelPreference,
+} from "../contracts/common.ts";
 import { db } from "../db/client.ts";
 import { foodEntriesTable, usersTable } from "../db/schema.ts";
 import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
+import { resolveMealSlugFromLoggedName } from "../services/mealSlug.ts";
+import { sanitizeMealSlug } from "../services/slugShape.ts";
+
+function coerceAiModelPreference(raw: string): AiModelPreference {
+  const parsed = AiModelPreferenceSchema.safeParse(raw);
+  return parsed.success ? parsed.data : "qwen3";
+}
 
 const DayParamSchema = z.object({
   day: IsoDateSchema,
@@ -138,6 +149,7 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
           carbs: row.carbs,
           fats: row.fats,
           portion: row.portion ?? undefined,
+          mealSlug: row.mealSlug ?? undefined,
           createdAt: row.createdAt.toISOString(),
         });
         if (row.mealType === "snack") {
@@ -191,6 +203,20 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
       const bodyParsed = CreateFoodEntryBodySchema.safeParse(request.body);
       if (!bodyParsed.success) return sendValidationError(reply);
 
+      const user = await db.query.usersTable.findFirst({
+        where: eq(usersTable.id, userId),
+      });
+      if (!user) return sendUnauthorized(reply);
+
+      const clientSlug = bodyParsed.data.mealSlug
+        ? sanitizeMealSlug(bodyParsed.data.mealSlug)
+        : null;
+      const mealSlug =
+        clientSlug ??
+        (await resolveMealSlugFromLoggedName(bodyParsed.data.name, {
+          aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
+        }));
+
       const createdAt = new Date();
       const entry = {
         id: randomUUID(),
@@ -203,6 +229,7 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
         carbs: bodyParsed.data.carbs,
         fats: bodyParsed.data.fats,
         portion: bodyParsed.data.portion ?? null,
+        mealSlug,
         createdAt,
       };
 
@@ -218,6 +245,7 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
         carbs: entry.carbs,
         fats: entry.fats,
         portion: entry.portion ?? undefined,
+        mealSlug: entry.mealSlug,
         createdAt: createdAt.toISOString(),
       });
 

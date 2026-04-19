@@ -17,6 +17,7 @@ data class ParsedFoodSuggestion(
     val fats: Double,
     val portion: String,
     val description: String? = null,
+    val mealSlug: String? = null,
 )
 
 @Serializable

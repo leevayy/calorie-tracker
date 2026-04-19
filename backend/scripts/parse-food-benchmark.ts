@@ -1,6 +1,7 @@
 /**
  * Drives parseFoodTextWithAi against analytics/trainingData.json and writes
  * analytics/runs/<YYYY-MM-DD>/<model>.json for offline analysis.
+ * Each training row may include optional expectedSlug (English meal_slug) for report.html.
  *
  * Run from repo: npm run benchmark:parse-food --workspace calorie-tracker-backend
  * Or: cd backend && npm run benchmark:parse-food
@@ -55,6 +56,8 @@ function isNutritionGoal(s: string): s is NutritionGoal {
 type TrainingRow = {
   query: string;
   expectedResult: { calories: number; protein: number };
+  /** Reference English meal_slug for eyeballing / report.html (same shape as parse-food `mealSlug`). */
+  expectedSlug?: string;
 };
 
 function roundMs(ms: number): number {
@@ -179,6 +182,7 @@ async function main() {
     const results: Array<{
       query: string;
       expectedResult: { calories: number; protein: number };
+      expectedSlug?: string;
       suggestions: Awaited<ReturnType<typeof parseFoodTextWithAi>>;
       error?: string;
       /** Wall time for parseFoodTextWithAi (ms), including failed attempts. */
@@ -199,10 +203,18 @@ async function main() {
           { skipCache: true },
         );
         const durationMs = roundMs(performance.now() - t0);
-        console.log(`    → ${durationMs} ms`);
+        const firstSlug = suggestions[0]?.mealSlug;
+        const slugNote =
+          firstSlug !== undefined && firstSlug !== ""
+            ? ` · slug: ${firstSlug}`
+            : row.expectedSlug
+              ? " · slug: (missing)"
+              : "";
+        console.log(`    → ${durationMs} ms${slugNote}`);
         results.push({
           query: row.query,
           expectedResult: row.expectedResult,
+          ...(row.expectedSlug !== undefined ? { expectedSlug: row.expectedSlug } : {}),
           suggestions,
           durationMs,
         });
@@ -213,6 +225,7 @@ async function main() {
         results.push({
           query: row.query,
           expectedResult: row.expectedResult,
+          ...(row.expectedSlug !== undefined ? { expectedSlug: row.expectedSlug } : {}),
           suggestions: [],
           error: message,
           durationMs,

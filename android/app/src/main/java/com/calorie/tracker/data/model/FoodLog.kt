@@ -11,6 +11,7 @@ data class FoodEntryResponse(
     val carbs: Double,
     val fats: Double,
     val portion: String? = null,
+    val mealSlug: String? = null,
     val mealType: String,
     val day: String,
     val createdAt: String
@@ -24,7 +25,8 @@ data class CreateFoodEntryBody(
     val protein: Double,
     val carbs: Double,
     val fats: Double,
-    val portion: String? = null
+    val portion: String? = null,
+    val mealSlug: String? = null,
 )
 
 @Serializable

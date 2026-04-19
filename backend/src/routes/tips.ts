@@ -14,7 +14,6 @@ import {
   generateTipMessageWithAi,
   type RecentLog,
 } from "../services/ai.ts";
-
 function coerceNutritionGoal(raw: string) {
   const parsed = NutritionGoalSchema.safeParse(raw);
   return parsed.success ? parsed.data : "maintain";
@@ -139,6 +138,8 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
       const recentEntryRows = await db
         .select({
           createdAt: foodEntriesTable.createdAt,
+          name: foodEntriesTable.name,
+          mealSlug: foodEntriesTable.mealSlug,
           calories: foodEntriesTable.calories,
           protein: foodEntriesTable.protein,
           carbs: foodEntriesTable.carbs,
@@ -152,6 +153,8 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
 
       const recentLogs: RecentLog[] = [...recentEntryRows].reverse().map((row) => ({
         timestamp: row.createdAt.toISOString(),
+        name: row.name,
+        mealSlug: row.mealSlug ?? null,
         calories: Number(row.calories ?? 0),
         proteinG: Number(row.protein ?? 0),
         carbsG: Number(row.carbs ?? 0),
