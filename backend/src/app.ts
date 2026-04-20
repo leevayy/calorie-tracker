@@ -46,7 +46,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       const normalizedOrigin = origin.replace(/\/$/, "");
       callback(null, allowedOrigins.has(normalizedOrigin));
     },
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Authorization", "Content-Type", "Accept"],
     credentials: true,
   });
