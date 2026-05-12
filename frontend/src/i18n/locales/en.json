@@ -44,7 +44,8 @@
   "macros": {
     "proteinLetter": "P",
     "fatsLetter": "F",
-    "carbsLetter": "C"
+    "carbsLetter": "C",
+    "fiberLetter": "Fi"
   },
   "goals": {
     "maintain": "Maintain weight",

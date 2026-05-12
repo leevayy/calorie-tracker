@@ -21,8 +21,9 @@ export function buildDailyTipRequest(
       proteinG: acc.proteinG + e.protein,
       carbsG: acc.carbsG + e.carbs,
       fatsG: acc.fatsG + e.fats,
+      fiberG: acc.fiberG + e.fiber,
     }),
-    { proteinG: 0, carbsG: 0, fatsG: 0 },
+    { proteinG: 0, carbsG: 0, fatsG: 0, fiberG: 0 },
   );
   return {
     date: calendarDay,

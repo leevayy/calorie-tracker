@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
@@ -13,6 +14,7 @@ export interface MealFoodItem {
   protein: number;
   carbs: number;
   fats: number;
+  fiber: number;
 }
 
 interface MealSectionProps {
@@ -26,6 +28,7 @@ interface MealSectionProps {
 }
 
 export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled }: MealSectionProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const isMobile = useIsMobile();
   const [activeFoodKey, setActiveFoodKey] = useState<string | null>(null);
@@ -34,7 +37,10 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
   const totalProtein = foods.reduce((sum, food) => sum + food.protein, 0);
   const totalCarbs = foods.reduce((sum, food) => sum + food.carbs, 0);
   const totalFats = foods.reduce((sum, food) => sum + food.fats, 0);
+  const totalFiber = foods.reduce((sum, food) => sum + food.fiber, 0);
 
+  const macroLine = (p: number, c: number, f: number, fb: number) =>
+    `${t("macros.proteinLetter")}: ${p}g • ${t("macros.carbsLetter")}: ${c}g • ${t("macros.fatsLetter")}: ${f}g • ${t("macros.fiberLetter")}: ${fb}g`;
   useEffect(() => {
     if (!expanded) setActiveFoodKey(null);
   }, [expanded]);
@@ -65,7 +71,7 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
               {title}
             </Text>
             <Text variant="muted">
-              {totalCalories} cal • P: {totalProtein}g • C: {totalCarbs}g • F: {totalFats}g
+              {totalCalories} cal • {macroLine(totalProtein, totalCarbs, totalFats, totalFiber)}
             </Text>
           </div>
         </div>
@@ -114,7 +120,7 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
                     <div className="flex-1">
                       <Text>{food.name}</Text>
                       <Text variant="muted">
-                        {food.calories} cal • P: {food.protein}g • C: {food.carbs}g • F: {food.fats}g
+                        {food.calories} cal • {macroLine(food.protein, food.carbs, food.fats, food.fiber)}
                       </Text>
                     </div>
                     <button

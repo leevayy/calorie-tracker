@@ -10,8 +10,8 @@ type DayMacrosLabelsProps = {
 };
 
 /**
- * Три строки Б/Ж/У в фиксированном блоке (родитель задаёт размер, напр. 140×140).
- * Сетка `grid-rows-3` и разделители — как у таблицы.
+ * Четыре строки Б/Ж/У/клетчатка в фиксированном блоке (родитель задаёт размер).
+ * Сетка `grid-rows-4` и разделители — как у таблицы.
  */
 export function DayMacrosLabels({ totals, className }: DayMacrosLabelsProps) {
   const { t } = useTranslation();
@@ -19,12 +19,13 @@ export function DayMacrosLabels({ totals, className }: DayMacrosLabelsProps) {
     { letter: t("macros.proteinLetter"), value: formatMacroGrams(totals.protein) },
     { letter: t("macros.fatsLetter"), value: formatMacroGrams(totals.fats) },
     { letter: t("macros.carbsLetter"), value: formatMacroGrams(totals.carbs) },
+    { letter: t("macros.fiberLetter"), value: formatMacroGrams(totals.fiber) },
   ];
 
   return (
     <div
       className={cn(
-        "grid h-full w-full min-h-0 min-w-0 grid-rows-3 divide-y divide-border/60",
+        "grid h-full w-full min-h-0 min-w-0 grid-rows-4 divide-y divide-border/60",
         className,
       )}
     >

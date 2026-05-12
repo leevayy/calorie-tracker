@@ -20,6 +20,7 @@ interface FoodSuggestionProps {
 
 export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps) {
   const { t } = useTranslation();
+  const macroLine = `${t("macros.proteinLetter")}: ${food.protein}g • ${t("macros.carbsLetter")}: ${food.carbs}g • ${t("macros.fatsLetter")}: ${food.fats}g • ${t("macros.fiberLetter")}: ${food.fiber}g`;
   const conf =
     typeof food.confidence === "number" && Number.isFinite(food.confidence)
       ? Math.min(1, Math.max(0, food.confidence))
@@ -42,7 +43,7 @@ export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps
             {food.portion} • {food.calories} cal
           </Text>
           <Text variant="muted">
-            P: {food.protein}g • C: {food.carbs}g • F: {food.fats}g
+            {macroLine}
           </Text>
         </div>
         <div className="flex gap-2 shrink-0">

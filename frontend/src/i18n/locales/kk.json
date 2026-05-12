@@ -44,7 +44,8 @@
   "macros": {
     "proteinLetter": "Б",
     "fatsLetter": "Ж",
-    "carbsLetter": "У"
+    "carbsLetter": "У",
+    "fiberLetter": "Кл"
   },
   "goals": {
     "maintain": "Салмақты сақтау",

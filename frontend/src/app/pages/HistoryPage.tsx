@@ -39,6 +39,7 @@ const HistoryPage = observer(function HistoryPage() {
       protein: d.protein,
       fats: d.fats,
       carbs: d.carbs,
+      fiber: d.fiber,
     }));
   }, [history.data?.days, i18n.language]);
 
@@ -161,6 +162,9 @@ const HistoryPage = observer(function HistoryPage() {
                       </Badge>
                       <Badge size="sm" variant="secondary" className="tabular-nums">
                         {t("macros.carbsLetter")} {formatMacroGrams(day.carbs)}
+                      </Badge>
+                      <Badge size="sm" variant="secondary" className="tabular-nums">
+                        {t("macros.fiberLetter")} {formatMacroGrams(day.fiber)}
                       </Badge>
                     </div>
                   </div>

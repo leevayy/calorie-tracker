@@ -128,6 +128,7 @@ const MainPage = observer(function MainPage() {
       protein: food.protein,
       carbs: food.carbs,
       fats: food.fats,
+      fiber: food.fiber,
       portion: food.portion,
       ...(food.mealSlug ? { mealSlug: food.mealSlug } : {}),
     });
@@ -199,7 +200,7 @@ const MainPage = observer(function MainPage() {
                   />
                   <Card className="flex h-full min-h-0 min-w-0 flex-col px-0 py-2">
                     <div className="flex w-full flex-1 flex-col items-center justify-center">
-                      <div className="box-border h-[140px] w-[140px] shrink-0 rounded-[var(--radius)] px-2.5 py-1.5">
+                      <div className="box-border h-[188px] w-[140px] shrink-0 rounded-[var(--radius)] px-2.5 py-1.5">
                         <DayMacrosLabels totals={sumDayMacros(dayData)} />
                       </div>
                       <Text variant="muted" align="center" className="mt-2 w-full">

@@ -1,6 +1,6 @@
 import type { DayLogResponse } from "@contracts/food-log";
 
-export type MacroGramTotals = { protein: number; carbs: number; fats: number };
+export type MacroGramTotals = { protein: number; carbs: number; fats: number; fiber: number };
 
 export function sumDayMacros(day: DayLogResponse): MacroGramTotals {
   const { meals } = day;
@@ -15,8 +15,9 @@ export function sumDayMacros(day: DayLogResponse): MacroGramTotals {
       protein: acc.protein + e.protein,
       carbs: acc.carbs + e.carbs,
       fats: acc.fats + e.fats,
+      fiber: acc.fiber + e.fiber,
     }),
-    { protein: 0, carbs: 0, fats: 0 },
+    { protein: 0, carbs: 0, fats: 0, fiber: 0 },
   );
 }
 
