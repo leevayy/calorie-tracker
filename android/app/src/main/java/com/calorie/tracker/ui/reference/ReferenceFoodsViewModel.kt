@@ -16,6 +16,7 @@ data class ReferenceFoodsUiState(
     val protein: String = "",
     val carbs: String = "",
     val fats: String = "",
+    val fiber: String = "",
     val portion: String = "100g"
 )
 
@@ -36,6 +37,7 @@ class ReferenceFoodsViewModel(private val db: ReferenceFoodDb) : ViewModel() {
     fun setProtein(v: String) { _state.update { it.copy(protein = v) } }
     fun setCarbs(v: String) { _state.update { it.copy(carbs = v) } }
     fun setFats(v: String) { _state.update { it.copy(fats = v) } }
+    fun setFiber(v: String) { _state.update { it.copy(fiber = v) } }
     fun setPortion(v: String) { _state.update { it.copy(portion = v) } }
 
     fun add() {
@@ -45,6 +47,7 @@ class ReferenceFoodsViewModel(private val db: ReferenceFoodDb) : ViewModel() {
         val p = s.protein.toDoubleOrNull() ?: return
         val c = s.carbs.toDoubleOrNull() ?: return
         val f = s.fats.toDoubleOrNull() ?: return
+        val fi = s.fiber.toDoubleOrNull() ?: return
         val portion = s.portion.ifBlank { "100g" }
 
         viewModelScope.launch {
@@ -55,11 +58,12 @@ class ReferenceFoodsViewModel(private val db: ReferenceFoodDb) : ViewModel() {
                     protein = p,
                     carbs = c,
                     fats = f,
+                    fiber = fi,
                     portion = portion
                 )
             )
             _state.update {
-                it.copy(name = "", calories = "", protein = "", carbs = "", fats = "", portion = "100g")
+                it.copy(name = "", calories = "", protein = "", carbs = "", fats = "", fiber = "", portion = "100g")
             }
         }
     }

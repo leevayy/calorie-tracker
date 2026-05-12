@@ -10,6 +10,7 @@ data class FoodEntryResponse(
     val protein: Double,
     val carbs: Double,
     val fats: Double,
+    val fiber: Double,
     val portion: String? = null,
     val mealSlug: String? = null,
     val mealType: String,
@@ -25,6 +26,7 @@ data class CreateFoodEntryBody(
     val protein: Double,
     val carbs: Double,
     val fats: Double,
+    val fiber: Double,
     val portion: String? = null,
     val mealSlug: String? = null,
 )
@@ -45,11 +47,23 @@ data class DayLogResponse(
     val meals: MealBuckets
 )
 
-/** Б / Ж / У totals in grams (protein, fats, carbs). */
-fun DayLogResponse.sumMacros(): Triple<Double, Double, Double> {
+/** Totals in grams: protein, fats, carbs, fiber. */
+data class DayMacroTotals(
+    val protein: Double,
+    val fats: Double,
+    val carbs: Double,
+    val fiber: Double
+)
+
+fun DayLogResponse.sumMacros(): DayMacroTotals {
     val all = meals.breakfast + meals.lunch + meals.dinner + meals.snack
-    return all.fold(Triple(0.0, 0.0, 0.0)) { acc, e ->
-        Triple(acc.first + e.protein, acc.second + e.fats, acc.third + e.carbs)
+    return all.fold(DayMacroTotals(0.0, 0.0, 0.0, 0.0)) { acc, e ->
+        DayMacroTotals(
+            acc.protein + e.protein,
+            acc.fats + e.fats,
+            acc.carbs + e.carbs,
+            acc.fiber + e.fiber
+        )
     }
 }
 

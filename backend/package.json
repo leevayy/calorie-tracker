@@ -9,7 +9,7 @@
     "test": "vitest run",
     "db:migrate": "node --experimental-strip-types src/db/migrate.ts",
     "backfill:meal-slugs": "tsx scripts/backfill-meal-slugs.ts",
-    "benchmark:parse-food": "node --experimental-strip-types --env-file=.env .\\scripts\\parse-food-benchmark.ts"
+    "backfill:fiber-recent": "tsx --env-file=.env scripts/backfill-fiber-recent.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

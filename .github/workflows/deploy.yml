@@ -105,3 +105,10 @@ jobs:
               git remote set-url origin "${ORIGIN_URL}"
             fi
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            # Wait for api entrypoint (db:migrate + server) so fiber column exists before backfill.
+            sleep 15
+            # One-time fiber backfill (no-op after maintenance_jobs.fiber_recent_backfill_v1 exists).
+            if ! docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api \
+              npx tsx scripts/backfill-fiber-recent.ts; then
+              echo "::warning::Fiber backfill did not complete — check api logs and YANDEX_AI_STUDIO_API_KEY; run manually with --ignore-job if needed."
+            fi

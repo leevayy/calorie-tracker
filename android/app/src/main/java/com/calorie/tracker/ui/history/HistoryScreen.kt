@@ -157,7 +157,8 @@ fun HistoryScreen(viewModel: HistoryViewModel) {
                                 modifier = Modifier.padding(top = 8.dp),
                                 protein = day.protein,
                                 fats = day.fats,
-                                carbs = day.carbs
+                                carbs = day.carbs,
+                                fiber = day.fiber
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {

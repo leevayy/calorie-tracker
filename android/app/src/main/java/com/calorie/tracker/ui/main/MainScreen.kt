@@ -78,7 +78,7 @@ fun MainScreen(viewModel: MainViewModel, referenceFoodDb: ReferenceFoodDb? = nul
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        val (p, f, c) = dayLog.sumMacros()
+                        val m = dayLog.sumMacros()
                         Column(
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -91,9 +91,10 @@ fun MainScreen(viewModel: MainViewModel, referenceFoodDb: ReferenceFoodDb? = nul
                             )
                             DayMacrosRow(
                                 modifier = Modifier.padding(top = 8.dp),
-                                protein = p,
-                                fats = f,
-                                carbs = c
+                                protein = m.protein,
+                                fats = m.fats,
+                                carbs = m.carbs,
+                                fiber = m.fiber
                             )
                         }
 

@@ -10,6 +10,7 @@ data class DailyHistoryPoint(
     val protein: Double = 0.0,
     val carbs: Double = 0.0,
     val fats: Double = 0.0,
+    val fiber: Double = 0.0,
 )
 
 @Serializable

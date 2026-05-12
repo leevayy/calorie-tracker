@@ -10,6 +10,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "reference_foods")
@@ -20,6 +22,7 @@ data class ReferenceFoodEntity(
     val protein: Double,
     val carbs: Double,
     val fats: Double,
+    val fiber: Double,
     val portion: String
 )
 
@@ -38,7 +41,13 @@ interface ReferenceFoodDao {
     suspend fun delete(food: ReferenceFoodEntity)
 }
 
-@Database(entities = [ReferenceFoodEntity::class], version = 1, exportSchema = false)
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE reference_foods ADD COLUMN fiber REAL NOT NULL DEFAULT 0")
+    }
+}
+
+@Database(entities = [ReferenceFoodEntity::class], version = 2, exportSchema = false)
 abstract class ReferenceFoodDb : RoomDatabase() {
     abstract fun dao(): ReferenceFoodDao
 
@@ -51,7 +60,10 @@ abstract class ReferenceFoodDb : RoomDatabase() {
                     context.applicationContext,
                     ReferenceFoodDb::class.java,
                     "reference_foods.db"
-                ).build().also { instance = it }
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
+                    .also { instance = it }
             }
     }
 }

@@ -35,6 +35,7 @@ export const MacrosSchema = z.object({
   proteinG: z.number().nonnegative(),
   carbsG: z.number().nonnegative(),
   fatsG: z.number().nonnegative(),
+  fiberG: z.number().nonnegative(),
 });
 export type Macros = z.infer<typeof MacrosSchema>;
 
@@ -44,6 +45,8 @@ export const FoodMacrosSchema = z.object({
   protein: z.number().nonnegative(),
   carbs: z.number().nonnegative(),
   fats: z.number().nonnegative(),
+  /** Dietary fiber (grams). */
+  fiber: z.number().nonnegative(),
   portion: z.string().optional(),
 });
 export type FoodMacros = z.infer<typeof FoodMacrosSchema>;

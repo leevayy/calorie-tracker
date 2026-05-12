@@ -40,6 +40,7 @@
     <string name="macro_protein_letter">Б</string>
     <string name="macro_fats_letter">Ж</string>
     <string name="macro_carbs_letter">У</string>
+    <string name="macro_fiber_letter">Кл</string>
 
     <string name="settings_title">Настройки</string>
     <string name="settings_language">Язык</string>
@@ -79,6 +80,7 @@
     <string name="reference_name">Название</string>
     <string name="reference_cal">Калории</string>
     <string name="reference_portion">Порция</string>
+    <string name="reference_fiber">Клетчатка (г)</string>
     <string name="reference_add">Добавить</string>
     <string name="reference_list_title">Ваши блюда (%1$d)</string>
     <string name="reference_empty">Нет эталонных блюд. Добавьте первое выше.</string>

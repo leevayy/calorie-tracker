@@ -45,6 +45,7 @@ fun MealCard(
     val totalP = foods.sumOf { it.protein.roundToInt() }
     val totalC = foods.sumOf { it.carbs.roundToInt() }
     val totalF = foods.sumOf { it.fats.roundToInt() }
+    val totalFi = foods.sumOf { it.fiber.roundToInt() }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -61,7 +62,7 @@ fun MealCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, fontWeight = FontWeight.Medium)
                 Text(
-                    "${totalCal} cal · P: ${totalP}g · C: ${totalC}g · F: ${totalF}g",
+                    "${totalCal} cal · P: ${totalP}g · C: ${totalC}g · F: ${totalF}g · Fi: ${totalFi}g",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -99,7 +100,7 @@ fun MealCard(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(food.name, style = MaterialTheme.typography.bodyMedium)
                             Text(
-                                "${food.calories.roundToInt()} cal · P: ${food.protein.roundToInt()}g · C: ${food.carbs.roundToInt()}g · F: ${food.fats.roundToInt()}g",
+                                "${food.calories.roundToInt()} cal · P: ${food.protein.roundToInt()}g · C: ${food.carbs.roundToInt()}g · F: ${food.fats.roundToInt()}g · Fi: ${food.fiber.roundToInt()}g",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

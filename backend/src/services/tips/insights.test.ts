@@ -10,6 +10,7 @@ function baseContext(over: Partial<TipContext>): TipContext {
     proteinG: 50,
     carbsG: 100,
     fatsG: 40,
+    fiberG: 0,
     weeklyAverageCalories: 1900,
     communityAvgCalories: null,
     clientTimeZone: "Europe/Moscow",

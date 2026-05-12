@@ -15,6 +15,7 @@ data class ParsedFoodSuggestion(
     val protein: Double,
     val carbs: Double,
     val fats: Double,
+    val fiber: Double,
     val portion: String,
     val description: String? = null,
     val mealSlug: String? = null,

@@ -9,6 +9,7 @@ RUN ln -s /app/backend/node_modules /app/node_modules
 COPY backend/tsconfig.json ./tsconfig.json
 COPY backend/drizzle.config.ts ./drizzle.config.ts
 COPY backend/src ./src
+COPY backend/scripts ./scripts
 COPY contracts ../contracts
 
 EXPOSE 3000

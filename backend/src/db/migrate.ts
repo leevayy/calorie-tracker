@@ -37,6 +37,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS tip_vibe_prompt text NOT NULL DEFAULT
 ALTER TABLE users ADD COLUMN IF NOT EXISTS tip_vibe_emoji text;
 
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS meal_slug text;
+ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS fiber real NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS maintenance_jobs (
   name text PRIMARY KEY,

@@ -134,7 +134,8 @@ class MainViewModel : ViewModel() {
             val p = food.protein.roundToInt()
             val c = food.carbs.roundToInt()
             val f = food.fats.roundToInt()
-            """Input: "${food.name}" -> {"foods":[{"description":"${food.name}","estimated_portion":"${food.portion}","nutrients":[{"name":"calories","amount":$cal,"unit":"kcal"},{"name":"protein","amount":$p,"unit":"g"},{"name":"fat","amount":$f,"unit":"g"},{"name":"carbohydrates","amount":$c,"unit":"g"}]}]}"""
+            val fi = food.fiber.roundToInt()
+            """Input: "${food.name}" -> {"foods":[{"description":"${food.name}","estimated_portion":"${food.portion}","nutrients":[{"name":"calories","amount":$cal,"unit":"kcal"},{"name":"protein","amount":$p,"unit":"g"},{"name":"fat","amount":$f,"unit":"g"},{"name":"carbohydrates","amount":$c,"unit":"g"},{"name":"fiber","amount":$fi,"unit":"g"}]}]}"""
         }
 
         return "[REFERENCE]\n$examples\n[END REFERENCE]\n\n"
@@ -186,6 +187,7 @@ class MainViewModel : ViewModel() {
                         protein = suggestion.protein,
                         carbs = suggestion.carbs,
                         fats = suggestion.fats,
+                        fiber = suggestion.fiber,
                         portion = suggestion.portion,
                         mealSlug = suggestion.mealSlug,
                     )

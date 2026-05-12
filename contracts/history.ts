@@ -9,6 +9,7 @@ export const DailyHistoryPointSchema = z.object({
   protein: z.number().nonnegative().default(0),
   carbs: z.number().nonnegative().default(0),
   fats: z.number().nonnegative().default(0),
+  fiber: z.number().nonnegative().default(0),
 });
 export type DailyHistoryPoint = z.infer<typeof DailyHistoryPointSchema>;
 

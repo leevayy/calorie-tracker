@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 data class Macros(
     val proteinG: Double,
     val carbsG: Double,
-    val fatsG: Double
+    val fatsG: Double,
+    val fiberG: Double
 )
 
 @Serializable

@@ -61,9 +61,7 @@ Always include:
 - protein (g)
 - fat (g)
 - carbohydrates (g)
-
-Optional:
-- fiber (g)
+- fiber (g) — dietary fiber; required for every item (estimate if unsure).
 
 6. SANITY CHECKS
 - Large portions (>500g) should rarely be <600 kcal unless very low-fat
@@ -73,17 +71,18 @@ Optional:
 7. OUTPUT
 - Respond with a single JSON object
 - No markdown, no comments, no extra text
-- In nutrients, fiber is optional and may be omitted.
+- Every food MUST list fiber in nutrients (never omit fiber).
 
 8. API FIELD ALIGNMENT
 - The downstream API stores nutrients as:
-  calories, protein, carbs, fats, portion
+  calories, protein, carbs, fats, fiber, portion
 - In this structured output schema, keep:
   - "carbohydrates" as the carbohydrate field
   - "fat" as the fat field
 - These will be mapped to API fields:
   carbohydrates -> carbs
   fat -> fats
+  fiber -> fiber (grams)
 
 9. REFERENCE NUTRITION DATA (FEW-SHOT EXAMPLES)
 - The user message MAY contain a [REFERENCE] ... [END REFERENCE] block before the actual food text.
@@ -156,7 +155,8 @@ const NutritionParserResponseSchema = z.object({
             names.has("calories") &&
             names.has("protein") &&
             names.has("fat") &&
-            names.has("carbohydrates")
+            names.has("carbohydrates") &&
+            names.has("fiber")
           );
         },
         { message: "Missing required nutrients" },
@@ -171,7 +171,7 @@ type ParseFoodCacheEntry = {
   suggestions: ParsedFoodSuggestion[];
 };
 
-const PARSE_FOOD_CACHE_VERSION = "v5";
+const PARSE_FOOD_CACHE_VERSION = "v6";
 const parseFoodCache = new Map<string, ParseFoodCacheEntry>();
 const parseFoodInFlight = new Map<string, Promise<ParsedFoodSuggestion[]>>();
 
@@ -186,7 +186,7 @@ function extractFirstJsonObject(raw: string): string {
 
 function getNutrientAmount(
   nutrients: Array<z.infer<typeof NutrientSchema>>,
-  name: "calories" | "protein" | "fat" | "carbohydrates",
+  name: "calories" | "protein" | "fat" | "carbohydrates" | "fiber",
 ): number {
   const nutrient = nutrients.find((item) => item.name === name);
   if (!nutrient) {
@@ -371,6 +371,9 @@ async function generateParseFoodSuggestions(
         ? Math.min(1, Math.max(0, food.confidence))
         : undefined;
     const slug = food.meal_slug ? sanitizeMealSlug(food.meal_slug) : null;
+    const carbs = getNutrientAmount(food.nutrients, "carbohydrates");
+    const fiberRaw = getNutrientAmount(food.nutrients, "fiber");
+    const fiber = Math.min(fiberRaw, carbs);
     return ParsedFoodSuggestionSchema.parse({
       name: food.name,
       ...(trimmed ? { description: trimmed } : {}),
@@ -378,8 +381,9 @@ async function generateParseFoodSuggestions(
       ...(slug ? { mealSlug: slug } : {}),
       calories: getNutrientAmount(food.nutrients, "calories"),
       protein: getNutrientAmount(food.nutrients, "protein"),
-      carbs: getNutrientAmount(food.nutrients, "carbohydrates"),
+      carbs,
       fats: getNutrientAmount(food.nutrients, "fat"),
+      fiber,
       portion: food.estimated_portion ?? "1 serving",
     });
   });
@@ -407,6 +411,42 @@ export async function generateMealSlugWithAi(
 ): Promise<string> {
   const raw = await aiChat(name, MEAL_SLUG_PROMPT, aiModelPreference, { temperature: 0 });
   return raw.trim();
+}
+
+const FiberEstimateResponseSchema = z.object({ fiber_g: z.number().nonnegative() });
+
+/**
+ * Given trusted logged macros, estimate dietary fiber via the same AI stack as parse-food.
+ * Caps result at carbs (fiber cannot exceed total carbohydrates).
+ */
+export async function estimateFiberGramsWithAi(
+  input: {
+    name: string;
+    portion: string | null;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+  },
+  aiModelPreference: AiModelPreference,
+): Promise<number> {
+  const user = [
+    "Estimate dietary fiber (grams) for this single logged food. Calories and macros below are ground truth; only estimate fiber.",
+    `name: ${input.name}`,
+    `portion: ${input.portion?.trim() || "unknown"}`,
+    `calories_kcal: ${input.calories}`,
+    `protein_g: ${input.protein}`,
+    `carbs_g: ${input.carbs}`,
+    `fats_g: ${input.fats}`,
+    "",
+    'Reply with one JSON object only, no markdown: {"fiber_g": <number>}',
+    "Rules: fiber_g >= 0, fiber_g <= carbs_g, realistic whole-food estimate.",
+  ].join("\n");
+  const system = "You output only valid JSON with a single key fiber_g. No prose, no markdown.";
+  const raw = await aiChat(user, system, aiModelPreference, { temperature: 0.1 });
+  const parsed = FiberEstimateResponseSchema.parse(JSON.parse(extractFirstJsonObject(raw)));
+  const cap = Math.max(0, input.carbs);
+  return Math.min(parsed.fiber_g, cap);
 }
 
 export async function parseFoodTextWithAi(

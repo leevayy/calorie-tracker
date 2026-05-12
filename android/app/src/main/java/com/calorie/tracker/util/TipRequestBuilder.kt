@@ -12,8 +12,13 @@ fun buildDailyTipRequest(
 ): DailyTipRequest {
     val meals = dayLog.meals
     val all = meals.breakfast + meals.lunch + meals.dinner + meals.snack
-    val macros = all.fold(Macros(0.0, 0.0, 0.0)) { acc, e ->
-        Macros(acc.proteinG + e.protein, acc.carbsG + e.carbs, acc.fatsG + e.fats)
+    val macros = all.fold(Macros(0.0, 0.0, 0.0, 0.0)) { acc, e ->
+        Macros(
+            acc.proteinG + e.protein,
+            acc.carbsG + e.carbs,
+            acc.fatsG + e.fats,
+            acc.fiberG + e.fiber
+        )
     }
     return DailyTipRequest(
         date = calendarDay,

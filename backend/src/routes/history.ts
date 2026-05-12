@@ -51,6 +51,7 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
           protein: sql<number>`coalesce(sum(${foodEntriesTable.protein}), 0)`.as("protein"),
           carbs: sql<number>`coalesce(sum(${foodEntriesTable.carbs}), 0)`.as("carbs"),
           fats: sql<number>`coalesce(sum(${foodEntriesTable.fats}), 0)`.as("fats"),
+          fiber: sql<number>`coalesce(sum(${foodEntriesTable.fiber}), 0)`.as("fiber"),
         })
         .from(foodEntriesTable)
         .where(
@@ -70,6 +71,7 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
             protein: Number(row.protein),
             carbs: Number(row.carbs),
             fats: Number(row.fats),
+            fiber: Number(row.fiber),
           },
         ]),
       );
@@ -83,6 +85,7 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
           protein: row?.protein ?? 0,
           carbs: row?.carbs ?? 0,
           fats: row?.fats ?? 0,
+          fiber: row?.fiber ?? 0,
         };
       });
 

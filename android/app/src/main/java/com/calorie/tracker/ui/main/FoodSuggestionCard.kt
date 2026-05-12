@@ -47,7 +47,7 @@ fun FoodSuggestionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "P: ${food.protein.roundToInt()}g · C: ${food.carbs.roundToInt()}g · F: ${food.fats.roundToInt()}g",
+                    "P: ${food.protein.roundToInt()}g · C: ${food.carbs.roundToInt()}g · F: ${food.fats.roundToInt()}g · Fi: ${food.fiber.roundToInt()}g",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

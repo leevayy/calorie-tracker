@@ -75,6 +75,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
           protein: sql<number>`coalesce(sum(${foodEntriesTable.protein}), 0)`.as("protein"),
           carbs: sql<number>`coalesce(sum(${foodEntriesTable.carbs}), 0)`.as("carbs"),
           fats: sql<number>`coalesce(sum(${foodEntriesTable.fats}), 0)`.as("fats"),
+          fiber: sql<number>`coalesce(sum(${foodEntriesTable.fiber}), 0)`.as("fiber"),
         })
         .from(foodEntriesTable)
         .where(and(eq(foodEntriesTable.userId, userId), eq(foodEntriesTable.day, parsed.data.date)));
@@ -84,6 +85,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         protein: 0,
         carbs: 0,
         fats: 0,
+        fiber: 0,
       };
 
       const historyRows = await db
@@ -144,6 +146,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
           protein: foodEntriesTable.protein,
           carbs: foodEntriesTable.carbs,
           fats: foodEntriesTable.fats,
+          fiber: foodEntriesTable.fiber,
           mealType: foodEntriesTable.mealType,
         })
         .from(foodEntriesTable)
@@ -159,6 +162,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         proteinG: Number(row.protein ?? 0),
         carbsG: Number(row.carbs ?? 0),
         fatsG: Number(row.fats ?? 0),
+        fiberG: Number(row.fiber ?? 0),
         mealType: coerceMealType(row.mealType),
       }));
 
@@ -169,6 +173,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
         proteinG: Number(todayAggregate.protein ?? 0),
         carbsG: Number(todayAggregate.carbs ?? 0),
         fatsG: Number(todayAggregate.fats ?? 0),
+        fiberG: Number(todayAggregate.fiber ?? 0),
         weeklyAverageCalories,
         communityAvgCalories: hasCommunityStats ? Number(community?.avgCalories ?? 0) : null,
         clientTimeZone: parsed.data.clientTimeZone,

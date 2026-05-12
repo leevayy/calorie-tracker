@@ -16,11 +16,18 @@ import kotlin.math.abs
 import kotlin.math.round
 
 @Composable
-fun DayMacrosRow(modifier: Modifier = Modifier, protein: Double, fats: Double, carbs: Double) {
+fun DayMacrosRow(
+    modifier: Modifier = Modifier,
+    protein: Double,
+    fats: Double,
+    carbs: Double,
+    fiber: Double
+) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         MacroDayBadge(stringResource(R.string.macro_protein_letter), protein)
         MacroDayBadge(stringResource(R.string.macro_fats_letter), fats)
         MacroDayBadge(stringResource(R.string.macro_carbs_letter), carbs)
+        MacroDayBadge(stringResource(R.string.macro_fiber_letter), fiber)
     }
 }
 

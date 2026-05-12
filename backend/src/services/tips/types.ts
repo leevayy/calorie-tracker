@@ -8,6 +8,7 @@ export type RecentLog = {
   proteinG?: number;
   carbsG?: number;
   fatsG?: number;
+  fiberG?: number;
   mealType?: "breakfast" | "lunch" | "dinner" | "snack";
   name?: string;
   mealSlug?: string | null;
@@ -20,6 +21,7 @@ export type TipContext = {
   proteinG: number;
   carbsG: number;
   fatsG: number;
+  fiberG: number;
   weeklyAverageCalories: number | null;
   communityAvgCalories: number | null;
   clientTimeZone: string;
