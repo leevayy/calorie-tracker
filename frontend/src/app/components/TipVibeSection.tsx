@@ -99,7 +99,7 @@ export const TipVibeSection = observer(function TipVibeSection() {
     : (dialogTile && "appleName" in dialogTile ? dialogTile.appleName : null);
 
   return (
-    <Card className="p-4">
+    <Card>
       <Text as="h3" weight="medium" className="mb-1">
         {t("settings.tipVibe.title")}
       </Text>

@@ -1,9 +1,15 @@
 import axios from "axios";
+import { getAccessToken, setAccessTokenGetter } from "./accessTokenBinding";
 
-let getAccessToken: () => string | null = () => null;
+export { setAccessTokenGetter } from "./accessTokenBinding";
 
-export function setAccessTokenGetter(fn: () => string | null): void {
-  getAccessToken = fn;
+type SessionTokenStore = {
+  session: { accessToken: string | undefined };
+};
+
+/** Call once from composition root after `createRootStore()` so refresh uses session token. */
+export function bindApiClientSession(store: SessionTokenStore): void {
+  setAccessTokenGetter(() => store.session.accessToken ?? null);
 }
 
 const rawBase = import.meta.env.VITE_API_BASE_URL;

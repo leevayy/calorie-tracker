@@ -63,21 +63,21 @@ const HistoryPage = observer(function HistoryPage() {
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
         <AsyncSection
           fetchState={history.fetchState}
           errorKey={history.errorKey}
           onRetry={() => void history.loadRange(from, to, today)}
           empty={isEmptySuccess}
           emptyContent={
-            <Card className="p-8">
+            <Card className="px-0 py-8">
               <Text variant="muted" align="center">
                 {t("states.emptyHistory")}
               </Text>
             </Card>
           }
         >
-          <Card className="p-4">
+          <Card>
             <Text as="h2" weight="medium" className="mb-4">
               {t("history.weeklySummary")}
             </Text>
@@ -140,12 +140,12 @@ const HistoryPage = observer(function HistoryPage() {
             </div>
           </Card>
 
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Text as="h3" weight="medium">
               {t("history.dailyBreakdown")}
             </Text>
             {[...chartData].reverse().map((day) => (
-              <Card key={day.iso} className="p-4">
+              <Card key={day.iso} className="py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <Text>{day.date}</Text>

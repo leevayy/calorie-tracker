@@ -35,10 +35,6 @@ const SettingsPage = observer(function SettingsPage() {
   const [aiModelPreference, setAiModelPreference] = useState<AiModelPreference>("qwen3");
 
   useEffect(() => {
-    void profile.read.load();
-  }, [profile.read]);
-
-  useEffect(() => {
     const p = profile.read.profile;
     if (!p) return;
     setDailyGoal(p.dailyCalorieGoal);
@@ -70,8 +66,8 @@ const SettingsPage = observer(function SettingsPage() {
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
-        <Card className="p-4">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
+        <Card>
           <Text as="h3" weight="medium" className="mb-4">
             {t("settings.language")}
           </Text>
@@ -95,7 +91,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Text>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <Text as="h3" weight="medium" className="mb-4">
             {t("settings.goal")}
           </Text>
@@ -119,7 +115,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Text>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <Text as="h3" weight="medium" className="mb-4">
             {t("settings.aiModel")}
           </Text>
@@ -145,7 +141,7 @@ const SettingsPage = observer(function SettingsPage() {
 
         <TipVibeSection />
 
-        <Card className="p-4">
+        <Card>
           <Text as="h3" weight="medium" className="mb-4">
             {t("settings.appearance")}
           </Text>
@@ -182,7 +178,7 @@ const SettingsPage = observer(function SettingsPage() {
           errorKey={profile.read.errorKey}
           onRetry={() => void profile.read.load()}
         >
-          <Card className="p-4">
+          <Card>
             <Text as="h3" weight="medium" className="mb-4">
               {t("settings.dailyGoals")}
             </Text>
@@ -206,7 +202,7 @@ const SettingsPage = observer(function SettingsPage() {
             </div>
           </Card>
 
-          <Card className="p-4">
+          <Card>
             <Text as="h3" weight="medium" className="mb-4">
               {t("settings.profile")}
             </Text>
@@ -258,7 +254,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Card>
         </AsyncSection>
 
-        <Card className="p-4">
+        <Card>
           <Text as="h3" weight="medium" className="mb-4">
             {t("settings.account")}
           </Text>
@@ -268,7 +264,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Button>
         </Card>
 
-        <Card className="p-4">
+        <Card>
           <Text as="h3" weight="medium" className="mb-2">
             {t("settings.about")}
           </Text>

@@ -27,7 +27,7 @@ export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps
   const pct = conf !== null ? Math.round(conf * 100) : null;
 
   return (
-    <Card className="p-3">
+    <Card className="bg-muted/20 px-0 py-3">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <Text weight="medium">{food.name}</Text>

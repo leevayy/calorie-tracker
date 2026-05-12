@@ -2,8 +2,7 @@ import { createBrowserRouter, redirect } from "react-router";
 import AuthPage from "./pages/AuthPage";
 import AppTabShell from "./layout/AppTabShell";
 import DesignSystemPage from "./pages/DesignSystemPage";
-
-const TAB_IDS = ["app", "history", "settings"] as const;
+import { DEFAULT_APP_TAB_SEGMENT, isAppTabSegment } from "./navigation/appTabs";
 
 export const router = createBrowserRouter([
   { path: "/", Component: AuthPage },
@@ -12,8 +11,8 @@ export const router = createBrowserRouter([
     path: "/:tab",
     Component: AppTabShell,
     loader: ({ params }) => {
-      if (!TAB_IDS.includes(params.tab as (typeof TAB_IDS)[number])) {
-        return redirect("/app");
+      if (!isAppTabSegment(params.tab)) {
+        return redirect(`/${DEFAULT_APP_TAB_SEGMENT}`);
       }
       return null;
     },

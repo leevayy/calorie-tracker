@@ -1,4 +1,3 @@
-import { setAccessTokenGetter } from "@/api/client";
 import { loadPersistedSession } from "./authStorage";
 import type { IRootStore } from "./rootStore";
 import { RootStore } from "./rootStore";
@@ -14,6 +13,7 @@ const defaultSnapshot = {
     dayRead: {},
     entryCreate: {},
     entryDelete: {},
+    frequentWeekRead: {},
   },
   history: {},
   dailyTip: {},
@@ -33,6 +33,5 @@ export function createRootStore(): IRootStore {
     ...defaultSnapshot,
     session: sessionSnapshot,
   });
-  setAccessTokenGetter(() => store.session.accessToken || null);
   return store;
 }

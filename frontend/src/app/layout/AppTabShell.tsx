@@ -4,29 +4,14 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { User } from "lucide-react";
 import { AppTabChatProvider, useAppTabChat } from "../context/AppTabChatContext";
+import { useSyncPreferredLanguageFromProfile } from "../hooks/useSyncPreferredLanguageFromProfile";
 import MainPage from "../pages/MainPage";
 import HistoryPage from "../pages/HistoryPage";
 import SettingsPage from "../pages/SettingsPage";
 import AppTabNav from "./AppTabNav";
 import { Text } from "../components/ds/Text";
+import { indexToPath, pathToIndex, pathToTitleKey } from "../navigation/appTabs";
 import { useRootStore } from "@/stores/StoreContext";
-
-const TAB_PATHS = ["/settings", "/app", "/history"] as const;
-
-function pathToIndex(pathname: string): number {
-  const i = TAB_PATHS.indexOf(pathname as (typeof TAB_PATHS)[number]);
-  return i >= 0 ? i : 1;
-}
-
-function indexToPath(index: number): (typeof TAB_PATHS)[number] {
-  return TAB_PATHS[Math.min(Math.max(index, 0), TAB_PATHS.length - 1)];
-}
-
-function pathToTitleKey(pathname: string): "settings.title" | "main.title" | "history.title" {
-  if (pathname === "/settings") return "settings.title";
-  if (pathname === "/history") return "history.title";
-  return "main.title";
-}
 
 const AppTabChromeHeader = observer(function AppTabChromeHeader() {
   const { t } = useTranslation();
@@ -53,7 +38,15 @@ const AppTabChromeHeader = observer(function AppTabChromeHeader() {
 function AppTabShellInner() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile } = useRootStore();
   const { chatOpen, setChatOpen } = useAppTabChat();
+
+  useSyncPreferredLanguageFromProfile();
+
+  useEffect(() => {
+    void profile.read.load();
+  }, [profile.read]);
+
   const scrollerRef = useRef<HTMLDivElement>(null);
   const ignoreScrollEndUntilRef = useRef(0);
   const [scrollProgress, setScrollProgress] = useState(() => pathToIndex(location.pathname));

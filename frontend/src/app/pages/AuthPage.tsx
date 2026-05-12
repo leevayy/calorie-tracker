@@ -37,8 +37,8 @@ const AuthPage = observer(function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/20">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <Card variant="elevated" className="w-full max-w-md">
+        <CardHeader className="text-center pb-2">
           <CardTitle className="text-2xl">{t("auth.title")}</CardTitle>
           <CardDescription>
             {isLogin ? t("auth.signInSubtitle") : t("auth.signUpSubtitle")}

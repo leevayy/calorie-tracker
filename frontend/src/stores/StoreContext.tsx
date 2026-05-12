@@ -1,4 +1,5 @@
 import { createContext, useContext, useRef, type ReactNode } from "react";
+import { bindApiClientSession } from "@/api/client";
 import { createRootStore } from "./createRootStore";
 import type { IRootStore } from "./rootStore";
 import { SessionBootstrap } from "./SessionBootstrap";
@@ -9,6 +10,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const storeRef = useRef<IRootStore | null>(null);
   if (storeRef.current == null) {
     storeRef.current = createRootStore();
+    bindApiClientSession(storeRef.current);
   }
   return (
     <RootStoreContext.Provider value={storeRef.current}>

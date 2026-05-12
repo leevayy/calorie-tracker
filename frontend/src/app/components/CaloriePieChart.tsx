@@ -26,7 +26,7 @@ export function CaloriePieChart({
   const COLORS = ["#0ea5e9", "#e2e8f0"];
 
   return (
-    <Card className={cn("flex h-full flex-col p-4", className)}>
+    <Card className={cn("flex h-full flex-col px-0 py-2", className)}>
       <div className="flex w-full flex-1 flex-col items-center justify-center">
         <div className="relative h-[140px] w-full shrink-0">
           <ResponsiveContainer width="100%" height="100%">

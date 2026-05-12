@@ -3,6 +3,7 @@ import { types } from "mobx-state-tree";
 import { CreateFoodEntryStore } from "./createFoodEntryStore";
 import { DayLogReadStore } from "./dayLogReadStore";
 import { DeleteFoodEntryStore } from "./deleteFoodEntryStore";
+import { FrequentFoodsWeekReadStore } from "./frequentFoodsWeekReadStore";
 import { mergeFoodEntry, removeFoodEntryById } from "./foodLogMerge";
 
 export const FoodLogStore = types
@@ -10,6 +11,7 @@ export const FoodLogStore = types
     dayRead: DayLogReadStore,
     entryCreate: CreateFoodEntryStore,
     entryDelete: DeleteFoodEntryStore,
+    frequentWeekRead: FrequentFoodsWeekReadStore,
   })
   .actions((self) => ({
     applyCreatedEntry(day: string, entry: FoodEntryResponse) {

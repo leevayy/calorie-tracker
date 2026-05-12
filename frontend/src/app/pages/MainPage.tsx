@@ -1,8 +1,8 @@
 import { observer } from "mobx-react-lite";
 import type { MealType } from "@contracts/common";
-import type { FrequentFoodItem } from "@contracts/food-log";
 import type { ParsedFoodSuggestion } from "@contracts/ai-food";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Send, RefreshCw } from "lucide-react";
@@ -13,14 +13,14 @@ import { FoodSuggestion } from "../components/FoodSuggestion";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useAppTabChat } from "../context/AppTabChatContext";
+import { useBehavioralToday, useDailyTipAutoFetch } from "./main/mainPageHooks";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import { Input } from "../components/ds/Input";
 import { Text } from "../components/ds/Text";
-import { apiGetFrequentFoods } from "@/api/foodLog";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
-import { behavioralLocalIsoDate, defaultMealTypeForLocalTime, weekRangeEndingOn } from "@/utils/date";
+import { defaultMealTypeForLocalTime, weekRangeEndingOn } from "@/utils/date";
 import { sumDayMacros } from "@/utils/macroTotals";
 import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
@@ -35,18 +35,7 @@ const MainPage = observer(function MainPage() {
   const { t, i18n } = useTranslation();
   const { profile, foodLog, dailyTip, aiParse } = useRootStore();
 
-  /** Tick so behavioral "today" updates after midnight / 4:00 without full page reload. */
-  const [behavioralDayTick, setBehavioralDayTick] = useState(0);
-  useEffect(() => {
-    const bump = () => setBehavioralDayTick((n) => n + 1);
-    const id = window.setInterval(bump, 60_000);
-    document.addEventListener("visibilitychange", bump);
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", bump);
-    };
-  }, []);
-  const today = useMemo(() => behavioralLocalIsoDate(), [behavioralDayTick]);
+  const today = useBehavioralToday();
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
@@ -58,9 +47,7 @@ const MainPage = observer(function MainPage() {
   };
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [targetMeal, setTargetMeal] = useState<MealType>(() => defaultMealTypeForLocalTime());
-  const [weekFrequentFoods, setWeekFrequentFoods] = useState<FrequentFoodItem[]>([]);
 
-  const tipAutoKeyRef = useRef("");
   const collapsedInputRef = useRef<HTMLInputElement>(null);
   const expandedInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,30 +71,18 @@ const MainPage = observer(function MainPage() {
     : "off";
 
   useEffect(() => {
-    void profile.read.load();
     void foodLog.dayRead.loadDay(today);
-  }, [profile.read, foodLog.dayRead, today]);
+  }, [foodLog.dayRead, today]);
 
-  useEffect(() => {
-    if (foodLog.dayRead.fetchState !== "success" || !foodLog.dayRead.data) return;
-    if (profile.read.fetchState === "loading") return;
-    const key = `${today}|${preferredLanguage}|${nutritionGoal}|${tipVibeKey}`;
-    if (tipAutoKeyRef.current === key) return;
-    tipAutoKeyRef.current = key;
-    void dailyTip.fetchTip(
-      buildDailyTipRequest(foodLog.dayRead.data, today, { preferredLanguage, at: new Date() }),
-      { force: true },
-    );
-  }, [
-    foodLog.dayRead.fetchState,
-    foodLog.dayRead.data,
-    profile.read.fetchState,
+  useDailyTipAutoFetch({
+    dayRead: foodLog.dayRead,
+    profileRead: profile.read,
+    dailyTip,
+    today,
     preferredLanguage,
     nutritionGoal,
     tipVibeKey,
-    today,
-    dailyTip,
-  ]);
+  });
 
   const requestDailyTip = useCallback(() => {
     const data = foodLog.dayRead.data;
@@ -118,7 +93,7 @@ const MainPage = observer(function MainPage() {
     );
   }, [foodLog.dayRead.data, dailyTip, today, preferredLanguage]);
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
+  const handleChatSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const text = chatInput.trim();
     if (!text) return;
@@ -178,26 +153,15 @@ const MainPage = observer(function MainPage() {
   const deleteBusy = foodLog.entryDelete.fetchState === "loading";
 
   useEffect(() => {
-    let cancelled = false;
     const { from, to } = weekRangeEndingOn(today);
-    void (async () => {
-      try {
-        const res = await apiGetFrequentFoods({ from, to, limit: CHAT_SUGGESTION_LIMIT });
-        if (!cancelled) setWeekFrequentFoods(res.items);
-      } catch {
-        if (!cancelled) setWeekFrequentFoods([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [today, dayData]);
+    void foodLog.frequentWeekRead.load({ from, to, limit: CHAT_SUGGESTION_LIMIT });
+  }, [today, dayData, foodLog.frequentWeekRead]);
 
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background">
       {profile.read.fetchState === "error" && profile.read.errorKey ? (
         <div className="px-4 pt-2">
-          <Card className="p-3 border-destructive/50 bg-destructive/5">
+          <Card className="bg-destructive/10 px-0 py-2">
             <Text variant="error" className="mb-2">
               {t(profile.read.errorKey)}
             </Text>
@@ -233,7 +197,7 @@ const MainPage = observer(function MainPage() {
                     goal={dayData.calorieGoal}
                     caption={t("main.caloriesToday")}
                   />
-                  <Card className="flex h-full min-h-0 min-w-0 flex-col p-4">
+                  <Card className="flex h-full min-h-0 min-w-0 flex-col px-0 py-2">
                     <div className="flex w-full flex-1 flex-col items-center justify-center">
                       <div className="box-border h-[140px] w-[140px] shrink-0 rounded-[var(--radius)] px-2.5 py-1.5">
                         <DayMacrosLabels totals={sumDayMacros(dayData)} />
@@ -244,7 +208,7 @@ const MainPage = observer(function MainPage() {
                     </div>
                   </Card>
                 </div>
-                <Card className="p-4 flex flex-col">
+                <Card className="flex flex-col px-0 py-2">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <Text variant="muted">{t("main.tip")}</Text>
                     <Button
@@ -384,13 +348,13 @@ const MainPage = observer(function MainPage() {
 
             <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
-                {aiParse.fetchState !== "loading" && weekFrequentFoods.length > 0 ? (
-                  <div className="shrink-0 rounded-xl border border-border bg-muted/40">
+                {aiParse.fetchState !== "loading" && foodLog.frequentWeekRead.items.length > 0 ? (
+                  <div className="shrink-0 rounded-xl bg-muted/35">
                     <Text weight="semibold" className="px-4 pt-3 pb-2">
                       {t("main.recentLogged")}
                     </Text>
                     <ul className="pb-1">
-                      {weekFrequentFoods.map((item) => (
+                      {foodLog.frequentWeekRead.items.map((item) => (
                         <li key={item.name} className="border-t border-border/70 first:border-t-0">
                           <button
                             type="button"
@@ -456,12 +420,13 @@ const MainPage = observer(function MainPage() {
                       </Text>
                     ) : null}
                     {pendingSuggestions.map((entry, idx) => (
-                      <FoodSuggestion
-                        key={entry.id}
-                        food={entry.food}
-                        onAccept={() => void handleAcceptFood(idx)}
-                        onReject={() => handleRejectFood(idx)}
-                      />
+                      <Fragment key={entry.id}>
+                        <FoodSuggestion
+                          food={entry.food}
+                          onAccept={() => void handleAcceptFood(idx)}
+                          onReject={() => handleRejectFood(idx)}
+                        />
+                      </Fragment>
                     ))}
                     {foodLog.entryCreate.fetchState === "error" && foodLog.entryCreate.errorKey ? (
                       <Text variant="error" className="pt-2" role="alert">

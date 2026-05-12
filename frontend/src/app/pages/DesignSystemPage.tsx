@@ -184,30 +184,39 @@ export default function DesignSystemPage() {
           <CardHeader>
             <CardTitle>Cards</CardTitle>
             <CardDescription>
-              Container components with moderate rounding
+              Default surfaces are borderless and flat; use elevated for rare focused blocks (e.g. auth).
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic Card</CardTitle>
-                  <CardDescription>A simple card component</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Text>Cards provide a clean container for grouping related content.</Text>
-                </CardContent>
-              </Card>
-
-              <Card className="border-primary">
-                <CardHeader>
-                  <CardTitle>Highlighted Card</CardTitle>
-                  <CardDescription>With custom border color</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Text>You can customize cards with different border colors.</Text>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <Text as="p" weight="medium" className="mb-3">
+                  variant=&quot;plain&quot; (default)
+                </Text>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Plain</CardTitle>
+                    <CardDescription>No border, no shadow — grouping is spacing and type.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Text>Use for settings sections, lists, and dashboard stacks.</Text>
+                  </CardContent>
+                </Card>
+              </div>
+              <div>
+                <Text as="p" weight="medium" className="mb-3">
+                  variant=&quot;elevated&quot;
+                </Text>
+                <Card variant="elevated">
+                  <CardHeader>
+                    <CardTitle>Elevated</CardTitle>
+                    <CardDescription>Card surface + soft shadow.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Text>Prefer for transactional screens centered on one task.</Text>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </CardContent>
         </Card>

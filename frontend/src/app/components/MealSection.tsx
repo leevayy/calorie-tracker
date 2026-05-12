@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
+import { cn } from "./ui/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useIsMobile } from "./ui/use-mobile";
 
@@ -44,10 +45,19 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
   }, [isMobile]);
 
   return (
-    <Card className="overflow-hidden">
+    <Card
+      className={cn(
+        "overflow-hidden transition-colors",
+        !expanded && "hover:bg-muted/55",
+      )}
+    >
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+        className={cn(
+          "flex w-full items-center justify-between gap-3 px-0 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          expanded && "transition-colors hover:bg-muted/40",
+        )}
       >
         <div className="flex items-center gap-3">
           <div>
@@ -73,9 +83,9 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="border-t border-border overflow-hidden"
+            className="overflow-hidden border-t border-border/50"
           >
-            <div className="p-4 pt-3 space-y-2">
+            <div className="space-y-2 px-0 pb-4 pt-3">
               {foods.length === 0 && emptyLabel ? (
                 <Text variant="muted" className="py-2">
                   {emptyLabel}

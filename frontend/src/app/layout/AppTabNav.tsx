@@ -1,9 +1,10 @@
 import { History, Home, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLayoutEffect, useRef, useState } from "react";
+import { APP_TAB_NAV_TITLE_KEYS, APP_TAB_SEGMENTS } from "../navigation/appTabs";
 
+/** Order must match `APP_TAB_SEGMENTS` in `appTabs.ts`. */
 const ICONS = [Settings, Home, History] as const;
-const TITLE_KEYS = ["settings.title", "main.title", "history.title"] as const;
 
 /** Circle center ↔ tab center distance in px must be ≤ this to use primary-foreground. */
 const INTERSECT_PX = 24;
@@ -16,16 +17,21 @@ type AppTabNavProps = {
   onSelectTab: (index: number) => void;
 };
 
-function tabHighlight(p: number, trackWidthPx: number, tabIndex: number): boolean {
+function tabHighlight(
+  p: number,
+  trackWidthPx: number,
+  tabIndex: number,
+  tabCount: number,
+): boolean {
   if (trackWidthPx <= 0) {
     return Math.round(p) === tabIndex;
   }
-  const third = trackWidthPx / 3;
-  const distToTabPx = (Math.abs(p - tabIndex) / 3) * trackWidthPx;
+  const cell = trackWidthPx / tabCount;
+  const distToTabPx = (Math.abs(p - tabIndex) / tabCount) * trackWidthPx;
   if (distToTabPx <= INTERSECT_PX) {
     return true;
   }
-  const snapDistPx = Math.abs(p - Math.round(p)) * third;
+  const snapDistPx = Math.abs(p - Math.round(p)) * cell;
   const settledNearSnap = snapDistPx <= INTERSECT_PX;
   if (settledNearSnap) {
     return Math.round(p) === tabIndex;
@@ -35,8 +41,10 @@ function tabHighlight(p: number, trackWidthPx: number, tabIndex: number): boolea
 
 export default function AppTabNav({ progress, onSelectTab, activeTabIndex }: AppTabNavProps) {
   const { t } = useTranslation();
-  const p = Math.min(2, Math.max(0, progress));
-  const leftPct = ((2 * p + 1) / 6) * 100;
+  const maxIdx = APP_TAB_SEGMENTS.length - 1;
+  const p = Math.min(maxIdx, Math.max(0, progress));
+  const n = APP_TAB_SEGMENTS.length;
+  const leftPct = ((2 * p + 1) / (2 * n)) * 100;
   const trackRef = useRef<HTMLDivElement>(null);
   const [trackWidth, setTrackWidth] = useState(0);
 
@@ -68,12 +76,12 @@ export default function AppTabNav({ progress, onSelectTab, activeTabIndex }: App
               type="button"
               onClick={() => onSelectTab(index)}
               className={`rounded-full p-2 transition-colors ${
-                tabHighlight(p, trackWidth, index)
+                tabHighlight(p, trackWidth, index, n)
                   ? "text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
               aria-current={activeTabIndex === index ? "page" : undefined}
-              aria-label={t(TITLE_KEYS[index])}
+              aria-label={t(APP_TAB_NAV_TITLE_KEYS[index])}
             >
               <Icon className="h-5 w-5" />
             </button>
