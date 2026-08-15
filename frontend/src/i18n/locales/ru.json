@@ -54,10 +54,13 @@
     "recomposition": "Рекомпозиция"
   },
   "aiModels": {
-    "deepseek": "DeepSeek",
-    "qwen3": "Qwen 3",
-    "gptoss": "GPT-OSS",
-    "alicegpt": "Alice GPT"
+    "alicegpt": "Alice AI LLM",
+    "aliceflash": "Alice AI LLM Flash",
+    "deepseek": "DeepSeek V4 Flash",
+    "qwen36": "Qwen 3.6 35B",
+    "qwen3": "Qwen 3 235B",
+    "gptoss120": "GPT-OSS 120B",
+    "gptoss": "GPT-OSS 20B"
   },
   "main": {
     "title": "Трекер калорий",

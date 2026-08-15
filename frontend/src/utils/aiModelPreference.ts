@@ -6,8 +6,11 @@ export function coerceAiModelPreference(code: string | undefined): AiModelPrefer
 }
 
 export const AI_MODEL_PREFERENCE_OPTIONS: { value: AiModelPreference; labelKey: string }[] = [
-  { value: "qwen3", labelKey: "aiModels.qwen3" },
-  { value: "deepseek", labelKey: "aiModels.deepseek" },
-  { value: "gptoss", labelKey: "aiModels.gptoss" },
   { value: "alicegpt", labelKey: "aiModels.alicegpt" },
+  { value: "deepseek", labelKey: "aiModels.deepseek" },
+  { value: "qwen36", labelKey: "aiModels.qwen36" },
+  { value: "aliceflash", labelKey: "aiModels.aliceflash" },
+  { value: "qwen3", labelKey: "aiModels.qwen3" },
+  { value: "gptoss120", labelKey: "aiModels.gptoss120" },
+  { value: "gptoss", labelKey: "aiModels.gptoss" },
 ];

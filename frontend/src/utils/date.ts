@@ -1,4 +1,5 @@
 import type { MealType } from "@contracts/common";
+import type { ParseFoodRequest } from "@contracts/ai-food";
 
 /**
  * Guess which meal slot matches local wall time (browser timezone).
@@ -44,6 +45,45 @@ export function localTimeHm(d = new Date()): string {
 /** IANA time zone for the browser (falls back to UTC). */
 export function browserTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+}
+
+export type ParseFoodTiming = Pick<
+  ParseFoodRequest,
+  "localDate" | "localTimeHm" | "clientTimeZone" | "defaultLogDay" | "defaultMealType"
+>;
+
+/** Snapshot the user's local timing context once when sending a parse-food request. */
+export function buildParseFoodTiming(
+  at: Date = new Date(),
+  clientTimeZone: string = browserTimeZone(),
+): ParseFoodTiming {
+  return {
+    localDate: localIsoDate(at),
+    localTimeHm: localTimeHm(at),
+    clientTimeZone,
+    defaultLogDay: behavioralLocalIsoDate(at),
+    defaultMealType: defaultMealTypeForLocalTime(at),
+  };
+}
+
+function isoDayNumber(iso: string): number {
+  const [year, month, day] = iso.split("-").map(Number);
+  return Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
+}
+
+/** Localized section-title label for a resolved log day. */
+export function formatLogDayLabel(day: string, localDate: string, locale: string): string {
+  const dayDelta = isoDayNumber(day) - isoDayNumber(localDate);
+  const label =
+    Math.abs(dayDelta) <= 1
+      ? new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(dayDelta, "day")
+      : new Intl.DateTimeFormat(locale, {
+          day: "numeric",
+          month: "short",
+          ...(day.slice(0, 4) === localDate.slice(0, 4) ? {} : { year: "numeric" }),
+        }).format(parseIsoDateLocal(day));
+
+  return label.length > 0 ? label[0]!.toLocaleUpperCase(locale) + label.slice(1) : label;
 }
 
 /** Parse YYYY-MM-DD as local Date at noon (avoid DST edge cases for display). */

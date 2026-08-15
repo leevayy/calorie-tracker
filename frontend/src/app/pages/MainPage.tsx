@@ -1,32 +1,35 @@
 import { observer } from "mobx-react-lite";
-import type { MealType } from "@contracts/common";
 import type { ParsedFoodSuggestion } from "@contracts/ai-food";
 import type { FormEvent } from "react";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Send, RefreshCw } from "lucide-react";
+import { Send, RefreshCw } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
 import { FoodSuggestion } from "../components/FoodSuggestion";
-import { FoodLogDrawerRoot } from "../components/FoodLogDrawer";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useAppTabChat } from "../context/AppTabChatContext";
 import { useBehavioralToday, useDailyTipAutoFetch } from "./main/mainPageHooks";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
-import { Input } from "../components/ds/Input";
+import { Input, inputVariants } from "../components/ds/Input";
 import { Text } from "../components/ds/Text";
+import { cn } from "../components/ui/utils";
 import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
-import { defaultMealTypeForLocalTime, weekRangeEndingOn } from "@/utils/date";
+import {
+  buildParseFoodTiming,
+  formatLogDayLabel,
+  localIsoDate,
+  weekRangeEndingOn,
+} from "@/utils/date";
 import { sumDayMacros } from "@/utils/macroTotals";
 import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 
-const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 const CHAT_SUGGESTION_LIMIT = 3;
 
 type PendingFoodSuggestion = { id: string; food: ParsedFoodSuggestion };
@@ -47,21 +50,18 @@ const MainPage = observer(function MainPage() {
     return `pending-food-${pendingSuggestionIdRef.current}`;
   };
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [targetMeal, setTargetMeal] = useState<MealType>(() => defaultMealTypeForLocalTime());
-
-  const collapsedInputRef = useRef<HTMLInputElement>(null);
   const expandedInputRef = useRef<HTMLInputElement>(null);
 
-  const focusChatInput = useCallback(() => {
-    if (chatExpanded) expandedInputRef.current?.focus();
-    else collapsedInputRef.current?.focus();
-  }, [chatExpanded]);
+  const setExpandedInputRef = useCallback((input: HTMLInputElement | null) => {
+    expandedInputRef.current = input;
+    // The portaled field must focus during the opening tap, before iOS can pan
+    // for a stale field or a deferred animation frame loses user activation.
+    input?.focus({ preventScroll: true });
+  }, []);
 
-  useEffect(() => {
-    if (!chatExpanded) return;
-    const id = requestAnimationFrame(() => expandedInputRef.current?.focus());
-    return () => cancelAnimationFrame(id);
-  }, [chatExpanded]);
+  const focusChatInput = useCallback(() => {
+    expandedInputRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const preferredLanguage = coercePreferredLanguage(
     profile.read.profile?.preferredLanguage ?? i18n.language,
@@ -101,6 +101,7 @@ const MainPage = observer(function MainPage() {
     await aiParse.parse({
       text,
       preferredLanguage: coercePreferredLanguage(profile.read.profile?.preferredLanguage ?? i18n.language),
+      ...buildParseFoodTiming(),
     });
     if (aiParse.fetchState !== "success") return;
     setChatInput("");
@@ -122,8 +123,8 @@ const MainPage = observer(function MainPage() {
     const entry = pendingSuggestions[idx];
     if (!entry) return;
     const { food } = entry;
-    await foodLog.entryCreate.create(today, {
-      mealType: targetMeal,
+    await foodLog.entryCreate.create(food.day, {
+      mealType: food.mealType,
       name: food.name,
       calories: food.calories,
       protein: food.protein,
@@ -285,15 +286,29 @@ const MainPage = observer(function MainPage() {
       {!chatExpanded ? (
         <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-border bg-background p-3 shadow-[0_-6px_24px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <form onSubmit={(e) => void handleChatSubmit(e)} className="flex gap-2">
-            <Input
-              ref={collapsedInputRef}
-              placeholder={t("main.logFoodPlaceholder")}
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onFocus={() => setChatExpanded(true)}
-              className="flex-1"
+            {/* A text input here would open the keyboard before the drawer field exists. */}
+            <button
+              type="button"
+              aria-label={t("main.logFoodPlaceholder")}
+              aria-haspopup="dialog"
+              aria-controls="food-log-sheet"
+              aria-expanded={false}
+              onClick={() => setChatExpanded(true)}
+              className={cn(
+                inputVariants(),
+                "flex-1 cursor-text items-center text-left font-normal touch-manipulation",
+              )}
               disabled={aiParse.fetchState === "loading"}
-            />
+            >
+              <span
+                className={cn(
+                  "block min-w-0 truncate",
+                  chatInput ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {chatInput || t("main.logFoodPlaceholder")}
+              </span>
+            </button>
             <Button
               type="submit"
               size="icon"
@@ -306,19 +321,25 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <FoodLogDrawerRoot
+      {/* Vaul's own repositioner can double-lift the sheet when iOS reports offsetTop. */}
+      <Drawer.Root
         open={chatExpanded}
         onOpenChange={onFoodLogSheetOpenChange}
         shouldScaleBackground={false}
+        repositionInputs={false}
       >
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-x border-t border-border bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] outline-none">
+          <Drawer.Content
+            id="food-log-sheet"
+            aria-describedby={undefined}
+            className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-x border-t border-border bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] outline-none"
+          >
             <Drawer.Title className="sr-only">{t("main.foodLogSheetTitle")}</Drawer.Title>
             <Drawer.Handle className="mb-2 shrink-0 bg-muted" />
             <form onSubmit={(e) => void handleChatSubmit(e)} className="flex shrink-0 gap-2 pt-2">
               <Input
-                ref={expandedInputRef}
+                ref={setExpandedInputRef}
                 placeholder={t("main.logFoodPlaceholder")}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
@@ -395,40 +416,41 @@ const MainPage = observer(function MainPage() {
                         </Text>
                       </button>
                     </div>
-                    {pendingSuggestions.length > 0 ? (
-                      <Text
-                        as="label"
-                        variant="muted"
-                        className="flex flex-wrap items-center gap-2"
-                      >
-                        <Text as="span">{t("main.addToMeal")}</Text>
-                        <select
-                          className="rounded-md border border-border bg-background px-2 py-1 text-base text-foreground"
-                          value={targetMeal}
-                          onChange={(e) => setTargetMeal(e.target.value as MealType)}
-                        >
-                          {MEAL_TYPES.map((mt) => (
-                            <option key={mt} value={mt}>
-                              {t(`meals.${mt}`)}
-                            </option>
-                          ))}
-                        </select>
-                      </Text>
-                    ) : null}
                     {pendingSuggestions.length === 0 && aiParse.fetchState === "success" ? (
                       <Text variant="muted" className="py-2">
                         {t("states.emptySuggestions")}
                       </Text>
                     ) : null}
-                    {pendingSuggestions.map((entry, idx) => (
-                      <Fragment key={entry.id}>
-                        <FoodSuggestion
-                          food={entry.food}
-                          onAccept={() => void handleAcceptFood(idx)}
-                          onReject={() => handleRejectFood(idx)}
-                        />
-                      </Fragment>
-                    ))}
+                    {pendingSuggestions.map((entry, idx) => {
+                      const previous = pendingSuggestions[idx - 1]?.food;
+                      const startsTargetSection =
+                        !previous ||
+                        previous.day !== entry.food.day ||
+                        previous.mealType !== entry.food.mealType;
+                      const locale = i18n.resolvedLanguage ?? i18n.language;
+
+                      return (
+                        <Fragment key={entry.id}>
+                          {startsTargetSection ? (
+                            <Text
+                              as="h3"
+                              variant="muted"
+                              size="sm"
+                              weight="medium"
+                              className="pt-2 first:pt-0"
+                            >
+                              {formatLogDayLabel(entry.food.day, localIsoDate(), locale)} ·{" "}
+                              {t(`meals.${entry.food.mealType}`)}
+                            </Text>
+                          ) : null}
+                          <FoodSuggestion
+                            food={entry.food}
+                            onAccept={() => void handleAcceptFood(idx)}
+                            onReject={() => handleRejectFood(idx)}
+                          />
+                        </Fragment>
+                      );
+                    })}
                     {foodLog.entryCreate.fetchState === "error" && foodLog.entryCreate.errorKey ? (
                       <Text variant="error" className="pt-2" role="alert">
                         {t(foodLog.entryCreate.errorKey)}
@@ -440,7 +462,7 @@ const MainPage = observer(function MainPage() {
             </div>
           </Drawer.Content>
         </Drawer.Portal>
-      </FoodLogDrawerRoot>
+      </Drawer.Root>
     </div>
   );
 });
