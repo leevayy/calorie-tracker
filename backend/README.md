@@ -27,10 +27,10 @@ cp backend/.env.example backend/.env
 docker compose up --build
 ```
 
-4. API and docs:
-- API: `http://localhost:3000`
-- Health: `GET /health`
-- OpenAPI UI: `http://localhost:3000/docs`
+4. App, API, and docs:
+- Frontend: `http://localhost:3000`
+- Health: `GET /api/v1/health`
+- OpenAPI UI: `http://localhost:3000/api/v1/docs`
 
 ## Scripts
 
@@ -50,7 +50,7 @@ docker compose up --build
 ## Deployment notes (single VPS)
 
 - Uses Docker Compose with:
-  - `api` service
+  - `api` service, which builds and serves the frontend SPA on every non-`/api` path
   - `db` service (PostgreSQL)
 - Secrets are env-only (`backend/.env`), not committed.
 - No Yandex Managed PostgreSQL and no Yandex Lockbox in v1.

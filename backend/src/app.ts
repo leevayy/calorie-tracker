@@ -3,6 +3,10 @@ import jwt from "@fastify/jwt";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyInstance } from "fastify";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import { extname, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import { env } from "./env.ts";
 import { sendUnauthorized } from "./lib/http.ts";
 import {
@@ -17,6 +21,31 @@ import { registerFoodLogRoutes } from "./routes/food-log.ts";
 import { registerHistoryRoutes } from "./routes/history.ts";
 import { registerProfileRoutes } from "./routes/profile.ts";
 import { registerTipsRoutes } from "./routes/tips.ts";
+
+const frontendRoot = fileURLToPath(new URL("../../frontend/dist/", import.meta.url));
+
+const contentTypes: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
+
+async function isFile(pathname: string): Promise<boolean> {
+  try {
+    return (await stat(pathname)).isFile();
+  } catch {
+    return false;
+  }
+}
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -111,6 +140,41 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
     { prefix: "/api/v1" },
   );
+
+  // Serve the built frontend on the same origin. Client-side routes fall back to
+  // index.html, while unknown /api paths remain API 404s.
+  app.setNotFoundHandler(async (request, reply) => {
+    const pathname = request.url.split("?", 1)[0] ?? "/";
+    if (pathname === "/api" || pathname.startsWith("/api/")) {
+      return reply.code(404).send({ message: "Route not found" });
+    }
+
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      return reply.code(404).send({ message: "Route not found" });
+    }
+
+    let requestedPath: string;
+    try {
+      requestedPath = decodeURIComponent(pathname);
+    } catch {
+      return reply.code(400).send({ message: "Invalid URL" });
+    }
+
+    const candidate = resolve(frontendRoot, `.${requestedPath}`);
+    const isInsideFrontend =
+      candidate === frontendRoot || candidate.startsWith(`${frontendRoot}${sep}`);
+    const filePath = isInsideFrontend && (await isFile(candidate))
+      ? candidate
+      : resolve(frontendRoot, "index.html");
+
+    if (!(await isFile(filePath))) {
+      request.log.error({ frontendRoot }, "Frontend build was not found");
+      return reply.code(503).send({ message: "Frontend is unavailable" });
+    }
+
+    reply.type(contentTypes[extname(filePath).toLowerCase()] ?? "application/octet-stream");
+    return reply.send(createReadStream(filePath));
+  });
 
   return app;
 }

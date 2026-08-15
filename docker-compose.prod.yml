@@ -1,4 +1,4 @@
-# Production: TLS + HTTP on 80/443 via Caddy → `api:3000`.
+# Production: TLS + HTTP on 80/443 via Caddy → the app on `api:3000`.
 # Requires repo-root `.env` with API_DOMAIN=your.public.api.hostname
 # (DNS A/AAAA must point at this host before Let's Encrypt will succeed).
 #
