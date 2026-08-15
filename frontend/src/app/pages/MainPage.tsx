@@ -10,6 +10,7 @@ import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
 import { FoodSuggestion } from "../components/FoodSuggestion";
+import { FoodLogDrawerRoot } from "../components/FoodLogDrawer";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useAppTabChat } from "../context/AppTabChatContext";
@@ -305,11 +306,10 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <Drawer.Root
+      <FoodLogDrawerRoot
         open={chatExpanded}
         onOpenChange={onFoodLogSheetOpenChange}
         shouldScaleBackground={false}
-        repositionInputs={false}
       >
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
@@ -440,7 +440,7 @@ const MainPage = observer(function MainPage() {
             </div>
           </Drawer.Content>
         </Drawer.Portal>
-      </Drawer.Root>
+      </FoodLogDrawerRoot>
     </div>
   );
 });
