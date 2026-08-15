@@ -1,10 +1,14 @@
 import { z } from "zod";
 import type {
   AiModelPreference,
+  MealType,
   NutritionGoal,
   PreferredLanguage,
 } from "../contracts/common.ts";
-import { ParsedFoodSuggestionSchema } from "../contracts/ai-food.ts";
+import {
+  ParsedFoodSuggestionSchema,
+  type ParseFoodRequest,
+} from "../contracts/ai-food.ts";
 import { env } from "../env.ts";
 import { sanitizeMealSlug } from "./slugShape.ts";
 import { buildEnglishFallbackTipMessage } from "./tips/fallbackEnglish.ts";
@@ -98,6 +102,8 @@ Always include:
 - "description": brief internal notes (portion assumptions, ambiguity, interpretation). Keep concise.
 - "confidence": number from 0 to 1 (subjective certainty). Include whenever possible for the client UI.
 - "estimated_portion" optional; same language as name/description.
+- "log_day": resolved local calendar day in YYYY-MM-DD format. Timing instructions and defaults are supplied below.
+- "meal_type": exactly one of "breakfast", "lunch", "dinner", or "snack". Timing instructions and defaults are supplied below.
 
 11. MEAL SLUG (per food, API; for habit tracking + meal recommendations)
 - Include "meal_slug" for every food.
@@ -125,7 +131,9 @@ Schema:
         { "name": "fiber", "amount": number, "unit": "g" }
       ],
       "confidence"?: number,
-      "meal_slug": string
+      "meal_slug": string,
+      "log_day": "YYYY-MM-DD",
+      "meal_type": "breakfast" | "lunch" | "dinner" | "snack"
     }
   ],
   "notes"?: string
@@ -147,6 +155,8 @@ const NutritionParserResponseSchema = z.object({
         nutrients: z.array(NutrientSchema),
         confidence: z.number().min(0).max(1).optional(),
         meal_slug: z.string().optional(),
+        log_day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        meal_type: z.enum(["breakfast", "lunch", "dinner", "snack"]).optional(),
       })
       .refine(
         (food) => {
@@ -171,7 +181,7 @@ type ParseFoodCacheEntry = {
   suggestions: ParsedFoodSuggestion[];
 };
 
-const PARSE_FOOD_CACHE_VERSION = "v6";
+const PARSE_FOOD_CACHE_VERSION = "v7";
 const parseFoodCache = new Map<string, ParseFoodCacheEntry>();
 const parseFoodInFlight = new Map<string, Promise<ParsedFoodSuggestion[]>>();
 
@@ -276,8 +286,20 @@ function buildParseFoodCacheKey(
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
   aiModelPreference: AiModelPreference,
+  timing: ParseFoodTimingContext,
 ): string {
-  return `${PARSE_FOOD_CACHE_VERSION}:${resolveModelUriForPreference(aiModelPreference)}:${preferredLanguage}:${nutritionGoal}:${normalizeParseFoodText(text)}`;
+  return [
+    PARSE_FOOD_CACHE_VERSION,
+    resolveModelUriForPreference(aiModelPreference),
+    preferredLanguage,
+    nutritionGoal,
+    timing.localDate,
+    timing.localTimeHm,
+    timing.clientTimeZone,
+    timing.defaultLogDay,
+    timing.defaultMealType,
+    normalizeParseFoodText(text),
+  ].join(":");
 }
 
 function cloneSuggestions(suggestions: ParsedFoodSuggestion[]): ParsedFoodSuggestion[] {
@@ -337,9 +359,17 @@ const NUTRITION_GOAL_PARSER_HINTS: Record<NutritionGoal, string> = {
 export function buildNutritionParserSystem(
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
+  timing?: ParseFoodTimingContext,
 ): string {
   const langName = OUTPUT_LANGUAGE_NAMES[preferredLanguage];
   const goalHint = NUTRITION_GOAL_PARSER_HINTS[nutritionGoal];
+  const timingContext = timing ?? {
+    localDate: "2026-01-01",
+    localTimeHm: "12:00",
+    clientTimeZone: "UTC",
+    defaultLogDay: "2026-01-01",
+    defaultMealType: "lunch" as MealType,
+  };
   return `${NutritionParserPrompt}
 
 12. USER NUTRITION GOAL (ESTIMATION BIAS)
@@ -347,18 +377,35 @@ export function buildNutritionParserSystem(
 
 13. OUTPUT LANGUAGE
 - The "name" field, the "description" working notes, and "estimated_portion" must be in ${langName} (BCP-style tag: ${preferredLanguage}).
-- "meal_slug" stays English regardless of this setting (see section 11).`;
+- "meal_slug" stays English regardless of this setting (see section 11).
+
+14. LOG TIMING (PER FOOD)
+- The user's current local calendar date and wall-clock time are ${timingContext.localDate} ${timingContext.localTimeHm} in IANA zone "${timingContext.clientTimeZone}".
+- Every food MUST include "log_day" and "meal_type".
+- Resolve explicit relative dates (for example today, yesterday, the day before yesterday, and their equivalents in any input language) against the local calendar date ${timingContext.localDate}. "Yesterday" is the previous calendar date even shortly after midnight.
+- If no date is expressed for a food, use the app's default logging day: ${timingContext.defaultLogDay}.
+- Resolve an explicitly named meal to exactly one API value: breakfast, lunch, dinner, or snack. Understand meal words in any input language (for example завтрак/обед/ужин/перекус).
+- If the input gives a clock time or daypart instead of a meal name, map it using the app's buckets: 05:00–10:59 breakfast, 11:00–15:59 lunch, 16:00–21:59 dinner, and snack otherwise. An explicit meal name takes precedence over this clock mapping.
+- If no meal is expressed for a food, use the default meal: ${timingContext.defaultMealType}.
+- A timing phrase shared by a list applies to every food in that list. If separate clauses clearly give foods different dates or meals, assign each food its own values.
+- Do not include date, time, or meal words in the food name or meal_slug unless they are genuinely part of the dish name.`;
 }
+
+type ParseFoodTimingContext = Pick<
+  ParseFoodRequest,
+  "localDate" | "localTimeHm" | "clientTimeZone" | "defaultLogDay" | "defaultMealType"
+>;
 
 async function generateParseFoodSuggestions(
   text: string,
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
   aiModelPreference: AiModelPreference,
+  timing: ParseFoodTimingContext,
 ): Promise<ParsedFoodSuggestion[]> {
   const raw = await aiChat(
     text,
-    buildNutritionParserSystem(preferredLanguage, nutritionGoal),
+    buildNutritionParserSystem(preferredLanguage, nutritionGoal, timing),
     aiModelPreference,
     { temperature: 0.1 },
   );
@@ -385,6 +432,8 @@ async function generateParseFoodSuggestions(
       fats: getNutrientAmount(food.nutrients, "fat"),
       fiber,
       portion: food.estimated_portion ?? "1 serving",
+      day: food.log_day ?? timing.defaultLogDay,
+      mealType: food.meal_type ?? timing.defaultMealType,
     });
   });
 }
@@ -454,10 +503,17 @@ export async function parseFoodTextWithAi(
   preferredLanguage: PreferredLanguage,
   nutritionGoal: NutritionGoal,
   aiModelPreference: AiModelPreference,
+  timing: ParseFoodTimingContext,
   options?: { skipCache?: boolean },
 ): Promise<ParsedFoodSuggestion[]> {
   const skipCache = options?.skipCache === true;
-  const cacheKey = buildParseFoodCacheKey(text, preferredLanguage, nutritionGoal, aiModelPreference);
+  const cacheKey = buildParseFoodCacheKey(
+    text,
+    preferredLanguage,
+    nutritionGoal,
+    aiModelPreference,
+    timing,
+  );
 
   if (!skipCache) {
     const cached = getCachedParseFoodSuggestions(cacheKey);
@@ -476,6 +532,7 @@ export async function parseFoodTextWithAi(
     preferredLanguage,
     nutritionGoal,
     aiModelPreference,
+    timing,
   );
 
   if (!skipCache) {

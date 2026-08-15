@@ -155,8 +155,15 @@ async function main() {
 
   console.log("parse-food-benchmark: loading AI module (validates env)…");
   const { parseFoodTextWithAi, buildNutritionParserSystem } = await import("../src/services/ai.ts");
-  const systemPrompt = buildNutritionParserSystem(language, nutritionGoal);
   const runDate = localDateYmd();
+  const timing = {
+    localDate: runDate,
+    localTimeHm: "12:00",
+    clientTimeZone: "UTC",
+    defaultLogDay: runDate,
+    defaultMealType: "lunch" as const,
+  };
+  const systemPrompt = buildNutritionParserSystem(language, nutritionGoal, timing);
   const outDir = debug
     ? resolve(repoRoot, "analytics", "runs", runDate, "debug")
     : resolve(repoRoot, "analytics", "runs", runDate);
@@ -200,6 +207,7 @@ async function main() {
           language,
           nutritionGoal,
           model,
+          timing,
           { skipCache: true },
         );
         const durationMs = roundMs(performance.now() - t0);

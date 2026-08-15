@@ -134,9 +134,9 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 **Auth:** required.
 
-**Body:** `ParseFoodRequest` — `text` (user message), `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`) for food names and portion strings.
+**Body:** `ParseFoodRequest` — `text` (user message), `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`) for food names and portion strings, plus the user's local date/time zone and the app's default logging day/meal for resolving relative timing phrases.
 
-**Response:** `200` `ParseFoodResponse` — `suggestions`: array of `ParsedFoodSuggestion` (`name`, `calories`, `protein`, `carbs`, `fats`, `portion`).
+**Response:** `200` `ParseFoodResponse` — `suggestions`: array of `ParsedFoodSuggestion` (`name`, `calories`, `protein`, `carbs`, `fats`, `portion`, `day`, `mealType`). Each suggestion's resolved `day` and `mealType` determine where an accepted food is logged.
 
 **Errors:** `400`, `401`, `502` upstream AI/nutrition failure.
 

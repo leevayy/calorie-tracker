@@ -58,6 +58,13 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
           parsed.data.preferredLanguage,
           coerceNutritionGoal(user.nutritionGoal),
           coerceAiModelPreference(user.aiModelPreference),
+          {
+            localDate: parsed.data.localDate,
+            localTimeHm: parsed.data.localTimeHm,
+            clientTimeZone: parsed.data.clientTimeZone,
+            defaultLogDay: parsed.data.defaultLogDay,
+            defaultMealType: parsed.data.defaultMealType,
+          },
         );
         const response = ParseFoodResponseSchema.parse({ suggestions });
         return reply.status(200).send(response);
