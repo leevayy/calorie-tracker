@@ -22,7 +22,7 @@ import { registerHistoryRoutes } from "./routes/history.ts";
 import { registerProfileRoutes } from "./routes/profile.ts";
 import { registerTipsRoutes } from "./routes/tips.ts";
 
-const frontendRoot = fileURLToPath(new URL("../../frontend/dist/", import.meta.url));
+const frontendRoot = resolve(fileURLToPath(new URL("../../frontend/dist/", import.meta.url)));
 
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
