@@ -4,17 +4,15 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Moon, Sun, LogOut } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
-import { TipVibeSection } from "../components/TipVibeSection";
 import { Card } from "../components/ds/Card";
 import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
 import { Text } from "../components/ds/Text";
 import { useTheme } from "../components/ThemeProvider";
 import { useRequireAuth } from "../hooks/useRequireAuth";
-import type { AiModelPreference, NutritionGoal, PreferredLanguage } from "@contracts/common";
+import type { NutritionGoal, PreferredLanguage } from "@contracts/common";
 import type { UpdateProfileRequest } from "@contracts/profile";
 import { useRootStore } from "@/stores/StoreContext";
-import { AI_MODEL_PREFERENCE_OPTIONS, coerceAiModelPreference } from "@/utils/aiModelPreference";
 import { NUTRITION_GOAL_OPTIONS, coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { PREFERRED_LANGUAGE_OPTIONS } from "@/utils/preferredLanguage";
 
@@ -32,7 +30,6 @@ const SettingsPage = observer(function SettingsPage() {
   const [height, setHeight] = useState<string>("");
   const [preferredLanguage, setPreferredLanguage] = useState<PreferredLanguage>("en");
   const [nutritionGoal, setNutritionGoal] = useState<NutritionGoal>("maintain");
-  const [aiModelPreference, setAiModelPreference] = useState<AiModelPreference>("qwen3");
 
   useEffect(() => {
     const p = profile.read.profile;
@@ -42,7 +39,6 @@ const SettingsPage = observer(function SettingsPage() {
     setHeight(p.heightCm != null ? String(p.heightCm) : "");
     setPreferredLanguage(p.preferredLanguage);
     setNutritionGoal(coerceNutritionGoal(p.nutritionGoal));
-    setAiModelPreference(coerceAiModelPreference(p.aiModelPreference));
   }, [profile.read.profile]);
 
   const handleSaveProfile = () => {
@@ -52,7 +48,6 @@ const SettingsPage = observer(function SettingsPage() {
       dailyCalorieGoal: dailyGoal,
       preferredLanguage,
       nutritionGoal,
-      aiModelPreference,
     };
     if (w != null && !Number.isNaN(w) && w > 0) body.weightKg = w;
     if (h != null && !Number.isNaN(h) && h > 0) body.heightCm = h;
@@ -114,32 +109,6 @@ const SettingsPage = observer(function SettingsPage() {
             {t("settings.goalHint")}
           </Text>
         </Card>
-
-        <Card>
-          <Text as="h3" weight="medium" className="mb-4">
-            {t("settings.aiModel")}
-          </Text>
-          <Text as="label" htmlFor="settings-ai-model">
-            {t("settings.aiModelLabel")}
-          </Text>
-          <select
-            id="settings-ai-model"
-            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-base"
-            value={aiModelPreference}
-            onChange={(e) => setAiModelPreference(e.target.value as AiModelPreference)}
-          >
-            {AI_MODEL_PREFERENCE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </option>
-            ))}
-          </select>
-          <Text variant="muted" className="mt-2">
-            {t("settings.aiModelHint")}
-          </Text>
-        </Card>
-
-        <TipVibeSection />
 
         <Card>
           <Text as="h3" weight="medium" className="mb-4">

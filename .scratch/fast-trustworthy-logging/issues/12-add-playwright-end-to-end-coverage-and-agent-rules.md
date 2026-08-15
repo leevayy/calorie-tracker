@@ -6,14 +6,24 @@
 
 **Status:** ready-for-agent
 
-- [ ] Playwright starts or connects to the production-shaped frontend and real backend, uses a dedicated test database, and drives supported desktop and mobile browser projects without mocking application HTTP APIs.
-- [ ] Test setup creates or resets an isolated test user through a documented seed/setup mechanism; tests do not depend on a developer's personal account, production data, test ordering, or leftovers from an earlier run.
-- [ ] A documented user-scenario inventory maps every maintained feature and the acceptance criteria from issues 01–10 and 13 to one or more Playwright tests, including authentication, profile/settings behavior that remains supported, logging, AI-first and structured fallback editing, coherent nutrition scaling, moving, deleting and undoing, automatic multi-food logging and rollback, consecutive and failed submissions, historical-food suggestions, date navigation, history corrections, meal duplication, totals, and authorization boundaries.
-- [ ] The core suite covers success, validation, empty, loading, retry, and recoverable failure states. Deterministic backend test controls may induce failures, but the browser still talks to the running backend and those controls are unavailable outside the test environment.
-- [ ] At least one separately tagged live-AI smoke journey uses the configured real AI provider end to end. The deterministic regression suite does not become flaky or require paid external AI calls on every local run.
-- [ ] Assertions verify user-visible behavior and persisted results by reloading or revisiting the UI, rather than relying only on DOM state immediately after an action.
-- [ ] Commands exist for installing browsers, preparing the test environment, running the complete suite, running the live-AI smoke suite, and collecting traces, screenshots, videos, and backend logs on failure.
-- [ ] Secrets and test credentials come from ignored environment configuration; logs and artifacts redact tokens and passwords and are excluded from source control where appropriate.
-- [ ] Repository AI/agent rules instruct agents that changes to user-visible behavior must add or update the corresponding scenario inventory and Playwright coverage, run the relevant end-to-end tests when the environment permits, and explicitly report any suite or live-AI checks that were not run.
-- [ ] CI runs the deterministic Playwright suite from a clean database and preserves useful failure artifacts; the live-AI smoke suite has an explicit opt-in or scheduled execution policy.
-- [ ] Setup and troubleshooting documentation is sufficient for a new contributor or coding agent to reproduce the full stack and test run locally.
+- [x] Playwright starts or connects to the production-shaped frontend and real backend, uses a dedicated test database, and drives supported desktop and mobile browser projects without mocking application HTTP APIs.
+- [x] Test setup creates or resets an isolated test user through a documented seed/setup mechanism; tests do not depend on a developer's personal account, production data, test ordering, or leftovers from an earlier run.
+- [x] A documented user-scenario inventory maps every maintained feature and the acceptance criteria from issues 01–10 and 13 to one or more Playwright tests, including authentication, profile/settings behavior that remains supported, logging, AI-first and structured fallback editing, coherent nutrition scaling, moving, deleting and undoing, automatic multi-food logging and rollback, consecutive and failed submissions, historical-food suggestions, date navigation, history corrections, meal duplication, totals, and authorization boundaries.
+- [x] The core suite covers success, validation, empty, loading, retry, and recoverable failure states. Deterministic backend test controls may induce failures, but the browser still talks to the running backend and those controls are unavailable outside the test environment.
+- [x] At least one separately tagged live-AI smoke journey uses the configured real AI provider end to end. The deterministic regression suite does not become flaky or require paid external AI calls on every local run.
+- [x] Assertions verify user-visible behavior and persisted results by reloading or revisiting the UI, rather than relying only on DOM state immediately after an action.
+- [x] Commands exist for installing browsers, preparing the test environment, running the complete suite, running the live-AI smoke suite, and collecting traces, screenshots, videos, and backend logs on failure.
+- [x] Secrets and test credentials come from ignored environment configuration; logs and artifacts redact tokens and passwords and are excluded from source control where appropriate.
+- [x] Repository AI/agent rules instruct agents that changes to user-visible behavior must add or update the corresponding scenario inventory and Playwright coverage, run the relevant end-to-end tests when the environment permits, and explicitly report any suite or live-AI checks that were not run.
+- [x] CI runs the deterministic Playwright suite from a clean database and preserves useful failure artifacts; the live-AI smoke suite has an explicit opt-in or scheduled execution policy.
+- [x] Setup and troubleshooting documentation is sufficient for a new contributor or coding agent to reproduce the full stack and test run locally.
+
+## Comments
+
+- 2026-08-15: Added the production-shaped runner, dedicated/resettable PostgreSQL
+  controls, 55 mapped journeys across desktop Chromium and mobile WebKit, CI,
+  documentation, agent rules, redacted artifact boundary, non-secret E2E session
+  handles, and two opt-in live-provider smokes. The deterministic final run passed
+  110/110 with 110 videos and no failure traces/screenshots. Live AI was not run
+  locally because no provider key or folder id was configured; its fail-fast gate
+  and test discovery were verified.

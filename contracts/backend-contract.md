@@ -11,7 +11,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 **Environment (frontend)**
 
-- `VITE_API_BASE_URL` — optional origin (no trailing slash required). If unset, the app uses local tip logic only.
+- `VITE_API_BASE_URL` — optional API origin (no trailing slash required). If unset, the app uses same-origin API requests.
 
 ---
 
@@ -45,11 +45,11 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 ### `GET /me`
 
-**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `nutritionGoal`, `aiModelPreference` (`alicegpt` \| `aliceflash` \| `deepseek` \| `qwen36` \| `qwen3` \| `gptoss120` \| `gptoss`), `updatedAt`.
+**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `nutritionGoal`, `updatedAt`.
 
 ### `PATCH /me`
 
-**Body:** `UpdateProfileRequest` — at least one of `dailyCalorieGoal`, `weightKg`, `heightCm`, `preferredLanguage`, `nutritionGoal`, `aiModelPreference`.
+**Body:** `UpdateProfileRequest` — at least one of `dailyCalorieGoal`, `weightKg`, `heightCm`, `preferredLanguage`, `nutritionGoal`.
 
 **Response:** `200` `UserProfileResponse`.
 
@@ -83,6 +83,18 @@ Searches the authenticated user's active food-entry history by name. Results kee
 
 **Atomicity:** Slugs are resolved before the database transaction begins. All entries are inserted in one transaction; if any insert fails, none are persisted.
 
+### `POST /meals/duplicate`
+
+Copies every active entry from one owned meal to an explicit destination day and meal.
+
+**Body:** `DuplicateMealBody` — `sourceDay`, `sourceMealType`, `destinationDay`, and `destinationMealType`.
+
+**Response:** `201` `DuplicateMealResponse` — `{ "entries": FoodEntryResponse[] }`, preserving source-entry order with new ids and the requested destination day and meal.
+
+**Errors:** `400` invalid body; `404` no active source meal exists for the authenticated user. A meal belonging to another user is indistinguishable from a missing meal.
+
+**Atomicity:** All source entries are copied in one transaction. Either every entry is created or none is persisted.
+
 ### `DELETE /entries/batch`
 
 **Body:** `DeleteFoodEntriesBody` — `{ "entryIds": string[] }`, identifying every entry created by one logging submission.
@@ -115,7 +127,7 @@ Restores a soft-deleted entry owned by the authenticated user.
 
 **Errors:** `400` invalid id; `404` missing, active, or owned by another user.
 
-**Read rule:** Soft-deleted entries are excluded from day logs, frequent foods, history, and all daily-tip user/community aggregates and recent-log context.
+**Read rule:** Soft-deleted entries are excluded from day logs, frequent foods, and history.
 
 ---
 
@@ -126,49 +138,6 @@ Restores a soft-deleted entry owned by the authenticated user.
 **Response:** `200` `HistoryRangeResponse` — `from`, `to`, `days` (`DailyHistoryPoint`: `date`, `calories`, `goal`), optional `weeklyAverageCalories`.
 
 **Rules:** `from` ≤ `to`. Aggregate `calories` per user per day from food entries; `goal` is the goal effective that day (or current profile if you do not version goals).
-
----
-
-## Daily tip (personal + community)
-
-### `POST /tips/daily`
-
-**Auth:** required.
-
-**Body:** `DailyTipRequest`
-
-| Field | Description |
-|--------|-------------|
-| `date` | Calendar day the tip applies to (usually “today” in the user’s timezone). |
-| `caloriesConsumedToday` | Sum of logged calories for `date` (client may send computed total; server should reconcile with DB). |
-| `calorieGoal` | User’s daily calorie target for that context. |
-| `macrosToday` | Aggregated `proteinG`, `carbsG`, `fatsG` for `date`. |
-| `mealsSummary` | Counts of items per meal for `date` (breakfast/lunch/dinner, optional snack). |
-| `clientTimeZone` | IANA zone id from the client (e.g. `Europe/Warsaw`) so the model can interpret “now” vs local midnight for `date`. |
-| `localTimeHm` | Client’s local wall time on that day, `HH:mm` (24h), same instant as the request. |
-| `preferredLanguage` | `en` \| `ru` \| `pl` \| `tt` \| `kk` — natural-language output for the tip. |
-
-**Server responsibilities**
-
-1. Load the user’s **profile** and **history** (recent days) from storage.
-2. Load **anonymized aggregates** across users for a defined cohort (e.g. similar `dailyCalorieGoal` band, same locale/time bucket). Do not expose per-user data.
-3. Produce a short natural-language `message` that references:
-   - the user’s progress vs `calorieGoal` for `date`,
-   - macro balance if useful,
-   - optional comparison to cohort medians/averages (e.g. intake “by now” in the user’s timezone).
-
-**Response:** `200` `DailyTipResponse`
-
-| Field | Description |
-|--------|-------------|
-| `message` | Single tip string for the UI. |
-| `generatedAt` | When the tip was computed. |
-| `sourcesUsed` | Optional tags: `user_today`, `user_profile`, `user_history`, `community_aggregate`. |
-| `communitySnapshot` | Optional: `sampleSize`, `avgCaloriesAtSameUtcOffset`, `avgProteinGAtSameUtcOffset`, `cohortLabel`. |
-
-**Errors:** `400` invalid body; `401` missing/invalid token.
-
-**Privacy:** Community fields must be aggregated with a minimum k-anonymity threshold (e.g. suppress or widen cohort if `sampleSize` is too small).
 
 ---
 
@@ -186,6 +155,22 @@ Restores a soft-deleted entry owned by the authenticated user.
 
 ---
 
+## AI food-entry correction
+
+### `POST /ai/entries/:entryId/correction`
+
+**Auth:** required. The server loads the active entry by both authenticated user id and `entryId`; client-supplied entry context is ignored.
+
+**Body:** `CorrectFoodEntryRequest` — `instruction` (trimmed, 1–2000 characters) and `preferredLanguage`. Model selection is server configuration and is not part of the request.
+
+**Response:** `200` `CorrectFoodEntryResponse` — `{ "draft": UpdateFoodEntryBody }`. The draft is complete and schema-validated, but this endpoint never persists it. The existing ownership-scoped `PATCH /entries/:entryId` remains the only Save operation.
+
+**Proportional changes:** The AI classifies a scale factor; application code multiplies calories, protein, carbohydrates, fats, and fiber together. Portion changes only when the classified operation explicitly includes a new portion.
+
+**Errors:** `400` invalid request/id; `401` unauthenticated; `404` missing, deleted, or another user's entry; `422` ambiguous/unsupported/invalid instruction; `502` provider failure or schema-invalid AI output.
+
+---
+
 ## Schema source of truth
 
 Implementations should stay aligned with:
@@ -195,7 +180,6 @@ Implementations should stay aligned with:
 - `src/contracts/profile.ts`
 - `src/contracts/food-log.ts` (`CreateFoodEntryBody` for path-style create; `CreateFoodEntryRequest` when `day` is in the body; batch create and full entry update schemas)
 - `src/contracts/history.ts`
-- `src/contracts/daily-tip.ts`
 - `src/contracts/ai-food.ts`
 
 Use `*.parse()` / `safeParse()` on the server for input validation and optionally for serializing responses.

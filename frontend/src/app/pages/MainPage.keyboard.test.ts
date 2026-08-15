@@ -60,12 +60,6 @@ const { rootStore } = vi.hoisted(() => ({
         restore: vi.fn(),
       },
     },
-    dailyTip: {
-      data: null,
-      fetchState: "idle",
-      errorKey: null,
-      fetchTip: vi.fn(),
-    },
     aiParse: {
       data: null,
       fetchState: "idle",
@@ -86,7 +80,6 @@ vi.mock("@/stores/StoreContext", () => ({ useRootStore: () => rootStore }));
 vi.mock("../hooks/useRequireAuth", () => ({ useRequireAuth: () => undefined }));
 vi.mock("./main/mainPageHooks", () => ({
   useBehavioralToday: () => "2026-08-15",
-  useDailyTipAutoFetch: () => undefined,
 }));
 
 class MockVisualViewport extends EventTarget {

@@ -6,8 +6,15 @@
 
 **Status:** ready-for-agent
 
-- [ ] A meal in historical day detail provides a duplicate action with a clear destination day and meal.
-- [ ] Every food in the meal is copied atomically with its stored portion and nutrition values.
-- [ ] The original historical meal remains unchanged.
-- [ ] The copied entries can immediately use the established editing and undo interactions.
-- [ ] Automated tests cover successful duplication and rollback when the copy cannot complete.
+- [x] A meal in historical day detail provides a duplicate action with a clear destination day and meal.
+- [x] Every food in the meal is copied atomically with its stored portion and nutrition values.
+- [x] The original historical meal remains unchanged.
+- [x] The copied entries can immediately use the established editing and undo interactions.
+- [x] Automated tests cover successful duplication and rollback when the copy cannot complete.
+
+## Comments
+
+- 2026-08-15: Added the ownership-scoped `POST /meals/duplicate` transaction and
+  explicit history UI destination flow. The source stays unchanged, copied rows
+  use the existing edit/delete/Undo path, and success plus induced rollback pass
+  in both Playwright projects as part of the 110/110 final run.

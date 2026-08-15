@@ -11,7 +11,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronLeft, ChevronRight, Pencil, RefreshCw, RotateCcw, Send } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, Send } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
@@ -19,14 +19,13 @@ import { FoodEntryEditor } from "../components/FoodEntryEditor";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useAppTabChat } from "../context/AppTabChatContext";
-import { useBehavioralToday, useDailyTipAutoFetch } from "./main/mainPageHooks";
+import { useBehavioralToday } from "./main/mainPageHooks";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import { Input, inputVariants } from "../components/ds/Input";
 import { Text } from "../components/ds/Text";
 import { cn } from "../components/ui/utils";
 import { useRootStore } from "@/stores/StoreContext";
-import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
 import {
   buildParseFoodTiming,
   addDaysLocal,
@@ -36,7 +35,6 @@ import {
   weekRangeEndingOn,
 } from "@/utils/date";
 import { sumDayMacros } from "@/utils/macroTotals";
-import { coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 
 const CHAT_SUGGESTION_LIMIT = 3;
@@ -59,7 +57,7 @@ type LoggingReceipt = {
 const MainPage = observer(function MainPage() {
   useRequireAuth();
   const { t, i18n } = useTranslation();
-  const { profile, foodLog, dailyTip, aiParse } = useRootStore();
+  const { profile, foodLog, aiParse } = useRootStore();
 
   const today = useBehavioralToday();
   const [selectedDay, setSelectedDay] = useState(today);
@@ -97,37 +95,10 @@ const MainPage = observer(function MainPage() {
     expandedInputRef.current?.focus({ preventScroll: true });
   }, []);
 
-  const preferredLanguage = coercePreferredLanguage(
-    profile.read.profile?.preferredLanguage ?? i18n.language,
-  );
-  const nutritionGoal = coerceNutritionGoal(profile.read.profile?.nutritionGoal);
-  const tipVibeKey = (profile.read.profile?.tipVibePrompt ?? "").trim().length > 0
-    ? `${profile.read.profile?.tipVibeEmoji ?? ""}|${(profile.read.profile?.tipVibePrompt ?? "").length}`
-    : "off";
-
   useEffect(() => {
     void foodLog.dayRead.loadDay(selectedDay);
     setSelectedEntry(null);
   }, [foodLog.dayRead, selectedDay]);
-
-  useDailyTipAutoFetch({
-    dayRead: foodLog.dayRead,
-    profileRead: profile.read,
-    dailyTip,
-    today: selectedDay,
-    preferredLanguage,
-    nutritionGoal,
-    tipVibeKey,
-  });
-
-  const requestDailyTip = useCallback(() => {
-    const data = foodLog.dayRead.data;
-    if (!data) return;
-    void dailyTip.fetchTip(
-      buildDailyTipRequest(data, selectedDay, { preferredLanguage, at: new Date() }),
-      { force: true },
-    );
-  }, [foodLog.dayRead.data, dailyTip, selectedDay, preferredLanguage]);
 
   const updateSubmission = (
     id: string,
@@ -490,37 +461,6 @@ const MainPage = observer(function MainPage() {
                     </div>
                   </Card>
                 </div>
-                <Card className="flex flex-col px-0 py-2">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <Text variant="muted">{t("main.tip")}</Text>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 h-8 w-8 -mt-0.5"
-                      onClick={() => requestDailyTip()}
-                      disabled={dailyTip.fetchState === "loading" || !dayData}
-                      aria-label={t("main.regenerateTip")}
-                      title={t("main.regenerateTip")}
-                    >
-                      <RefreshCw
-                        className={`h-4 w-4 ${dailyTip.fetchState === "loading" ? "animate-spin" : ""}`}
-                      />
-                    </Button>
-                  </div>
-                  <AsyncSection
-                    fetchState={dailyTip.fetchState}
-                    errorKey={dailyTip.errorKey}
-                    onRetry={requestDailyTip}
-                    loadingClassName="py-4"
-                  >
-                    {dailyTip.data?.message ? (
-                      <Text className="leading-relaxed">{dailyTip.data.message}</Text>
-                    ) : (
-                      <Text variant="muted">{t("states.emptyTip")}</Text>
-                    )}
-                  </AsyncSection>
-                </Card>
               </div>
 
               <div className="space-y-3">
@@ -563,7 +503,9 @@ const MainPage = observer(function MainPage() {
       </div>
 
       {!chatExpanded ? (
-        <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-border bg-background p-3 shadow-[0_-6px_24px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        // Keep tab chrome inside Home: sibling carousel tabs stay mounted and a
+        // viewport-fixed composer would otherwise intercept their controls.
+        <div className="absolute bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-border bg-background p-3 shadow-[0_-6px_24px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <form onSubmit={(e) => void handleChatSubmit(e)} className="flex gap-2">
             {/* A text input here would open the keyboard before the drawer field exists. */}
             <button
@@ -829,8 +771,9 @@ const MainPage = observer(function MainPage() {
       />
 
       {undoEntry ? (
+        // This page remains mounted offscreen while another carousel tab is active.
         <div
-          className="fixed bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
+          className="absolute bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
           role="status"
         >
           <Text className="min-w-0 flex-1">

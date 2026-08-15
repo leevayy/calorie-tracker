@@ -1,21 +1,23 @@
 import { observer } from "mobx-react-lite";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { Badge } from "../components/ds/Badge";
 import { Card } from "../components/ds/Card";
 import { Text } from "../components/ds/Text";
 import { useRequireAuth } from "../hooks/useRequireAuth";
+import { HistoryDayDetail } from "./history/HistoryDayDetail";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useRootStore } from "@/stores/StoreContext";
-import { localIsoDate, parseIsoDateLocal } from "@/utils/date";
+import { formatCalendarDate, localIsoDate, parseIsoDateLocal } from "@/utils/date";
 import { formatMacroGrams } from "@/utils/macroTotals";
 
 const HistoryPage = observer(function HistoryPage() {
   useRequireAuth();
   const { t, i18n } = useTranslation();
   const { history } = useRootStore();
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   const { from, to, today } = useMemo(() => {
     const end = new Date();
@@ -63,7 +65,7 @@ const HistoryPage = observer(function HistoryPage() {
   const isEmptySuccess = history.fetchState === "success" && chartData.length === 0;
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
+    <div className="relative mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
         <AsyncSection
           fetchState={history.fetchState}
@@ -146,8 +148,15 @@ const HistoryPage = observer(function HistoryPage() {
               {t("history.dailyBreakdown")}
             </Text>
             {[...chartData].reverse().map((day) => (
-              <Card key={day.iso} className="py-3">
-                <div className="flex items-center justify-between gap-3">
+              <Card key={day.iso}>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 rounded-[var(--radius)] py-3 text-left transition-colors hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={t("history.openDay", {
+                    date: formatCalendarDate(day.iso, i18n.language),
+                  })}
+                  onClick={() => setSelectedDay(day.iso)}
+                >
                   <div className="min-w-0">
                     <Text>{day.date}</Text>
                     <Text variant="muted" className="tabular-nums">
@@ -168,28 +177,39 @@ const HistoryPage = observer(function HistoryPage() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <Text
-                      className={`tabular-nums ${day.calories > day.goal ? "text-destructive" : "text-success"}`}
-                    >
-                      {day.calories > day.goal ? "+" : ""}
-                      {Math.round(day.calories - day.goal)} {t("history.calShort")}
-                    </Text>
-                    <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden mt-2">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all"
-                        style={{
-                          width: `${Math.min((day.calories / (day.goal || 1)) * 100, 100)}%`,
-                        }}
-                      />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="text-right">
+                      <Text
+                        className={`tabular-nums ${day.calories > day.goal ? "text-destructive" : "text-success"}`}
+                      >
+                        {day.calories > day.goal ? "+" : ""}
+                        {Math.round(day.calories - day.goal)} {t("history.calShort")}
+                      </Text>
+                      <div className="mt-2 h-2 w-24 overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{
+                            width: `${Math.min((day.calories / (day.goal || 1)) * 100, 100)}%`,
+                          }}
+                        />
+                      </div>
                     </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
                   </div>
-                </div>
+                </button>
               </Card>
             ))}
           </div>
         </AsyncSection>
       </div>
+      {selectedDay ? (
+        <HistoryDayDetail
+          key={selectedDay}
+          day={selectedDay}
+          onClose={() => setSelectedDay(null)}
+          onOpenDay={setSelectedDay}
+        />
+      ) : null}
     </div>
   );
 });

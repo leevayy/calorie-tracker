@@ -36,6 +36,20 @@ export const CreateFoodEntriesResponseSchema = z.object({
 });
 export type CreateFoodEntriesResponse = z.infer<typeof CreateFoodEntriesResponseSchema>;
 
+/** `POST /meals/duplicate` — copies one owned meal to an explicit day/meal atomically. */
+export const DuplicateMealBodySchema = z.object({
+  sourceDay: IsoDateSchema,
+  sourceMealType: MealTypeSchema,
+  destinationDay: IsoDateSchema,
+  destinationMealType: MealTypeSchema,
+});
+export type DuplicateMealBody = z.infer<typeof DuplicateMealBodySchema>;
+
+export const DuplicateMealResponseSchema = z.object({
+  entries: z.array(FoodEntryResponseSchema).min(1),
+});
+export type DuplicateMealResponse = z.infer<typeof DuplicateMealResponseSchema>;
+
 /** `DELETE /entries/batch` — reverses one atomically-created logging submission. */
 export const DeleteFoodEntriesBodySchema = z.object({
   entryIds: z.array(z.string().uuid()).min(1),

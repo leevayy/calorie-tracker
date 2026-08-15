@@ -4,6 +4,7 @@ import { CreateFoodEntryStore } from "./createFoodEntryStore";
 import { CreateFoodEntriesStore } from "./createFoodEntriesStore";
 import { DayLogReadStore } from "./dayLogReadStore";
 import { DeleteFoodEntryStore } from "./deleteFoodEntryStore";
+import { DuplicateMealStore } from "./duplicateMealStore";
 import { FrequentFoodsWeekReadStore } from "./frequentFoodsWeekReadStore";
 import { HistoricalFoodSuggestionsStore } from "./historicalFoodSuggestionsStore";
 import {
@@ -21,6 +22,7 @@ export const FoodLogStore = types
     entriesCreate: CreateFoodEntriesStore,
     entryUpdate: UpdateFoodEntryStore,
     entryDelete: DeleteFoodEntryStore,
+    mealDuplicate: types.optional(DuplicateMealStore, {}),
     frequentWeekRead: FrequentFoodsWeekReadStore,
     historicalSuggestions: types.optional(HistoricalFoodSuggestionsStore, {}),
   })

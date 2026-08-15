@@ -15,6 +15,26 @@ frontend/node_modules/
 frontend/dist/
 dist/
 
+# Playwright browsers, test state, and redacted artifacts
+/.cache/playwright-browsers/
+/.cache/e2e-postgres/
+/.playwright-browsers/
+/ms-playwright/
+/e2e/.auth/
+/e2e/.cache/
+/artifacts/playwright/
+/playwright-report/
+/test-results/
+/blob-report/
+
+# E2E-only environment and credentials (commit examples, never values)
+**/.env.e2e
+**/.env.e2e.*
+!**/.env.e2e.example
+/e2e/.env
+/e2e/.env.*
+!/e2e/.env.example
+
 # Logs and OS noise
 *.log
 .DS_Store

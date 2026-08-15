@@ -7,21 +7,14 @@
  * Exits immediately if maintenance job `meal_slug_backfill_v1` already completed (table `maintenance_jobs`).
  */
 import { pool } from "../src/db/client.ts";
+import { env } from "../src/env.ts";
 import { resolveMealSlugFromLoggedName } from "../src/services/mealSlug.ts";
-import type { AiModelPreference } from "../src/contracts/common.ts";
-import { AiModelPreferenceSchema } from "../src/contracts/common.ts";
 
 const JOB_NAME = "meal_slug_backfill_v1";
-
-function coerceAiModelPreference(raw: string): AiModelPreference {
-  const parsed = AiModelPreferenceSchema.safeParse(raw);
-  return parsed.success ? parsed.data : "qwen3";
-}
 
 type Row = {
   id: string;
   name: string;
-  ai_model_preference: string;
 };
 
 async function main(): Promise<void> {
@@ -35,9 +28,8 @@ async function main(): Promise<void> {
   }
 
   const { rows } = await pool.query<Row>(
-    `SELECT fe.id, fe.name, u.ai_model_preference
+    `SELECT fe.id, fe.name
      FROM food_entries fe
-     INNER JOIN users u ON u.id = fe.user_id
      WHERE fe.meal_slug IS NULL
      ORDER BY fe.created_at ASC`,
   );
@@ -49,7 +41,7 @@ async function main(): Promise<void> {
   for (const row of rows) {
     n += 1;
     const slug = await resolveMealSlugFromLoggedName(row.name, {
-      aiModelPreference: coerceAiModelPreference(row.ai_model_preference),
+      aiModelPreference: env.AI_MODEL_PREFERENCE,
     });
     console.log(`[${n}/${total}] ${row.id} "${row.name}" -> ${slug}`);
     if (!dryRun) {

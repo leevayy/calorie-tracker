@@ -8,6 +8,8 @@ import {
   DayLogResponseSchema,
   DeleteFoodEntriesBodySchema,
   DeleteFoodEntriesResponseSchema,
+  DuplicateMealBodySchema,
+  DuplicateMealResponseSchema,
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
@@ -18,10 +20,10 @@ import {
   type FoodEntryResponse,
 } from "../contracts/food-log.ts";
 import {
-  AiModelPreferenceSchema,
   IsoDateSchema,
   type AiModelPreference,
 } from "../contracts/common.ts";
+import { env } from "../env.ts";
 import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
 import {
@@ -40,11 +42,6 @@ export type {
   FoodLogRepository,
   FoodLogUserRecord,
 } from "../services/foodLogRepository.ts";
-
-function coerceAiModelPreference(raw: string): AiModelPreference {
-  const parsed = AiModelPreferenceSchema.safeParse(raw);
-  return parsed.success ? parsed.data : "qwen3";
-}
 
 const DayParamSchema = z.object({
   day: IsoDateSchema,
@@ -97,14 +94,13 @@ const defaultDependencies: FoodLogRouteDependencies = {
 
 async function resolveSlug(
   entry: Pick<CreateFoodEntryRequest, "name" | "mealSlug">,
-  user: FoodLogUserRecord,
   resolver: ResolveMealSlug,
 ): Promise<string> {
   const clientSlug = entry.mealSlug ? sanitizeMealSlug(entry.mealSlug) : null;
   return (
     clientSlug ??
     resolver(entry.name, {
-      aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
+      aiModelPreference: env.AI_MODEL_PREFERENCE,
     })
   );
 }
@@ -309,7 +305,7 @@ export async function registerFoodLogRoutes(
       if (!user) return sendUnauthorized(reply);
 
       const input: CreateFoodEntryRequest = { ...bodyParsed.data, day: dayParsed.data.day };
-      const mealSlug = await resolveSlug(input, user, dependencies.resolveMealSlug);
+      const mealSlug = await resolveSlug(input, dependencies.resolveMealSlug);
       const record = createRecord(input, userId, mealSlug, dependencies);
       const [created] = await repository.createEntriesAtomic([record]);
       if (!created) throw new Error("Food entry insert returned no entry");
@@ -345,7 +341,7 @@ export async function registerFoodLogRoutes(
       // Resolve every potentially remote slug before opening the explicit DB transaction.
       const mealSlugs = await Promise.all(
         bodyParsed.data.entries.map((entry) =>
-          resolveSlug(entry, user, dependencies.resolveMealSlug),
+          resolveSlug(entry, dependencies.resolveMealSlug),
         ),
       );
       const records = bodyParsed.data.entries.map((entry, index) =>
@@ -359,6 +355,56 @@ export async function registerFoodLogRoutes(
         entries: created.map(toFoodEntryResponse),
       });
       return reply.status(201).send(response);
+    },
+  );
+
+  app.post(
+    "/meals/duplicate",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        body: toJsonSchema(DuplicateMealBodySchema),
+        response: {
+          201: toJsonSchema(DuplicateMealResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+          404: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
+
+      const bodyParsed = DuplicateMealBodySchema.safeParse(request.body);
+      if (!bodyParsed.success) return sendValidationError(reply);
+      const user = await repository.findUser(userId);
+      if (!user) return sendUnauthorized(reply);
+
+      const sourceEntries = (await repository.findDayEntries(userId, bodyParsed.data.sourceDay))
+        .filter((entry) => entry.mealType === bodyParsed.data.sourceMealType);
+      if (sourceEntries.length === 0) {
+        return reply.status(404).send({ message: "Source meal not found" });
+      }
+
+      const records: FoodEntryRecord[] = sourceEntries.map((source) => ({
+        ...source,
+        id: dependencies.createId(),
+        day: bodyParsed.data.destinationDay,
+        mealType: bodyParsed.data.destinationMealType,
+        createdAt: dependencies.now(),
+        deletedAt: null,
+      }));
+      const created = await repository.createEntriesAtomic(records);
+      if (created.length !== records.length) {
+        throw new Error("Meal duplication returned an incomplete group");
+      }
+
+      return reply.status(201).send(DuplicateMealResponseSchema.parse({
+        entries: created.map(toFoodEntryResponse),
+      }));
     },
   );
 
@@ -394,7 +440,7 @@ export async function registerFoodLogRoutes(
       if (!current) return reply.status(404).send({ message: "Entry not found" });
 
       const mealSlug = await dependencies.resolveMealSlug(bodyParsed.data.name, {
-        aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
+        aiModelPreference: env.AI_MODEL_PREFERENCE,
       });
       const changes: FoodEntryUpdate = {
         day: bodyParsed.data.day,

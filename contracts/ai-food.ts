@@ -5,6 +5,7 @@ import {
   MealTypeSchema,
   PreferredLanguageSchema,
 } from "./common.ts";
+import { UpdateFoodEntryBodySchema } from "./food-log.ts";
 
 const LocalTimeHmSchema = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 
@@ -44,3 +45,20 @@ export const ParseFoodResponseSchema = z.object({
   suggestions: z.array(ParsedFoodSuggestionSchema),
 });
 export type ParseFoodResponse = z.infer<typeof ParseFoodResponseSchema>;
+
+/** Ask the server to propose (but not persist) a correction to one owned saved entry. */
+export const CorrectFoodEntryRequestSchema = z
+  .object({
+    instruction: z.string().trim().min(1).max(2_000),
+    preferredLanguage: PreferredLanguageSchema,
+  })
+  .strict();
+export type CorrectFoodEntryRequest = z.infer<typeof CorrectFoodEntryRequestSchema>;
+
+/** Complete editable draft returned by the correction flow; persistence still uses PATCH /entries/:id. */
+export const CorrectFoodEntryResponseSchema = z
+  .object({
+    draft: UpdateFoodEntryBodySchema,
+  })
+  .strict();
+export type CorrectFoodEntryResponse = z.infer<typeof CorrectFoodEntryResponseSchema>;

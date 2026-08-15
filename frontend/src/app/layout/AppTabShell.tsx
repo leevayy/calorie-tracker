@@ -35,7 +35,7 @@ const AppTabChromeHeader = observer(function AppTabChromeHeader() {
   );
 });
 
-function AppTabShellInner() {
+const AppTabShellInner = observer(function AppTabShellInner() {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useRootStore();
@@ -178,7 +178,7 @@ function AppTabShellInner() {
       </div>
     </div>
   );
-}
+});
 
 /** Horizontal snap carousel for Settings ↔ Home ↔ History; URL follows scroll position. */
 export default function AppTabShell() {

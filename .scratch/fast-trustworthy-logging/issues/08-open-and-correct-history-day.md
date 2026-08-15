@@ -6,8 +6,15 @@
 
 **Status:** ready-for-agent
 
-- [ ] Selecting a history day opens that calendar day's itemized meals and totals.
-- [ ] The opened day supports the established edit, move, delete, and undo interactions.
-- [ ] Corrections immediately update both the day detail and aggregate history values.
-- [ ] Navigation back to history preserves the user's previous history context.
-- [ ] Automated tests cover opening a day and observing aggregate changes after a correction.
+- [x] Selecting a history day opens that calendar day's itemized meals and totals.
+- [x] The opened day supports the established edit, move, delete, and undo interactions.
+- [x] Corrections immediately update both the day detail and aggregate history values.
+- [x] Navigation back to history preserves the user's previous history context.
+- [x] Automated tests cover opening a day and observing aggregate changes after a correction.
+
+## Comments
+
+- 2026-08-15: Implemented an itemized history-day detail with shared correction,
+  move, soft-delete/Undo, aggregate reconciliation, and scroll-context behavior.
+  Unit coverage passes and the final desktop/mobile Playwright matrix passed
+  110/110, including all four history-detail scenarios in both projects.

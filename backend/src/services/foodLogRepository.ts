@@ -4,7 +4,6 @@ import { foodEntriesTable, usersTable } from "../db/schema.ts";
 
 export type FoodLogUserRecord = {
   dailyCalorieGoal: number;
-  aiModelPreference: string;
 };
 
 export type FoodEntryRecord = {
@@ -88,7 +87,6 @@ export const drizzleFoodLogRepository: FoodLogRepository = {
     const user = await db.query.usersTable.findFirst({
       columns: {
         dailyCalorieGoal: true,
-        aiModelPreference: true,
       },
       where: eq(usersTable.id, userId),
     });

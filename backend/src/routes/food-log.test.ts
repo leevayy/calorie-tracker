@@ -43,8 +43,8 @@ function entry(overrides: Partial<FoodEntryRecord> = {}): FoodEntryRecord {
 
 class MemoryFoodLogRepository implements FoodLogRepository {
   readonly users = new Map<string, FoodLogUserRecord>([
-    [USER_ID, { dailyCalorieGoal: 2_000, aiModelPreference: "qwen3" }],
-    [OTHER_USER_ID, { dailyCalorieGoal: 2_200, aiModelPreference: "qwen3" }],
+    [USER_ID, { dailyCalorieGoal: 2_000 }],
+    [OTHER_USER_ID, { dailyCalorieGoal: 2_200 }],
   ]);
 
   entries: FoodEntryRecord[];
@@ -377,6 +377,119 @@ describe("food log routes", () => {
         lunch: [],
       },
     });
+  });
+
+  test("duplicates an owned meal atomically with its exact stored nutrition", async () => {
+    const first = entry({ day: "2026-08-12", mealType: "dinner" });
+    const second = entry({
+      id: "22222222-2222-4222-8222-222222222222",
+      day: "2026-08-12",
+      mealType: "dinner",
+      name: "Salad",
+      calories: 180,
+      protein: 5,
+      carbs: 16,
+      fats: 11,
+      fiber: 6,
+      portion: "1 plate",
+      mealSlug: "salad",
+    });
+    const repository = new MemoryFoodLogRepository([first, second]);
+    const app = await buildTestApp(repository);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/meals/duplicate",
+      payload: {
+        sourceDay: "2026-08-12",
+        sourceMealType: "dinner",
+        destinationDay: "2026-08-15",
+        destinationMealType: "lunch",
+      },
+    });
+    const source = await app.inject({ method: "GET", url: "/days/2026-08-12" });
+    const destination = await app.inject({ method: "GET", url: "/days/2026-08-15" });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().entries).toMatchObject([
+      {
+        day: "2026-08-15",
+        mealType: "lunch",
+        name: "Oatmeal",
+        calories: 320,
+        protein: 14,
+        carbs: 52,
+        fats: 7,
+        fiber: 8,
+        portion: "1 bowl",
+        mealSlug: "oatmeal",
+      },
+      {
+        day: "2026-08-15",
+        mealType: "lunch",
+        name: "Salad",
+        calories: 180,
+        protein: 5,
+        carbs: 16,
+        fats: 11,
+        fiber: 6,
+        portion: "1 plate",
+        mealSlug: "salad",
+      },
+    ]);
+    expect(source.json()).toMatchObject({
+      totalCalories: 500,
+      meals: { dinner: [{ id: first.id }, { id: second.id }] },
+    });
+    expect(destination.json()).toMatchObject({
+      totalCalories: 500,
+      meals: { lunch: [{ name: "Oatmeal" }, { name: "Salad" }] },
+    });
+  });
+
+  test("rolls back a failed meal duplication and hides another user's source meal", async () => {
+    const first = entry({ day: "2026-08-12", mealType: "dinner" });
+    const second = entry({
+      id: "22222222-2222-4222-8222-222222222222",
+      day: "2026-08-12",
+      mealType: "dinner",
+      name: "Salad",
+    });
+    const foreign = entry({
+      id: OTHER_ENTRY_ID,
+      userId: OTHER_USER_ID,
+      day: "2026-08-11",
+      mealType: "lunch",
+    });
+    const repository = new MemoryFoodLogRepository([first, second, foreign]);
+    repository.failBatchAt = 1;
+    const app = await buildTestApp(repository);
+
+    const failed = await app.inject({
+      method: "POST",
+      url: "/meals/duplicate",
+      payload: {
+        sourceDay: "2026-08-12",
+        sourceMealType: "dinner",
+        destinationDay: "2026-08-15",
+        destinationMealType: "breakfast",
+      },
+    });
+    const foreignSource = await app.inject({
+      method: "POST",
+      url: "/meals/duplicate",
+      payload: {
+        sourceDay: "2026-08-11",
+        sourceMealType: "lunch",
+        destinationDay: "2026-08-15",
+        destinationMealType: "breakfast",
+      },
+    });
+
+    expect(failed.statusCode).toBe(500);
+    expect(foreignSource.statusCode).toBe(404);
+    expect(repository.entries).toHaveLength(3);
+    expect(repository.entries.map((item) => item.id)).toEqual([first.id, second.id, foreign.id]);
   });
 
   test("undoes a multi-food logging submission atomically", async () => {

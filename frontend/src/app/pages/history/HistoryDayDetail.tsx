@@ -1,0 +1,479 @@
+import type { MealType } from "@contracts/common";
+import type {
+  DayLogResponse,
+  FoodEntryResponse,
+  UpdateFoodEntryBody,
+} from "@contracts/food-log";
+import { ArrowLeft, Copy } from "lucide-react";
+import { observer } from "mobx-react-lite";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { apiGetDayLog } from "@/api/foodLog";
+import { errorMessageKey } from "@/api/errors";
+import { useRootStore } from "@/stores/StoreContext";
+import {
+  mergeFoodEntry,
+  removeFoodEntryById,
+  replaceFoodEntry,
+} from "@/stores/foodLogMerge";
+import { formatCalendarDate, localIsoDate } from "@/utils/date";
+import { formatMacroGrams, sumDayMacros } from "@/utils/macroTotals";
+import { AsyncSection, type AsyncFetchState } from "../../components/AsyncSection";
+import { FoodEntryEditor } from "../../components/FoodEntryEditor";
+import { MealSection } from "../../components/MealSection";
+import { Badge } from "../../components/ds/Badge";
+import { Button } from "../../components/ds/Button";
+import { Card } from "../../components/ds/Card";
+import { Input } from "../../components/ds/Input";
+import { Text } from "../../components/ds/Text";
+
+const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+
+type HistoryDayDetailProps = {
+  day: string;
+  onClose: () => void;
+  onOpenDay: (day: string) => void;
+};
+
+type DuplicateReceipt = {
+  count: number;
+  destinationDay: string;
+  destinationMealType: MealType;
+};
+
+function entriesForMeal(data: DayLogResponse, mealType: MealType): FoodEntryResponse[] {
+  if (mealType === "snack") return data.meals.snack ?? [];
+  return data.meals[mealType];
+}
+
+function allEntries(data: DayLogResponse): FoodEntryResponse[] {
+  return MEAL_TYPES.flatMap((mealType) => entriesForMeal(data, mealType));
+}
+
+export const HistoryDayDetail = observer(function HistoryDayDetail({
+  day,
+  onClose,
+  onOpenDay,
+}: HistoryDayDetailProps) {
+  const { t, i18n } = useTranslation();
+  const { foodLog } = useRootStore();
+  const [data, setData] = useState<DayLogResponse>();
+  const [fetchState, setFetchState] = useState<AsyncFetchState>("initial");
+  const [fetchErrorKey, setFetchErrorKey] = useState("");
+  const [selectedEntry, setSelectedEntry] = useState<FoodEntryResponse | null>(null);
+  const [undoEntry, setUndoEntry] = useState<FoodEntryResponse | null>(null);
+  const [duplicateSourceMealType, setDuplicateSourceMealType] = useState<MealType | null>(null);
+  const [duplicateDestinationDay, setDuplicateDestinationDay] = useState(() => localIsoDate());
+  const [duplicateDestinationMealType, setDuplicateDestinationMealType] =
+    useState<MealType>("breakfast");
+  const [duplicateErrorKey, setDuplicateErrorKey] = useState("");
+  const [duplicateReceipt, setDuplicateReceipt] = useState<DuplicateReceipt | null>(null);
+  const requestIdRef = useRef(0);
+
+  const loadDay = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setFetchState("loading");
+    setFetchErrorKey("");
+    try {
+      const next = await apiGetDayLog(day);
+      if (requestIdRef.current !== requestId) return;
+      setData(next);
+      setFetchState("success");
+    } catch (error) {
+      if (requestIdRef.current !== requestId) return;
+      setFetchState("error");
+      setFetchErrorKey(errorMessageKey(error));
+    }
+  }, [day]);
+
+  useEffect(() => {
+    void loadDay();
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [loadDay]);
+
+  useEffect(() => {
+    if (!undoEntry) return undefined;
+    const timeoutId = window.setTimeout(() => setUndoEntry(null), 8_000);
+    return () => window.clearTimeout(timeoutId);
+  }, [undoEntry]);
+
+  const foods = useMemo(() => (data ? allEntries(data) : []), [data]);
+  const macros = useMemo(
+    () => (data ? sumDayMacros(data) : { protein: 0, carbs: 0, fats: 0, fiber: 0 }),
+    [data],
+  );
+
+  const openEntryEditor = (entry: FoodEntryResponse) => {
+    foodLog.entryUpdate.clearError();
+    foodLog.entryDelete.clearError();
+    setSelectedEntry(entry);
+  };
+
+  const handleSaveEntry = async (
+    entry: FoodEntryResponse,
+    body: UpdateFoodEntryBody,
+  ): Promise<boolean> => {
+    const updated = await foodLog.entryUpdate.update(entry, body);
+    if (!updated) return false;
+    setData((current) => (current ? replaceFoodEntry(current, entry, updated) : current));
+    return true;
+  };
+
+  const handleDeleteEntry = async (entry: FoodEntryResponse): Promise<boolean> => {
+    setData((current) => {
+      if (!current) return current;
+      return removeFoodEntryById(current, entry.id) ?? current;
+    });
+    const deleted = await foodLog.entryDelete.remove(entry);
+    if (!deleted) {
+      setData((current) => (current ? mergeFoodEntry(current, entry) : current));
+      return false;
+    }
+    setUndoEntry(deleted);
+    return true;
+  };
+
+  const handleUndoDelete = async () => {
+    if (!undoEntry) return;
+    const restored = await foodLog.entryDelete.restore(undoEntry.id);
+    if (!restored) return;
+    setData((current) =>
+      current && restored.day === current.day ? mergeFoodEntry(current, restored) : current,
+    );
+    setUndoEntry(null);
+  };
+
+  const openDuplicateMeal = (mealType: MealType) => {
+    setDuplicateSourceMealType(mealType);
+    setDuplicateDestinationDay(localIsoDate());
+    setDuplicateDestinationMealType(mealType);
+    setDuplicateErrorKey("");
+  };
+
+  const handleDuplicateMeal = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!duplicateSourceMealType || !duplicateDestinationDay) return;
+    setDuplicateErrorKey("");
+    const request = {
+      sourceDay: day,
+      sourceMealType: duplicateSourceMealType,
+      destinationDay: duplicateDestinationDay,
+      destinationMealType: duplicateDestinationMealType,
+    };
+    const result = await foodLog.mealDuplicate.duplicate(request);
+    if (!result || "errorKey" in result) {
+      setDuplicateErrorKey(
+        result && "errorKey" in result
+          ? result.errorKey
+          : foodLog.mealDuplicate.errorKey || "errors.unknown",
+      );
+      return;
+    }
+    setDuplicateReceipt({
+      count: result.entries.length,
+      destinationDay: request.destinationDay,
+      destinationMealType: request.destinationMealType,
+    });
+    setDuplicateSourceMealType(null);
+    if (request.destinationDay === day) await loadDay();
+  };
+
+  const openCopiedDay = () => {
+    if (!duplicateReceipt) return;
+    if (duplicateReceipt.destinationDay === day) {
+      void loadDay();
+      return;
+    }
+    onOpenDay(duplicateReceipt.destinationDay);
+  };
+
+  const mutationBusy =
+    foodLog.entryUpdate.fetchState === "loading" ||
+    foodLog.entryDelete.fetchState === "loading";
+  const duplicateLoading = foodLog.mealDuplicate.fetchState === "loading";
+  const editorErrorKey =
+    foodLog.entryUpdate.fetchState === "error"
+      ? foodLog.entryUpdate.errorKey
+      : foodLog.entryDelete.fetchState === "error"
+        ? foodLog.entryDelete.errorKey
+        : "";
+  const formattedDay = formatCalendarDate(day, i18n.language);
+
+  return (
+    <section
+      className="absolute inset-0 z-30 flex min-h-0 flex-col bg-background"
+      aria-labelledby="history-day-detail-title"
+    >
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={t("history.backToHistory")}
+          onClick={onClose}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="min-w-0">
+          <Text id="history-day-detail-title" as="h2" weight="medium" className="truncate">
+            {formattedDay}
+          </Text>
+          <Text variant="muted" size="sm">
+            {t("history.dayDetail")}
+          </Text>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
+        <AsyncSection
+          fetchState={fetchState}
+          errorKey={fetchErrorKey}
+          onRetry={() => void loadDay()}
+        >
+          {data ? (
+            <div className="space-y-4">
+              <Card variant="elevated" className="space-y-3">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <Text variant="muted">{t("history.dayTotal")}</Text>
+                    <Text size="2xl" weight="semibold" className="tabular-nums">
+                      {Math.round(data.totalCalories)} {t("history.calShort")}
+                    </Text>
+                  </div>
+                  <Text variant="muted" className="tabular-nums">
+                    {t("history.goalTotal", { goal: Math.round(data.calorieGoal) })}
+                  </Text>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge size="sm" variant="secondary" className="tabular-nums">
+                    {t("macros.proteinLetter")} {formatMacroGrams(macros.protein)}
+                  </Badge>
+                  <Badge size="sm" variant="secondary" className="tabular-nums">
+                    {t("macros.fatsLetter")} {formatMacroGrams(macros.fats)}
+                  </Badge>
+                  <Badge size="sm" variant="secondary" className="tabular-nums">
+                    {t("macros.carbsLetter")} {formatMacroGrams(macros.carbs)}
+                  </Badge>
+                  <Badge size="sm" variant="secondary" className="tabular-nums">
+                    {t("macros.fiberLetter")} {formatMacroGrams(macros.fiber)}
+                  </Badge>
+                </div>
+              </Card>
+
+              <Text as="h3" weight="medium">
+                {t("history.itemizedMeals")}
+              </Text>
+              {duplicateReceipt ? (
+                <Card
+                  variant="elevated"
+                  className="space-y-3 border border-success/40 bg-success/10"
+                  role="status"
+                >
+                  <Text>
+                    {t("history.duplicateSuccess", {
+                      count: duplicateReceipt.count,
+                      date: formatCalendarDate(duplicateReceipt.destinationDay, i18n.language),
+                      meal: t(`meals.${duplicateReceipt.destinationMealType}`),
+                    })}
+                  </Text>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" onClick={openCopiedDay}>
+                      {t("history.openCopiedDay")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setDuplicateReceipt(null)}
+                    >
+                      {t("history.dismissDuplicateSuccess")}
+                    </Button>
+                  </div>
+                </Card>
+              ) : null}
+              {foods.length === 0 ? (
+                <Card variant="elevated" className="py-8">
+                  <Text variant="muted" align="center">
+                    {t("states.emptyDay")}
+                  </Text>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {MEAL_TYPES.map((mealType) => {
+                    const mealEntries = entriesForMeal(data, mealType);
+                    return (
+                      <div key={mealType} className="space-y-2">
+                        <MealSection
+                          title={t(`meals.${mealType}`)}
+                          foods={mealEntries}
+                          emptyLabel={t("states.emptyMeals")}
+                          onEdit={openEntryEditor}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          disabled={mealEntries.length === 0 || duplicateLoading}
+                          onClick={() => openDuplicateMeal(mealType)}
+                        >
+                          <Copy className="h-4 w-4" aria-hidden="true" />
+                          {t("history.duplicateMeal", { meal: t(`meals.${mealType}`) })}
+                        </Button>
+
+                        {duplicateSourceMealType === mealType ? (
+                          <Card
+                            variant="elevated"
+                            className="space-y-4 border border-border"
+                          >
+                            <div>
+                              <Text as="h4" weight="medium">
+                                {t("history.duplicateMealTitle", {
+                                  meal: t(`meals.${mealType}`),
+                                })}
+                              </Text>
+                              <Text variant="muted" size="sm">
+                                {t("history.duplicateMealDescription", {
+                                  count: mealEntries.length,
+                                  date: formattedDay,
+                                })}
+                              </Text>
+                            </div>
+                            <form
+                              className="space-y-3"
+                              aria-label={t("history.duplicateMealForm", {
+                                meal: t(`meals.${mealType}`),
+                              })}
+                              onSubmit={(event) => void handleDuplicateMeal(event)}
+                            >
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="min-w-0 space-y-1.5">
+                                  <Text
+                                    as="label"
+                                    htmlFor={`duplicate-destination-day-${mealType}`}
+                                    size="sm"
+                                    weight="medium"
+                                  >
+                                    {t("history.destinationDay")}
+                                  </Text>
+                                  <Input
+                                    id={`duplicate-destination-day-${mealType}`}
+                                    type="date"
+                                    value={duplicateDestinationDay}
+                                    required
+                                    disabled={duplicateLoading}
+                                    onChange={(event) =>
+                                      setDuplicateDestinationDay(event.target.value)
+                                    }
+                                  />
+                                </div>
+                                <div className="min-w-0 space-y-1.5">
+                                  <Text
+                                    as="label"
+                                    htmlFor={`duplicate-destination-meal-${mealType}`}
+                                    size="sm"
+                                    weight="medium"
+                                  >
+                                    {t("history.destinationMeal")}
+                                  </Text>
+                                  <select
+                                    id={`duplicate-destination-meal-${mealType}`}
+                                    className="h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    value={duplicateDestinationMealType}
+                                    disabled={duplicateLoading}
+                                    onChange={(event) =>
+                                      setDuplicateDestinationMealType(
+                                        event.target.value as MealType,
+                                      )
+                                    }
+                                  >
+                                    {MEAL_TYPES.map((destinationMealType) => (
+                                      <option
+                                        key={destinationMealType}
+                                        value={destinationMealType}
+                                      >
+                                        {t(`meals.${destinationMealType}`)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              {duplicateErrorKey ? (
+                                <Text variant="error" role="alert">
+                                  {t(duplicateErrorKey)}
+                                </Text>
+                              ) : null}
+
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={duplicateLoading}
+                                  onClick={() => setDuplicateSourceMealType(null)}
+                                >
+                                  {t("history.cancelDuplicate")}
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  loading={duplicateLoading}
+                                  disabled={!duplicateDestinationDay}
+                                >
+                                  {t("history.confirmDuplicate")}
+                                </Button>
+                              </div>
+                            </form>
+                          </Card>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {foodLog.entryDelete.fetchState === "error" && foodLog.entryDelete.errorKey ? (
+                <Text variant="error" role="alert">
+                  {t(foodLog.entryDelete.errorKey)}
+                </Text>
+              ) : null}
+            </div>
+          ) : null}
+        </AsyncSection>
+      </div>
+
+      <FoodEntryEditor
+        entry={selectedEntry}
+        busy={mutationBusy}
+        errorKey={editorErrorKey}
+        onClose={() => setSelectedEntry(null)}
+        onSave={handleSaveEntry}
+        onDelete={handleDeleteEntry}
+      />
+
+      {undoEntry ? (
+        <div
+          className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
+          role="status"
+        >
+          <Text className="min-w-0 flex-1">
+            {t("entryEditor.undoMessage", { name: undoEntry.name })}
+          </Text>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            loading={foodLog.entryDelete.isLoading}
+            onClick={() => void handleUndoDelete()}
+          >
+            {t("entryEditor.undo")}
+          </Button>
+        </div>
+      ) : null}
+    </section>
+  );
+});

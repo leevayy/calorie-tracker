@@ -18,15 +18,9 @@
  */
 import { pool } from "../src/db/client.ts";
 import { env } from "../src/env.ts";
-import { AiModelPreferenceSchema, type AiModelPreference } from "../src/contracts/common.ts";
 import { estimateFiberGramsWithAi } from "../src/services/ai.ts";
 
 const JOB_NAME = "fiber_recent_backfill_v1";
-
-function coerceAiModelPreference(raw: string): AiModelPreference {
-  const parsed = AiModelPreferenceSchema.safeParse(raw);
-  return parsed.success ? parsed.data : "qwen3";
-}
 
 function localIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -37,7 +31,6 @@ function localIsoDate(d: Date): string {
 
 type Row = {
   id: string;
-  user_id: string;
   day: string;
   name: string;
   portion: string | null;
@@ -46,7 +39,6 @@ type Row = {
   carbs: number;
   fats: number;
   fiber: number;
-  ai_model_preference: string;
 };
 
 function parseArgs(argv: string[]): { dryRun: boolean; force: boolean; ignoreJob: boolean; days: number } {
@@ -92,9 +84,8 @@ async function main(): Promise<void> {
   const fiberPredicate = force ? "TRUE" : "(coalesce(fe.fiber, 0) = 0)";
 
   const { rows } = await pool.query<Row>(
-    `SELECT fe.id, fe.user_id, fe.day, fe.name, fe.portion, fe.calories, fe.protein, fe.carbs, fe.fats, fe.fiber, u.ai_model_preference
+    `SELECT fe.id, fe.day, fe.name, fe.portion, fe.calories, fe.protein, fe.carbs, fe.fats, fe.fiber
      FROM food_entries fe
-     INNER JOIN users u ON u.id = fe.user_id
      WHERE fe.day >= $1 AND fe.day <= $2 AND ${fiberPredicate}
      ORDER BY fe.day ASC, fe.created_at ASC`,
     [from, to],
@@ -109,7 +100,6 @@ async function main(): Promise<void> {
   const byDay = new Map<string, number>();
   for (const row of rows) {
     n += 1;
-    const modelPref = coerceAiModelPreference(row.ai_model_preference);
     const prevFiber = Number(row.fiber ?? 0);
     let fiber: number;
     try {
@@ -122,7 +112,7 @@ async function main(): Promise<void> {
           carbs: row.carbs,
           fats: row.fats,
         },
-        modelPref,
+        env.AI_MODEL_PREFERENCE,
       );
     } catch (e) {
       console.error(`[${n}/${total}] ${row.id} AI error:`, e);

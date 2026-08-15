@@ -7,19 +7,18 @@ const defaultSnapshot = {
   profile: {
     read: {},
     patch: {},
-    setTipVibe: {},
   },
   foodLog: {
     dayRead: {},
     entryCreate: {},
     entriesCreate: {},
     entryUpdate: {},
-    entryDelete: {},
+      entryDelete: {},
+      mealDuplicate: {},
     frequentWeekRead: {},
     historicalSuggestions: {},
   },
   history: {},
-  dailyTip: {},
   aiParse: {},
 };
 

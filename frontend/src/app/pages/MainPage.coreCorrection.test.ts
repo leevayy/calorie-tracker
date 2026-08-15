@@ -61,12 +61,6 @@ const { rootStore } = vi.hoisted(() => ({
         restore: vi.fn(),
       },
     },
-    dailyTip: {
-      data: { message: "Tip" },
-      fetchState: "success",
-      errorKey: "",
-      fetchTip: vi.fn(),
-    },
     aiParse: {
       data: null as null | Record<string, unknown>,
       fetchState: "initial",
@@ -87,7 +81,6 @@ vi.mock("@/stores/StoreContext", () => ({ useRootStore: () => rootStore }));
 vi.mock("../hooks/useRequireAuth", () => ({ useRequireAuth: () => undefined }));
 vi.mock("./main/mainPageHooks", () => ({
   useBehavioralToday: () => "2026-08-15",
-  useDailyTipAutoFetch: () => undefined,
 }));
 vi.mock("../components/CaloriePieChart", () => ({ CaloriePieChart: () => null }));
 vi.mock("../components/DayMacrosLabels", () => ({ DayMacrosLabels: () => null }));

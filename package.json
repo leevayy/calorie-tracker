@@ -5,11 +5,21 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "e2e:install": "node scripts/e2e.mjs install",
+    "e2e:prepare": "node scripts/e2e.mjs prepare",
+    "e2e:list": "node scripts/e2e.mjs list",
+    "e2e:test": "node scripts/e2e.mjs test",
+    "e2e:live": "node scripts/e2e.mjs live"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
   }
 }

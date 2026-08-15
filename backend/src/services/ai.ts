@@ -10,15 +10,8 @@ import {
   type ParseFoodRequest,
 } from "../contracts/ai-food.ts";
 import { env } from "../env.ts";
+import { configuredAiModelUri } from "./aiModel.ts";
 import { sanitizeMealSlug } from "./slugShape.ts";
-import { buildEnglishFallbackTipMessage } from "./tips/fallbackEnglish.ts";
-import { TIP_CONFIDENCE_THRESHOLD } from "./tips/constants.ts";
-import { fractionOfLocalDayElapsed, getDayPhaseFromLocalHm } from "./tips/dayPhase.ts";
-import { pickPrimaryInsight } from "./tips/insights.ts";
-import { deriveBehaviorSignals } from "./tips/signals.ts";
-import { validateAndClampTipText } from "./tips/text.ts";
-import type { TipContext } from "./tips/types.ts";
-import { VIBE_SAFETY_GUARD } from "./tips/vibePrompts.ts";
 
 const ChatCompletionSchema = z.object({
   choices: z.array(
@@ -190,6 +183,12 @@ const PARSE_FOOD_CACHE_VERSION = "v7";
 const parseFoodCache = new Map<string, ParseFoodCacheEntry>();
 const parseFoodInFlight = new Map<string, Promise<ParsedFoodSuggestion[]>>();
 
+/** Clears process-local parse state when an isolated E2E run resets its database. */
+export function resetParseFoodInMemoryState(): void {
+  parseFoodCache.clear();
+  parseFoodInFlight.clear();
+}
+
 function extractFirstJsonObject(raw: string): string {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
@@ -224,7 +223,7 @@ async function aiChat(
   const authorizationHeader = apiKey.startsWith("AQVN")
     ? `Api-Key ${apiKey}`
     : `Bearer ${apiKey}`;
-  const model = resolveModelUriForPreference(aiModelPreference);
+  const model = configuredAiModelUri(aiModelPreference);
   const defaultHeaders: HeadersInit = {
     Authorization: authorizationHeader,
     "Content-Type": "application/json",
@@ -255,39 +254,6 @@ async function aiChat(
   return json.choices[0]?.message.content ?? "";
 }
 
-function modelIdForPreference(pref: AiModelPreference): string {
-  switch (pref) {
-    case "alicegpt":
-      return env.YANDEX_AI_STUDIO_MODEL_ALICE_GPT;
-    case "aliceflash":
-      return env.YANDEX_AI_STUDIO_MODEL_ALICE_FLASH;
-    case "qwen36":
-      return env.YANDEX_AI_STUDIO_MODEL_QWEN36;
-    case "qwen3":
-      return env.YANDEX_AI_STUDIO_MODEL_QWEN3;
-    case "gptoss120":
-      return env.YANDEX_AI_STUDIO_MODEL_GPT_OSS_120B;
-    case "gptoss":
-      return env.YANDEX_AI_STUDIO_MODEL_GPT_OSS;
-    default:
-      return env.YANDEX_AI_STUDIO_MODEL;
-  }
-}
-
-function resolveModelUriFromModelId(modelId: string): string {
-  if (modelId.startsWith("gpt://")) {
-    return modelId;
-  }
-  if (env.YANDEX_FOLDER_ID) {
-    return `gpt://${env.YANDEX_FOLDER_ID}/${modelId}`;
-  }
-  return modelId;
-}
-
-function resolveModelUriForPreference(pref: AiModelPreference): string {
-  return resolveModelUriFromModelId(modelIdForPreference(pref));
-}
-
 function normalizeParseFoodText(text: string): string {
   return text.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -301,7 +267,7 @@ function buildParseFoodCacheKey(
 ): string {
   return [
     PARSE_FOOD_CACHE_VERSION,
-    resolveModelUriForPreference(aiModelPreference),
+    configuredAiModelUri(aiModelPreference),
     preferredLanguage,
     nutritionGoal,
     timing.localDate,
@@ -560,183 +526,5 @@ export async function parseFoodTextWithAi(
     if (!skipCache) {
       parseFoodInFlight.delete(cacheKey);
     }
-  }
-}
-
-export type {
-  BehaviorSignals,
-  DayPhase,
-  PrimaryInsight,
-  RecentLog,
-  TipContext,
-} from "./tips/types.ts";
-export { deriveBehaviorSignals } from "./tips/signals.ts";
-export { buildEnglishFallbackTipMessage } from "./tips/fallbackEnglish.ts";
-
-const NUTRITION_GOAL_TIP_COACH_HINTS: Record<NutritionGoal, string> = {
-  maintain: "They want balanced eating and general health; keep advice practical and sustainable.",
-  muscle_gain:
-    "They are building muscle (surplus); encourage enough calories and protein without shaming appetite.",
-  fat_loss: "They are losing fat (deficit); be supportive about hunger and protein-forward choices.",
-  recomposition:
-    "They want recomposition (deficit + high protein); nudge protein and training recovery, not extreme cuts.",
-};
-
-function insightCoachNote(type: string): string {
-  switch (type) {
-    case "post_meal_large":
-      return "The last meal was calorie-heavy; suggest keeping the next meal lighter or simpler.";
-    case "late_night_context":
-      return "It is late at night locally — do NOT suggest eating more; focus on rest, hydration, or logging tomorrow.";
-    case "fasting_late_day":
-      return "Long gap since eating and/or no meals logged today while the local day is well underway; prioritize a timely meal (only if not late night).";
-    case "large_deficit_late_day":
-      return "Calorie intake is far under goal late in the local day; suggest a realistic way to close the gap without shame.";
-    case "low_protein_pattern":
-      return "Recent entries show consistently low protein; suggest a concrete protein add-on.";
-    case "late_day_eating":
-      return "Most calories cluster late (evening); suggest a small shift (e.g., earlier snack or front-loading).";
-    case "undereating_trend":
-      return "Recent days average under the calorie goal; suggest a gentle, sustainable bump.";
-    case "erratic_eating":
-      return "Meal sizes or timing swing a lot; suggest stabilizing with one simple habit.";
-    default:
-      return "Ground the tip in calorie goal vs intake and the user's nutrition goal; one practical nudge.";
-  }
-}
-
-/** Turns English-only factual summary into one sentence in the user's language via AI. Falls back to English if the call fails. */
-export async function localizeTipWithAi(
-  englishDraft: string,
-  preferredLanguage: PreferredLanguage,
-  aiModelPreference: AiModelPreference,
-  tipVibePrompt: string = "",
-): Promise<string> {
-  const clampedEnglish = validateAndClampTipText(englishDraft);
-  if (!clampedEnglish.trim()) return "";
-  const vibe = tipVibePrompt.trim();
-  if (preferredLanguage === "en" && !vibe) {
-    return clampedEnglish;
-  }
-  const langName = OUTPUT_LANGUAGE_NAMES[preferredLanguage];
-  const system = [
-    `You are a concise calorie tracking coach.`,
-    `Rewrite the following English summary into exactly ONE short sentence in ${langName} (language tag: ${preferredLanguage}).`,
-    `Preserve all numbers, percentages, and comparisons accurately.`,
-    `Sound natural and supportive, like a human coach.`,
-    `At most 220 characters.`,
-    `Do not include markdown, bullet points, or multiple sentences.`,
-    `Do not suggest eating more food late at night if the summary is about rest or late night.`,
-    ...(vibe ? [`Vibe override (apply persona/tone to the rewrite, keep facts intact): ${vibe}`, VIBE_SAFETY_GUARD] : []),
-  ].join("\n");
-  try {
-    const raw = await aiChat(clampedEnglish, system, aiModelPreference);
-    const validated = validateAndClampTipText(raw);
-    if (validated.trim()) return validated;
-  } catch {
-    // use English below
-  }
-  return clampedEnglish;
-}
-
-export async function generateTipMessageWithAi(
-  context: TipContext,
-  aiModelPreference: AiModelPreference,
-): Promise<string> {
-  const signals = deriveBehaviorSignals(context);
-  const dayFrac = fractionOfLocalDayElapsed(context.localTimeHm);
-  const dayPhase = getDayPhaseFromLocalHm(context.localTimeHm);
-  const primaryInsight = pickPrimaryInsight(context, signals, dayFrac, dayPhase);
-
-  const bypassBehaviorAi =
-    context.recentLogs.length === 0 || primaryInsight.confidence < TIP_CONFIDENCE_THRESHOLD;
-  if (bypassBehaviorAi) {
-    return localizeTipWithAi(
-      buildEnglishFallbackTipMessage(context),
-      context.preferredLanguage,
-      aiModelPreference,
-      context.tipVibePrompt,
-    );
-  }
-
-  const langName = OUTPUT_LANGUAGE_NAMES[context.preferredLanguage];
-  const goalLine = NUTRITION_GOAL_TIP_COACH_HINTS[context.nutritionGoal];
-  const payload = {
-    context,
-    signals,
-    primaryInsight,
-    dayPhase,
-  };
-  const highLogConfidence = primaryInsight.confidence >= 0.75;
-  const system = [
-    `You are a concise calorie tracking coach.`,
-    `Write the entire tip in ${langName} (language tag: ${context.preferredLanguage}).`,
-    `Nutrition goal context: ${goalLine}`,
-    `Local day phase: "${dayPhase}" (late_night = midnight–4:00 local). NEVER suggest eating more during late_night; prefer rest, hydration, or planning tomorrow.`,
-    `The user's logged calendar day is ${context.date}. Their local clock is ${context.localTimeHm} in IANA zone "${context.clientTimeZone}".`,
-    `About ${Math.round(dayFrac * 100)}% of their local day has passed (from local midnight to local time).`,
-    `Structured preprocessing already picked a primary insight (type "${primaryInsight.type}", confidence ${primaryInsight.confidence.toFixed(2)}).`,
-    `Focus the tip on that insight: ${insightCoachNote(primaryInsight.type)}`,
-    highLogConfidence
-      ? `You may use fields in "recentLogs" in context for specifics (timing, meal type, macros, mealSlug when present).`
-      : `Rely mainly on summary fields and signals; use recentLogs only lightly since confidence is moderate.`,
-    `Return exactly ONE short sentence, at most 220 characters.`,
-    `One actionable next step — not a list of statistics without guidance.`,
-    `When confidence is high (>= ~0.75), include ONE concrete next action (food choice, timing, or macro tweak) unless late_night forbids food.`,
-    `When confidence is moderate, stay safe and general but still practical.`,
-    `Phrase it like a human coach: natural imperatives or gentle suggestions in ${langName}, with a doable step whenever the insight is specific—do not answer with diagnosis-only commentary.`,
-    `Do not include markdown, bullet points, or multiple sentences.`,
-    ...(context.tipVibePrompt.trim()
-      ? [
-          `Vibe override (highest priority for tone/voice; never overrides safety): ${context.tipVibePrompt.trim()}`,
-          VIBE_SAFETY_GUARD,
-        ]
-      : []),
-  ].join("\n");
-
-  const raw = await aiChat(JSON.stringify(payload), system, aiModelPreference);
-  const validated = validateAndClampTipText(raw);
-  if (!validated.trim()) {
-    return localizeTipWithAi(
-      buildEnglishFallbackTipMessage(context),
-      context.preferredLanguage,
-      aiModelPreference,
-      context.tipVibePrompt,
-    );
-  }
-  return validated;
-}
-
-const FALLBACK_VIBE_EMOJI = "✨";
-const SINGLE_EMOJI_REGEX = /^\p{Extended_Pictographic}(\u200D\p{Extended_Pictographic})*\uFE0F?$/u;
-
-const PICK_EMOJI_SYSTEM = [
-  "You assign a single emoji that best represents a user-supplied 'tip vibe' (a tone/persona instruction for a nutrition coach).",
-  "OUTPUT (strict): reply with EXACTLY ONE emoji character and nothing else. No quotes, no words, no punctuation, no explanation.",
-  "Pick an emoji that visually evokes the requested persona/tone (e.g. pirate vibe -> a pirate-flag-style emoji; sweet supportive -> a heart-style emoji; drill sergeant -> a stern-face emoji).",
-  "If unsure, reply with: ✨",
-].join("\n");
-
-/** Asks the model for a single emoji that visually represents the user's vibe prompt; falls back to ✨. */
-export async function pickEmojiForVibePromptWithAi(
-  prompt: string,
-  aiModelPreference: AiModelPreference,
-): Promise<string> {
-  const trimmed = prompt.trim();
-  if (!trimmed) return FALLBACK_VIBE_EMOJI;
-  try {
-    const raw = await aiChat(trimmed, PICK_EMOJI_SYSTEM, aiModelPreference, { temperature: 0.3 });
-    const cleaned = raw.replace(/[\s"'`]+/g, "").trim();
-    if (!cleaned) return FALLBACK_VIBE_EMOJI;
-    // Try the whole cleaned string, then progressively shorter prefixes (handles ZWJ sequences).
-    const candidates = [cleaned, [...cleaned].slice(0, 3).join(""), [...cleaned].slice(0, 2).join(""), [...cleaned][0] ?? ""];
-    for (const candidate of candidates) {
-      if (candidate && SINGLE_EMOJI_REGEX.test(candidate)) {
-        return candidate;
-      }
-    }
-    return FALLBACK_VIBE_EMOJI;
-  } catch {
-    return FALLBACK_VIBE_EMOJI;
   }
 }

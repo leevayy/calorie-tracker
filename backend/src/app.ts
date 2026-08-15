@@ -7,6 +7,13 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createE2EControlRuntime } from "./e2e/control.ts";
+import { createDrizzleE2EControlPersistence } from "./e2e/drizzlePersistence.ts";
+import {
+  bearerPublicE2ESessionIdentity,
+  issuePublicE2ESession,
+  parsePublicE2ESessionHandle,
+} from "./e2e/publicSession.ts";
 import { env } from "./env.ts";
 import { sendUnauthorized } from "./lib/http.ts";
 import {
@@ -17,10 +24,13 @@ import {
 } from "./lib/rate-limit.ts";
 import { registerAiRoutes } from "./routes/ai.ts";
 import { registerAuthRoutes } from "./routes/auth.ts";
+import { registerE2EControlRoutes } from "./routes/e2e-control.ts";
+import { registerFoodEntryCorrectionRoutes } from "./routes/food-entry-correction.ts";
 import { registerFoodLogRoutes } from "./routes/food-log.ts";
 import { registerHistoryRoutes } from "./routes/history.ts";
 import { registerProfileRoutes } from "./routes/profile.ts";
-import { registerTipsRoutes } from "./routes/tips.ts";
+import { resetParseFoodInMemoryState } from "./services/ai.ts";
+import { drizzleFoodLogRepository } from "./services/foodLogRepository.ts";
 
 const frontendRoot = resolve(fileURLToPath(new URL("../../frontend/dist/", import.meta.url)));
 
@@ -48,6 +58,20 @@ async function isFile(pathname: string): Promise<boolean> {
 }
 
 export async function buildApp(): Promise<FastifyInstance> {
+  const e2eRuntime = env.E2E_TEST_MODE
+    ? createE2EControlRuntime({
+        enabled: true,
+        nodeEnv: env.NODE_ENV,
+        secret: env.E2E_CONTROL_SECRET,
+        persistence: createDrizzleE2EControlPersistence(env.DATABASE_URL),
+        resetApplicationState: resetParseFoodInMemoryState,
+      })
+    : null;
+  const foodLogRepository = e2eRuntime
+    ? e2eRuntime.wrapFoodLogRepository(drizzleFoodLogRepository)
+    : drizzleFoodLogRepository;
+  const deterministicE2ERuntime = e2eRuntime && !env.E2E_LIVE_AI ? e2eRuntime : null;
+
   const app = Fastify({
     logger: true,
     trustProxy: true,
@@ -76,7 +100,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       callback(null, allowedOrigins.has(normalizedOrigin));
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Authorization", "Content-Type", "Accept"],
+    allowedHeaders: [
+      "Authorization",
+      "Content-Type",
+      "Accept",
+      ...(e2eRuntime ? ["X-E2E-Control-Secret"] : []),
+    ],
     credentials: true,
   });
 
@@ -85,6 +114,17 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   app.decorate("authenticate", async (request, reply) => {
+    if (e2eRuntime) {
+      const publicIdentity = bearerPublicE2ESessionIdentity(request.headers.authorization);
+      if (publicIdentity) {
+        request.user = {
+          sub: publicIdentity.id,
+          email: publicIdentity.email,
+          type: publicIdentity.type,
+        };
+        return;
+      }
+    }
     try {
       await request.jwtVerify();
     } catch {
@@ -93,6 +133,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   app.addHook("onRequest", async (request, reply) => {
+    if (e2eRuntime) return;
     const pathname = request.url.split("?")[0] ?? "";
     const bucket = resolveRateLimitBucket(pathname);
     if (!bucket) return;
@@ -131,12 +172,32 @@ export async function buildApp(): Promise<FastifyInstance> {
 
       api.get("/health", async () => ({ ok: true }));
 
-      await registerAuthRoutes(api);
+      if (e2eRuntime) await registerE2EControlRoutes(api, e2eRuntime);
+      await registerAuthRoutes(
+        api,
+        e2eRuntime
+          ? {
+              issueSession: issuePublicE2ESession,
+              resolveRefreshSession: (token) => {
+                const identity = parsePublicE2ESessionHandle(token, "refresh");
+                return identity ? { id: identity.id, email: identity.email } : null;
+              },
+            }
+          : {},
+      );
       await registerProfileRoutes(api);
-      await registerFoodLogRoutes(api);
+      await registerFoodLogRoutes(api, { repository: foodLogRepository });
+      await registerFoodEntryCorrectionRoutes(api, {
+        repository: foodLogRepository,
+        ...(deterministicE2ERuntime
+          ? { classify: deterministicE2ERuntime.classifyCorrection }
+          : {}),
+      });
       await registerHistoryRoutes(api);
-      await registerTipsRoutes(api);
-      await registerAiRoutes(api);
+      await registerAiRoutes(
+        api,
+        deterministicE2ERuntime ? { parseFood: deterministicE2ERuntime.parseFood } : {},
+      );
     },
     { prefix: "/api/v1" },
   );

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { DayLogResponse, FoodEntryResponse, UpdateFoodEntryBody } from "@contracts/food-log";
+import type {
+  DayLogResponse,
+  DuplicateMealBody,
+  FoodEntryResponse,
+  UpdateFoodEntryBody,
+} from "@contracts/food-log";
 import type { HistoryRangeResponse } from "@contracts/history";
 import { RootStore } from "./rootStore";
 
@@ -8,6 +13,7 @@ const api = vi.hoisted(() => ({
   apiCreateFoodEntries: vi.fn(),
   apiDeleteFoodEntry: vi.fn(),
   apiDeleteFoodEntries: vi.fn(),
+  apiDuplicateMeal: vi.fn(),
   apiGetDayLog: vi.fn(),
   apiGetFrequentFoods: vi.fn(),
   apiRestoreFoodEntry: vi.fn(),
@@ -75,7 +81,7 @@ function deferred<T>() {
 function createStore() {
   return RootStore.create({
     session: {},
-    profile: { read: {}, patch: {}, setTipVibe: {} },
+    profile: { read: {}, patch: {} },
     foodLog: {
       dayRead: { day: day.day, data: day, fetchState: "success" },
       entryCreate: {},
@@ -85,7 +91,6 @@ function createStore() {
       frequentWeekRead: {},
     },
     history: { data: history, today: "2026-08-15", fetchState: "success" },
-    dailyTip: {},
     aiParse: {},
   });
 }
@@ -152,6 +157,45 @@ describe("food entry mutation stores", () => {
     expect(store.foodLog.dayRead.data?.meals.breakfast).toEqual([]);
     expect(store.history.data?.days[0]?.calories).toBe(0);
     expect(store.history.data?.days[1]?.calories).toBe(175);
+  });
+
+  it("applies an atomically duplicated meal to mounted destination totals", async () => {
+    const copied = [
+      {
+        ...before,
+        id: "22222222-2222-4222-8222-222222222222",
+        day: "2026-08-16",
+        mealType: "lunch" as const,
+      },
+      {
+        ...before,
+        id: "33333333-3333-4333-8333-333333333333",
+        day: "2026-08-16",
+        mealType: "lunch" as const,
+        name: "Banana",
+        calories: 90,
+      },
+    ];
+    const request: DuplicateMealBody = {
+      sourceDay: "2026-08-15",
+      sourceMealType: "breakfast",
+      destinationDay: "2026-08-16",
+      destinationMealType: "lunch",
+    };
+    api.apiDuplicateMeal.mockResolvedValue({ entries: copied });
+    const store = createStore();
+
+    const result = await store.foodLog.mealDuplicate.duplicate(request);
+
+    expect(result).toEqual({ entries: copied });
+    expect(store.foodLog.dayRead.data?.meals.breakfast).toEqual([before]);
+    expect(store.history.data?.days[1]).toMatchObject({
+      calories: 190,
+      protein: before.protein * 2,
+      carbs: before.carbs * 2,
+      fats: before.fats * 2,
+      fiber: before.fiber * 2,
+    });
   });
 
   it("rolls back its optimistic removal when delete fails", async () => {

@@ -1,7 +1,6 @@
 import type { Instance } from "mobx-state-tree";
 import { types } from "mobx-state-tree";
 import { AiParseFoodStore } from "./aiParseFoodStore";
-import { DailyTipStore } from "./dailyTipStore";
 import { FoodLogStore } from "./foodLogStore";
 import { HistoryRangeStore } from "./historyRangeStore";
 import { ProfileStore } from "./profileStore";
@@ -12,7 +11,6 @@ export const RootStore = types.model({
   profile: ProfileStore,
   foodLog: FoodLogStore,
   history: HistoryRangeStore,
-  dailyTip: DailyTipStore,
   aiParse: AiParseFoodStore,
 });
 

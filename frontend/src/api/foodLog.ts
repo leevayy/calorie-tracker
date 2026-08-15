@@ -5,6 +5,8 @@ import type {
   DeleteFoodEntriesBody,
   DeleteFoodEntriesResponse,
   DayLogResponse,
+  DuplicateMealBody,
+  DuplicateMealResponse,
   FoodEntryResponse,
   FrequentFoodsQuery,
   FrequentFoodsResponse,
@@ -16,6 +18,7 @@ import {
   CreateFoodEntriesResponseSchema,
   DeleteFoodEntriesResponseSchema,
   DayLogResponseSchema,
+  DuplicateMealResponseSchema,
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
@@ -78,6 +81,17 @@ export async function apiCreateFoodEntries(
     throw new ApiError("errors.http_generic", res.status);
   }
   return parseResponse(CreateFoodEntriesResponseSchema, res.data);
+}
+
+export async function apiDuplicateMeal(body: DuplicateMealBody): Promise<DuplicateMealResponse> {
+  const res = await apiClient.post("/api/v1/meals/duplicate", body);
+  if (res.status !== 201) {
+    if (res.status === 400) throw new ApiError("errors.http_400", res.status);
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    if (res.status === 404) throw new ApiError("errors.http_404", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(DuplicateMealResponseSchema, res.data);
 }
 
 export async function apiDeleteFoodEntries(

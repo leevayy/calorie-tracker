@@ -4,11 +4,11 @@ import { z } from "zod";
 export const PreferredLanguageSchema = z.enum(["en", "ru", "pl", "tt", "kk"]);
 export type PreferredLanguage = z.infer<typeof PreferredLanguageSchema>;
 
-/** User-selected nutrition target; steers daily tips and parse-food estimation hints. */
+/** User-selected nutrition target; steers parse-food estimation hints. */
 export const NutritionGoalSchema = z.enum(["maintain", "muscle_gain", "fat_loss", "recomposition"]);
 export type NutritionGoal = z.infer<typeof NutritionGoalSchema>;
 
-/** Which Yandex AI Studio model slug to use for parse-food and daily tips. */
+/** Internal server model alias used to route AI requests. */
 export const AiModelPreferenceSchema = z.enum([
   "alicegpt",
   "aliceflash",
@@ -19,17 +19,6 @@ export const AiModelPreferenceSchema = z.enum([
   "gptoss",
 ]);
 export type AiModelPreference = z.infer<typeof AiModelPreferenceSchema>;
-
-/** Max length of a user-supplied tip-vibe prompt (chars). */
-export const TIP_VIBE_PROMPT_MAX = 600;
-
-/**
- * Source of the saved tip vibe.
- * Presets ship a canonical default prompt the user can edit; "custom" stores any free-form prompt
- * with an AI-picked emoji.
- */
-export const TipVibeSlotSchema = z.enum(["toxic", "gymBro", "caveman", "custom"]);
-export type TipVibeSlot = z.infer<typeof TipVibeSlotSchema>;
 
 /** YYYY-MM-DD */
 export const IsoDateSchema = z

@@ -7,6 +7,7 @@ import {
   LoginRequestSchema,
   RefreshRequestSchema,
   RegisterRequestSchema,
+  type AuthResponse,
 } from "../contracts/auth.ts";
 import { db } from "../db/client.ts";
 import { usersTable } from "../db/schema.ts";
@@ -14,13 +15,20 @@ import { env } from "../env.ts";
 import { ErrorResponseJsonSchema, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
 
+type AuthUser = { id: string; email: string };
+
+export type AuthRouteDependencies = {
+  issueSession?: (user: AuthUser) => Promise<AuthResponse> | AuthResponse;
+  resolveRefreshSession?: (token: string) => AuthUser | null;
+};
+
 type TokenPayload = {
   sub: string;
   email: string;
   type: "access" | "refresh";
 };
 
-async function issueTokens(app: FastifyInstance, user: { id: string; email: string }) {
+async function issueTokens(app: FastifyInstance, user: AuthUser) {
   const accessToken = await app.jwt.sign(
     {
       sub: user.id,
@@ -50,7 +58,12 @@ async function issueTokens(app: FastifyInstance, user: { id: string; email: stri
   };
 }
 
-export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
+export async function registerAuthRoutes(
+  app: FastifyInstance,
+  dependencies: AuthRouteDependencies = {},
+): Promise<void> {
+  const issueSession = dependencies.issueSession ?? ((user: AuthUser) => issueTokens(app, user));
+
   app.post(
     "/auth/register",
     {
@@ -86,7 +99,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         dailyCalorieGoal: 2000,
       });
 
-      const authResponse = AuthResponseSchema.parse(await issueTokens(app, user));
+      const authResponse = AuthResponseSchema.parse(await issueSession(user));
       return reply.status(201).send(authResponse);
     },
   );
@@ -120,7 +133,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(401).send({ message: "Invalid credentials" });
       }
 
-      const authResponse = AuthResponseSchema.parse(await issueTokens(app, existing));
+      const authResponse = AuthResponseSchema.parse(await issueSession(existing));
       return reply.status(200).send(authResponse);
     },
   );
@@ -143,10 +156,19 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       if (!parsed.success) return sendValidationError(reply);
 
       let payload: Partial<TokenPayload>;
-      try {
-        payload = app.jwt.verify(parsed.data.refreshToken) as Partial<TokenPayload>;
-      } catch {
-        return reply.status(401).send({ message: "Invalid refresh token" });
+      const publicSession = dependencies.resolveRefreshSession?.(parsed.data.refreshToken);
+      if (publicSession) {
+        payload = {
+          sub: publicSession.id,
+          email: publicSession.email,
+          type: "refresh",
+        };
+      } else {
+        try {
+          payload = app.jwt.verify(parsed.data.refreshToken) as Partial<TokenPayload>;
+        } catch {
+          return reply.status(401).send({ message: "Invalid refresh token" });
+        }
       }
 
       if (payload.type !== "refresh" || !payload.sub || !payload.email) {
@@ -160,7 +182,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(401).send({ message: "Invalid refresh token" });
       }
 
-      const authResponse = AuthResponseSchema.parse(await issueTokens(app, existing));
+      if (existing.email !== payload.email) {
+        return reply.status(401).send({ message: "Invalid refresh token" });
+      }
+
+      const authResponse = AuthResponseSchema.parse(await issueSession(existing));
       return reply.status(200).send(authResponse);
     },
   );

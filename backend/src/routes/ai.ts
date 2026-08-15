@@ -1,21 +1,25 @@
 import { eq } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AiModelPreferenceSchema, NutritionGoalSchema } from "../contracts/common.ts";
+import { NutritionGoalSchema } from "../contracts/common.ts";
 import { ParseFoodRequestSchema, ParseFoodResponseSchema } from "../contracts/ai-food.ts";
 import { db } from "../db/client.ts";
 import { usersTable } from "../db/schema.ts";
+import { env } from "../env.ts";
 import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
 import { parseFoodTextWithAi } from "../services/ai.ts";
 
+export type AiRouteDependencies = {
+  parseFood: typeof parseFoodTextWithAi;
+};
+
+const defaultDependencies: AiRouteDependencies = {
+  parseFood: parseFoodTextWithAi,
+};
+
 function coerceNutritionGoal(raw: string) {
   const parsed = NutritionGoalSchema.safeParse(raw);
   return parsed.success ? parsed.data : "maintain";
-}
-
-function coerceAiModelPreference(raw: string) {
-  const parsed = AiModelPreferenceSchema.safeParse(raw);
-  return parsed.success ? parsed.data : "qwen3";
 }
 
 function userIdFromRequest(request: FastifyRequest): string | null {
@@ -23,7 +27,12 @@ function userIdFromRequest(request: FastifyRequest): string | null {
   return payload?.sub ?? null;
 }
 
-export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
+export async function registerAiRoutes(
+  app: FastifyInstance,
+  overrides: Partial<AiRouteDependencies> = {},
+): Promise<void> {
+  const dependencies = { ...defaultDependencies, ...overrides };
+
   app.post(
     "/ai/parse-food",
     {
@@ -53,11 +62,11 @@ export async function registerAiRoutes(app: FastifyInstance): Promise<void> {
       if (!user) return sendUnauthorized(reply);
 
       try {
-        const suggestions = await parseFoodTextWithAi(
+        const suggestions = await dependencies.parseFood(
           parsed.data.text,
           parsed.data.preferredLanguage,
           coerceNutritionGoal(user.nutritionGoal),
-          coerceAiModelPreference(user.aiModelPreference),
+          env.AI_MODEL_PREFERENCE,
           {
             localDate: parsed.data.localDate,
             localTimeHm: parsed.data.localTimeHm,
