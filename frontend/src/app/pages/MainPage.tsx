@@ -1,16 +1,17 @@
 import { observer } from "mobx-react-lite";
-import type { ParseFoodResponse, ParsedFoodSuggestion } from "@contracts/ai-food";
+import type { ParseFoodResponse } from "@contracts/ai-food";
 import type { MealType } from "@contracts/common";
 import type {
   CreateFoodEntryRequest,
   FoodEntryResponse,
+  HistoricalFoodSuggestion,
   UpdateFoodEntryBody,
 } from "@contracts/food-log";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
-import { Check, Pencil, RefreshCw, RotateCcw, Send } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Pencil, RefreshCw, RotateCcw, Send } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
@@ -28,6 +29,8 @@ import { useRootStore } from "@/stores/StoreContext";
 import { buildDailyTipRequest } from "@/utils/buildDailyTipRequest";
 import {
   buildParseFoodTiming,
+  addDaysLocal,
+  formatCalendarDate,
   formatLogDayLabel,
   localIsoDate,
   weekRangeEndingOn,
@@ -44,7 +47,7 @@ type LoggingSubmission = {
   phase: "parsing" | "saving" | "failed";
   retryFrom?: "parse" | "save";
   errorKey?: string;
-  foods: ParsedFoodSuggestion[];
+  foods: CreateFoodEntryRequest[];
   timing: ReturnType<typeof buildParseFoodTiming>;
 };
 
@@ -59,6 +62,14 @@ const MainPage = observer(function MainPage() {
   const { profile, foodLog, dailyTip, aiParse } = useRootStore();
 
   const today = useBehavioralToday();
+  const [selectedDay, setSelectedDay] = useState(today);
+  const previousTodayRef = useRef(today);
+
+  useEffect(() => {
+    const previousToday = previousTodayRef.current;
+    previousTodayRef.current = today;
+    setSelectedDay((current) => current === previousToday ? today : current);
+  }, [today]);
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
@@ -95,14 +106,15 @@ const MainPage = observer(function MainPage() {
     : "off";
 
   useEffect(() => {
-    void foodLog.dayRead.loadDay(today);
-  }, [foodLog.dayRead, today]);
+    void foodLog.dayRead.loadDay(selectedDay);
+    setSelectedEntry(null);
+  }, [foodLog.dayRead, selectedDay]);
 
   useDailyTipAutoFetch({
     dayRead: foodLog.dayRead,
     profileRead: profile.read,
     dailyTip,
-    today,
+    today: selectedDay,
     preferredLanguage,
     nutritionGoal,
     tipVibeKey,
@@ -112,10 +124,10 @@ const MainPage = observer(function MainPage() {
     const data = foodLog.dayRead.data;
     if (!data) return;
     void dailyTip.fetchTip(
-      buildDailyTipRequest(data, today, { preferredLanguage, at: new Date() }),
+      buildDailyTipRequest(data, selectedDay, { preferredLanguage, at: new Date() }),
       { force: true },
     );
-  }, [foodLog.dayRead.data, dailyTip, today, preferredLanguage]);
+  }, [foodLog.dayRead.data, dailyTip, selectedDay, preferredLanguage]);
 
   const updateSubmission = (
     id: string,
@@ -128,7 +140,7 @@ const MainPage = observer(function MainPage() {
     );
   };
 
-  const saveSubmission = async (submission: LoggingSubmission, foods: ParsedFoodSuggestion[]) => {
+  const saveSubmission = async (submission: LoggingSubmission, foods: CreateFoodEntryRequest[]) => {
     updateSubmission(submission.id, {
       phase: "saving",
       foods,
@@ -200,7 +212,14 @@ const MainPage = observer(function MainPage() {
       });
       return;
     }
-    await saveSubmission(submission, parsed.suggestions);
+    await saveSubmission(
+      submission,
+      parsed.suggestions.map((food) => ({
+        ...food,
+        // The explicitly selected dashboard day is authoritative for this composer.
+        day: submission.timing.defaultLogDay,
+      })),
+    );
   };
 
   const handleChatSubmit = (e: FormEvent) => {
@@ -211,12 +230,40 @@ const MainPage = observer(function MainPage() {
       text: chatInput,
       phase: "parsing",
       foods: [],
-      timing: { ...buildParseFoodTiming(), defaultLogDay: today },
+      timing: { ...buildParseFoodTiming(), defaultLogDay: selectedDay },
     };
     setChatInput("");
     setLoggingSubmissions((current) => [submission, ...current]);
     setChatExpanded(true);
     void parseAndSaveSubmission(submission);
+    focusChatInput();
+  };
+
+  const handleHistoricalSuggestion = (suggestion: HistoricalFoodSuggestion) => {
+    const timing = { ...buildParseFoodTiming(), defaultLogDay: selectedDay };
+    const food: CreateFoodEntryRequest = {
+      day: selectedDay,
+      mealType: timing.defaultMealType,
+      name: suggestion.name,
+      calories: suggestion.calories,
+      protein: suggestion.protein,
+      carbs: suggestion.carbs,
+      fats: suggestion.fats,
+      fiber: suggestion.fiber,
+      ...(suggestion.portion ? { portion: suggestion.portion } : {}),
+      ...(suggestion.mealSlug ? { mealSlug: suggestion.mealSlug } : {}),
+    };
+    const submission: LoggingSubmission = {
+      id: nextSubmissionId(),
+      text: suggestion.name,
+      phase: "saving",
+      foods: [food],
+      timing,
+    };
+    setChatInput("");
+    setLoggingSubmissions((current) => [submission, ...current]);
+    foodLog.historicalSuggestions.clear();
+    void saveSubmission(submission, [food]);
     focusChatInput();
   };
 
@@ -318,7 +365,7 @@ const MainPage = observer(function MainPage() {
     loggingSubmissions.flatMap((submission) => {
       if (
         submission.phase === "parsing" &&
-        submission.timing.defaultLogDay === today &&
+        submission.timing.defaultLogDay === selectedDay &&
         submission.timing.defaultMealType === mealType
       ) {
         return [{
@@ -329,7 +376,7 @@ const MainPage = observer(function MainPage() {
       }
       if (submission.phase !== "saving") return [];
       return submission.foods.flatMap((food, index) =>
-        food.day === today && food.mealType === mealType
+        food.day === selectedDay && food.mealType === mealType
           ? [{
               id: `${submission.id}-${index}`,
               label: food.name,
@@ -340,9 +387,21 @@ const MainPage = observer(function MainPage() {
     });
 
   useEffect(() => {
-    const { from, to } = weekRangeEndingOn(today);
+    const { from, to } = weekRangeEndingOn(selectedDay);
     void foodLog.frequentWeekRead.load({ from, to, limit: CHAT_SUGGESTION_LIMIT });
-  }, [today, dayData, foodLog.frequentWeekRead]);
+  }, [selectedDay, dayData, foodLog.frequentWeekRead]);
+
+  useEffect(() => {
+    const query = chatInput.trim();
+    if (!query) {
+      foodLog.historicalSuggestions.clear();
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(() => {
+      void foodLog.historicalSuggestions.load(query);
+    }, 150);
+    return () => window.clearTimeout(timeoutId);
+  }, [chatInput, foodLog.historicalSuggestions]);
 
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background">
@@ -368,10 +427,46 @@ const MainPage = observer(function MainPage() {
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))] pt-4">
+        <div className="mb-4 flex items-center justify-between gap-2" aria-label={t("main.dateNavigation")}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            aria-label={t("main.previousDay")}
+            onClick={() => setSelectedDay((day) => addDaysLocal(day, -1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0 flex-1 text-center">
+            <Text weight="semibold" className="capitalize">
+              {formatCalendarDate(selectedDay, i18n.resolvedLanguage ?? i18n.language)}
+            </Text>
+            {selectedDay !== today ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-1"
+                onClick={() => setSelectedDay(today)}
+              >
+                {t("main.returnToToday")}
+              </Button>
+            ) : null}
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            aria-label={t("main.nextDay")}
+            onClick={() => setSelectedDay((day) => addDaysLocal(day, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <AsyncSection
           fetchState={dayFetch}
           errorKey={foodLog.dayRead.errorKey}
-          onRetry={() => void foodLog.dayRead.loadDay(today)}
+          onRetry={() => void foodLog.dayRead.loadDay(selectedDay)}
         >
           {dayData ? (
             <>
@@ -382,7 +477,7 @@ const MainPage = observer(function MainPage() {
                     className="min-h-0 min-w-0 h-full"
                     consumed={dayData.totalCalories}
                     goal={dayData.calorieGoal}
-                    caption={t("main.caloriesToday")}
+                    caption={t("main.caloriesForDay")}
                   />
                   <Card className="flex h-full min-h-0 min-w-0 flex-col px-0 py-2">
                     <div className="flex w-full flex-1 flex-col items-center justify-center">
@@ -642,6 +737,50 @@ const MainPage = observer(function MainPage() {
                         ) : null}
                       </Card>
                     ))}
+                  </div>
+                ) : null}
+
+                {chatInput.trim() && foodLog.historicalSuggestions.items.length > 0 ? (
+                  <div className="shrink-0 rounded-xl border border-border bg-card" role="listbox" aria-label={t("main.historicalSuggestions")}>
+                    <Text weight="semibold" className="px-4 pt-3 pb-2">
+                      {t("main.historicalSuggestions")}
+                    </Text>
+                    <ul>
+                      {foodLog.historicalSuggestions.items.map((item, index) => (
+                        <li
+                          key={`${item.name}|${item.portion ?? ""}|${item.calories}|${item.protein}|${item.carbs}|${item.fats}|${item.fiber}|${index}`}
+                          className="border-t border-border/70"
+                        >
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={false}
+                            className="w-full px-4 py-3 text-left transition-colors hover:bg-accent/90 active:bg-accent"
+                            onClick={() => handleHistoricalSuggestion(item)}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <Text as="span" weight="medium" className="block break-words">
+                                  {item.name}
+                                </Text>
+                                <Text as="span" variant="muted" size="sm" className="mt-0.5 block">
+                                  {item.portion ?? t("main.portionNotRecorded")} · {t("main.caloriesValue", { calories: item.calories })}
+                                </Text>
+                              </div>
+                              <Text as="span" variant="muted" size="sm" className="shrink-0 text-right">
+                                {t("main.usedCount", { count: item.usageCount })}
+                                <br />
+                                {formatLogDayLabel(
+                                  item.lastUsedDay,
+                                  localIsoDate(),
+                                  i18n.resolvedLanguage ?? i18n.language,
+                                )}
+                              </Text>
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 ) : null}
 

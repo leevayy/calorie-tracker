@@ -87,3 +87,27 @@ export const FrequentFoodsResponseSchema = z.object({
   items: z.array(FrequentFoodItemSchema),
 });
 export type FrequentFoodsResponse = z.infer<typeof FrequentFoodsResponseSchema>;
+
+/** `GET /food-suggestions?query=&limit=` — exact historical configurations ranked for reuse. */
+export const HistoricalFoodSuggestionsQuerySchema = z.object({
+  query: z.string().trim().min(1).max(200),
+  limit: z.coerce.number().int().min(1).max(20).optional().default(8),
+});
+export type HistoricalFoodSuggestionsQuery = z.infer<
+  typeof HistoricalFoodSuggestionsQuerySchema
+>;
+
+export const HistoricalFoodSuggestionSchema = FoodMacrosSchema.extend({
+  /** Stored slug lets reuse skip the AI slug-resolution request too. */
+  mealSlug: z.string().min(1).optional(),
+  usageCount: z.number().int().positive(),
+  lastUsedDay: IsoDateSchema,
+});
+export type HistoricalFoodSuggestion = z.infer<typeof HistoricalFoodSuggestionSchema>;
+
+export const HistoricalFoodSuggestionsResponseSchema = z.object({
+  items: z.array(HistoricalFoodSuggestionSchema),
+});
+export type HistoricalFoodSuggestionsResponse = z.infer<
+  typeof HistoricalFoodSuggestionsResponseSchema
+>;

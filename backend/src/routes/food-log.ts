@@ -11,6 +11,8 @@ import {
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
+  HistoricalFoodSuggestionsQuerySchema,
+  HistoricalFoodSuggestionsResponseSchema,
   UpdateFoodEntryBodySchema,
   type CreateFoodEntryRequest,
   type FoodEntryResponse,
@@ -137,6 +139,46 @@ export async function registerFoodLogRoutes(
 ): Promise<void> {
   const dependencies = { ...defaultDependencies, ...overrides };
   const { repository } = dependencies;
+
+  app.get(
+    "/food-suggestions",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        querystring: toJsonSchema(HistoricalFoodSuggestionsQuerySchema),
+        response: {
+          200: toJsonSchema(HistoricalFoodSuggestionsResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
+
+      const parsed = HistoricalFoodSuggestionsQuerySchema.safeParse(request.query);
+      if (!parsed.success) return sendValidationError(reply);
+
+      const user = await repository.findUser(userId);
+      if (!user) return sendUnauthorized(reply);
+
+      const items = await repository.findHistoricalFoodSuggestions(
+        userId,
+        parsed.data.query,
+        parsed.data.limit,
+      );
+      return reply.status(200).send(HistoricalFoodSuggestionsResponseSchema.parse({
+        items: items.map((item) => ({
+          ...item,
+          portion: item.portion ?? undefined,
+          mealSlug: item.mealSlug ?? undefined,
+        })),
+      }));
+    },
+  );
 
   app.get(
     "/frequent-foods",

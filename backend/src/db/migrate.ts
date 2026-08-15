@@ -41,6 +41,11 @@ ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS meal_slug text;
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS fiber real NOT NULL DEFAULT 0;
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS food_entries_active_name_trgm_idx
+  ON food_entries USING gin (lower(name) gin_trgm_ops)
+  WHERE deleted_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS maintenance_jobs (
   name text PRIMARY KEY,
   completed_at timestamptz NOT NULL DEFAULT now()

@@ -99,6 +99,16 @@ export function addDaysLocal(iso: string, deltaDays: number): string {
   return localIsoDate(d);
 }
 
+/** Full, localized dashboard heading for an ISO calendar day. */
+export function formatCalendarDate(iso: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(parseIsoDateLocal(iso));
+}
+
 /** Inclusive range of local calendar days; `from` and `to` are YYYY-MM-DD, `from <= to`. */
 export function enumerateLocalIsoDatesInclusive(from: string, to: string): string[] {
   const out: string[] = [];

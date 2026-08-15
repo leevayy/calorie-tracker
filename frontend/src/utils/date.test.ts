@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildParseFoodTiming, formatLogDayLabel } from "./date";
+import { addDaysLocal, buildParseFoodTiming, formatCalendarDate, formatLogDayLabel } from "./date";
 
 describe("buildParseFoodTiming", () => {
   it("keeps the calendar date but defaults logging to the previous day shortly after midnight", () => {
@@ -30,5 +30,16 @@ describe("formatLogDayLabel", () => {
 
   it("uses a calendar label for older days", () => {
     expect(formatLogDayLabel("2026-08-10", "2026-08-15", "en-US")).toBe("Aug 10");
+  });
+});
+
+describe("calendar-day navigation", () => {
+  it("crosses month and year boundaries in local calendar time", () => {
+    expect(addDaysLocal("2026-01-01", -1)).toBe("2025-12-31");
+    expect(addDaysLocal("2026-02-28", 1)).toBe("2026-03-01");
+  });
+
+  it("formats an unambiguous selected date", () => {
+    expect(formatCalendarDate("2026-08-15", "en-US")).toContain("August 15, 2026");
   });
 });

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db/client.ts";
 import { foodEntriesTable, usersTable } from "../db/schema.ts";
 
@@ -34,6 +34,19 @@ export type FrequentFoodRecord = {
   count: number;
 };
 
+export type HistoricalFoodSuggestionRecord = {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  fiber: number;
+  portion: string | null;
+  mealSlug: string | null;
+  usageCount: number;
+  lastUsedDay: string;
+};
+
 class IncompleteFoodEntryBatchError extends Error {}
 
 export interface FoodLogRepository {
@@ -44,6 +57,11 @@ export interface FoodLogRepository {
     to: string,
     limit: number,
   ): Promise<FrequentFoodRecord[]>;
+  findHistoricalFoodSuggestions(
+    userId: string,
+    query: string,
+    limit: number,
+  ): Promise<HistoricalFoodSuggestionRecord[]>;
   findDayEntries(userId: string, day: string): Promise<FoodEntryRecord[]>;
   findActiveEntry(userId: string, entryId: string): Promise<FoodEntryRecord | null>;
   createEntriesAtomic(entries: FoodEntryRecord[]): Promise<FoodEntryRecord[]>;
@@ -95,6 +113,51 @@ export const drizzleFoodLogRepository: FoodLogRepository = {
       )
       .groupBy(foodEntriesTable.name)
       .orderBy(desc(countSql), asc(foodEntriesTable.name))
+      .limit(limit);
+  },
+
+  async findHistoricalFoodSuggestions(userId, query, limit) {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const usageCount = sql<number>`cast(count(*) as int)`;
+    const lastUsedDay = sql<string>`max(${foodEntriesTable.day})`;
+    const relevance = sql<number>`case
+      when lower(${foodEntriesTable.name}) = ${normalizedQuery} then 3
+      when lower(${foodEntriesTable.name}) like ${`${normalizedQuery}%`} then 2
+      else 1
+    end`;
+
+    return db
+      .select({
+        name: foodEntriesTable.name,
+        calories: foodEntriesTable.calories,
+        protein: foodEntriesTable.protein,
+        carbs: foodEntriesTable.carbs,
+        fats: foodEntriesTable.fats,
+        fiber: foodEntriesTable.fiber,
+        portion: foodEntriesTable.portion,
+        mealSlug: foodEntriesTable.mealSlug,
+        usageCount,
+        lastUsedDay,
+      })
+      .from(foodEntriesTable)
+      .where(
+        and(
+          eq(foodEntriesTable.userId, userId),
+          ilike(foodEntriesTable.name, `%${normalizedQuery}%`),
+          isNull(foodEntriesTable.deletedAt),
+        ),
+      )
+      .groupBy(
+        foodEntriesTable.name,
+        foodEntriesTable.calories,
+        foodEntriesTable.protein,
+        foodEntriesTable.carbs,
+        foodEntriesTable.fats,
+        foodEntriesTable.fiber,
+        foodEntriesTable.portion,
+        foodEntriesTable.mealSlug,
+      )
+      .orderBy(desc(relevance), desc(usageCount), desc(lastUsedDay), asc(foodEntriesTable.name))
       .limit(limit);
   },
 

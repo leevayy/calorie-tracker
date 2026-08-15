@@ -16,6 +16,7 @@ const defaultSnapshot = {
     entryUpdate: {},
     entryDelete: {},
     frequentWeekRead: {},
+    historicalSuggestions: {},
   },
   history: {},
   dailyTip: {},

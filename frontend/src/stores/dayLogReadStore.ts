@@ -10,6 +10,7 @@ export const DayLogReadStore = types
     data: types.maybe(types.frozen<DayLogResponse>()),
     fetchState: types.optional(FetchStateModel, "initial"),
     errorKey: types.optional(types.string, ""),
+    requestId: types.optional(types.integer, 0),
   })
   .views((self) => ({
     get isLoading() {
@@ -24,15 +25,18 @@ export const DayLogReadStore = types
       self.day = day;
     },
     loadDay: flow(function* (day: string) {
-      if (self.fetchState === "loading") return;
+      const requestId = self.requestId + 1;
+      self.requestId = requestId;
       self.day = day;
       self.fetchState = "loading";
       self.errorKey = "";
       try {
         const data = (yield apiGetDayLog(day)) as DayLogResponse;
+        if (self.requestId !== requestId) return;
         self.data = data;
         self.fetchState = "success";
       } catch (e) {
+        if (self.requestId !== requestId) return;
         self.fetchState = "error";
         self.errorKey = errorMessageKey(e);
       }

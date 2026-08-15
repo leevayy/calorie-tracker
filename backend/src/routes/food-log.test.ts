@@ -76,6 +76,71 @@ class MemoryFoodLogRepository implements FoodLogRepository {
       .slice(0, limit);
   }
 
+  async findHistoricalFoodSuggestions(userId: string, query: string, limit: number) {
+    const normalized = query.trim().toLocaleLowerCase();
+    const groups = new Map<string, {
+      name: string;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fats: number;
+      fiber: number;
+      portion: string | null;
+      mealSlug: string | null;
+      usageCount: number;
+      lastUsedDay: string;
+    }>();
+
+    for (const item of this.entries) {
+      if (
+        item.userId !== userId ||
+        item.deletedAt !== null ||
+        !item.name.toLocaleLowerCase().includes(normalized)
+      ) continue;
+      const key = JSON.stringify([
+        item.name,
+        item.portion,
+        item.calories,
+        item.protein,
+        item.carbs,
+        item.fats,
+        item.fiber,
+        item.mealSlug,
+      ]);
+      const current = groups.get(key);
+      if (current) {
+        current.usageCount += 1;
+        if (item.day > current.lastUsedDay) current.lastUsedDay = item.day;
+      } else {
+        groups.set(key, {
+          name: item.name,
+          calories: item.calories,
+          protein: item.protein,
+          carbs: item.carbs,
+          fats: item.fats,
+          fiber: item.fiber,
+          portion: item.portion,
+          mealSlug: item.mealSlug,
+          usageCount: 1,
+          lastUsedDay: item.day,
+        });
+      }
+    }
+
+    const relevance = (name: string) => {
+      const normalizedName = name.toLocaleLowerCase();
+      return normalizedName === normalized ? 3 : normalizedName.startsWith(normalized) ? 2 : 1;
+    };
+    return [...groups.values()]
+      .sort((left, right) =>
+        relevance(right.name) - relevance(left.name) ||
+        right.usageCount - left.usageCount ||
+        right.lastUsedDay.localeCompare(left.lastUsedDay) ||
+        left.name.localeCompare(right.name),
+      )
+      .slice(0, limit);
+  }
+
   async findDayEntries(userId: string, day: string): Promise<FoodEntryRecord[]> {
     return this.entries
       .filter((item) => item.userId === userId && item.day === day && item.deletedAt === null)
@@ -188,6 +253,56 @@ afterEach(async () => {
 });
 
 describe("food log routes", () => {
+  test("matches and ranks exact historical configurations without merging portions", async () => {
+    const entries = [
+      entry({ day: "2026-08-01", name: "Greek yogurt", portion: "100 g", calories: 90 }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000002",
+        day: "2026-08-12",
+        name: "Greek yogurt",
+        portion: "100 g",
+        calories: 90,
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000003",
+        day: "2026-08-14",
+        name: "Greek yogurt",
+        portion: "200 g",
+        calories: 180,
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000004",
+        day: "2026-08-15",
+        name: "Vanilla Greek yogurt",
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000005",
+        name: "Foreign yogurt",
+        userId: OTHER_USER_ID,
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000006",
+        name: "Deleted yogurt",
+        deletedAt: FIXED_NOW,
+      }),
+    ];
+    const app = await buildTestApp(new MemoryFoodLogRepository(entries));
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/food-suggestions?query=greek&limit=3",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      items: [
+        { name: "Greek yogurt", portion: "100 g", calories: 90, usageCount: 2, lastUsedDay: "2026-08-12" },
+        { name: "Greek yogurt", portion: "200 g", calories: 180, usageCount: 1, lastUsedDay: "2026-08-14" },
+        { name: "Vanilla Greek yogurt", usageCount: 1, lastUsedDay: "2026-08-15" },
+      ],
+    });
+  });
+
   test("creates a recognized group across days and meals in one batch", async () => {
     const repository = new MemoryFoodLogRepository();
     const app = await buildTestApp(repository);

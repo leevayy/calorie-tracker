@@ -5,6 +5,7 @@ import { CreateFoodEntriesStore } from "./createFoodEntriesStore";
 import { DayLogReadStore } from "./dayLogReadStore";
 import { DeleteFoodEntryStore } from "./deleteFoodEntryStore";
 import { FrequentFoodsWeekReadStore } from "./frequentFoodsWeekReadStore";
+import { HistoricalFoodSuggestionsStore } from "./historicalFoodSuggestionsStore";
 import {
   mergeFoodEntries,
   mergeFoodEntry,
@@ -21,6 +22,7 @@ export const FoodLogStore = types
     entryUpdate: UpdateFoodEntryStore,
     entryDelete: DeleteFoodEntryStore,
     frequentWeekRead: FrequentFoodsWeekReadStore,
+    historicalSuggestions: types.optional(HistoricalFoodSuggestionsStore, {}),
   })
   .actions((self) => ({
     applyCreatedEntry(day: string, entry: FoodEntryResponse) {

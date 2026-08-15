@@ -63,6 +63,12 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 **Response:** `200` `DayLogResponse` — `day`, `calorieGoal` (effective for that day), `totalCalories`, `meals` with arrays per `MealType` (`breakfast`, `lunch`, `dinner`, optional `snack`). Each item is `FoodEntryResponse`.
 
+### `GET /food-suggestions?query=&limit=`
+
+Searches the authenticated user's active food-entry history by name. Results keep distinct portions and nutrition configurations separate and are ranked by text relevance, usage count, then recency.
+
+**Response:** `200` `HistoricalFoodSuggestionsResponse` — reusable stored food fields plus `usageCount` and `lastUsedDay`. Supplying the returned `mealSlug` when creating the copied entry avoids another AI slug-resolution request.
+
 ### `POST /days/:day/entries`
 
 **Body:** `CreateFoodEntryBody` (`mealType`, food fields). The calendar day is taken from the path only.

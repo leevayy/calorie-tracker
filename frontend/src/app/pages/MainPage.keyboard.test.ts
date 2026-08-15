@@ -27,6 +27,12 @@ const { rootStore } = vi.hoisted(() => ({
         items: [],
         load: vi.fn(),
       },
+      historicalSuggestions: {
+        items: [],
+        fetchState: "initial",
+        load: vi.fn(),
+        clear: vi.fn(),
+      },
       entryCreate: {
         fetchState: "idle",
         errorKey: null,

@@ -8,6 +8,8 @@ import type {
   FoodEntryResponse,
   FrequentFoodsQuery,
   FrequentFoodsResponse,
+  HistoricalFoodSuggestionsQuery,
+  HistoricalFoodSuggestionsResponse,
   UpdateFoodEntryBody,
 } from "@contracts/food-log";
 import {
@@ -17,6 +19,8 @@ import {
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
+  HistoricalFoodSuggestionsQuerySchema,
+  HistoricalFoodSuggestionsResponseSchema,
 } from "@contracts/food-log";
 import { apiClient } from "./client";
 import { ApiError, parseResponse } from "./errors";
@@ -30,6 +34,19 @@ export async function apiGetFrequentFoods(query: FrequentFoodsQuery): Promise<Fr
     throw new ApiError("errors.http_generic", res.status);
   }
   return parseResponse(FrequentFoodsResponseSchema, res.data);
+}
+
+export async function apiGetHistoricalFoodSuggestions(
+  query: HistoricalFoodSuggestionsQuery,
+): Promise<HistoricalFoodSuggestionsResponse> {
+  const q = HistoricalFoodSuggestionsQuerySchema.parse(query);
+  const params = new URLSearchParams({ query: q.query, limit: String(q.limit) });
+  const res = await apiClient.get(`/api/v1/food-suggestions?${params.toString()}`);
+  if (res.status !== 200) {
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(HistoricalFoodSuggestionsResponseSchema, res.data);
 }
 
 export async function apiGetDayLog(day: string): Promise<DayLogResponse> {
