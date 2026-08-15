@@ -1,11 +1,15 @@
 import type {
   CreateFoodEntryBody,
+  CreateFoodEntriesBody,
+  CreateFoodEntriesResponse,
   DayLogResponse,
   FoodEntryResponse,
   FrequentFoodsQuery,
   FrequentFoodsResponse,
+  UpdateFoodEntryBody,
 } from "@contracts/food-log";
 import {
+  CreateFoodEntriesResponseSchema,
   DayLogResponseSchema,
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
@@ -44,10 +48,45 @@ export async function apiCreateFoodEntry(day: string, body: CreateFoodEntryBody)
   return parseResponse(FoodEntryResponseSchema, res.data);
 }
 
-export async function apiDeleteFoodEntry(entryId: string): Promise<void> {
-  const res = await apiClient.delete(`/api/v1/entries/${encodeURIComponent(entryId)}`);
-  if (res.status !== 204) {
+export async function apiCreateFoodEntries(
+  body: CreateFoodEntriesBody,
+): Promise<CreateFoodEntriesResponse> {
+  const res = await apiClient.post("/api/v1/entries/batch", body);
+  if (res.status !== 201) {
+    if (res.status === 400) throw new ApiError("errors.http_400", res.status);
     if (res.status === 401) throw new ApiError("errors.http_401", res.status);
     throw new ApiError("errors.http_generic", res.status);
   }
+  return parseResponse(CreateFoodEntriesResponseSchema, res.data);
+}
+
+export async function apiUpdateFoodEntry(
+  entryId: string,
+  body: UpdateFoodEntryBody,
+): Promise<FoodEntryResponse> {
+  const res = await apiClient.patch(`/api/v1/entries/${encodeURIComponent(entryId)}`, body);
+  if (res.status !== 200) {
+    if (res.status === 400) throw new ApiError("errors.http_400", res.status);
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(FoodEntryResponseSchema, res.data);
+}
+
+export async function apiDeleteFoodEntry(entryId: string): Promise<FoodEntryResponse> {
+  const res = await apiClient.delete(`/api/v1/entries/${encodeURIComponent(entryId)}`);
+  if (res.status !== 200) {
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(FoodEntryResponseSchema, res.data);
+}
+
+export async function apiRestoreFoodEntry(entryId: string): Promise<FoodEntryResponse> {
+  const res = await apiClient.post(`/api/v1/entries/${encodeURIComponent(entryId)}/restore`);
+  if (res.status !== 200) {
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(FoodEntryResponseSchema, res.data);
 }

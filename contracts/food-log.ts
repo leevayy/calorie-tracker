@@ -25,6 +25,24 @@ export const CreateFoodEntryRequestSchema = CreateFoodEntryBodySchema.extend({
 });
 export type CreateFoodEntryRequest = z.infer<typeof CreateFoodEntryRequestSchema>;
 
+/** `POST /entries/batch` — all entries are persisted atomically, even across days/meals. */
+export const CreateFoodEntriesBodySchema = z.object({
+  entries: z.array(CreateFoodEntryRequestSchema).min(1),
+});
+export type CreateFoodEntriesBody = z.infer<typeof CreateFoodEntriesBodySchema>;
+
+export const CreateFoodEntriesResponseSchema = z.object({
+  entries: z.array(FoodEntryResponseSchema).min(1),
+});
+export type CreateFoodEntriesResponse = z.infer<typeof CreateFoodEntriesResponseSchema>;
+
+/** `PATCH /entries/:entryId` — full editable replacement; `mealSlug` is server-derived. */
+export const UpdateFoodEntryBodySchema = FoodMacrosSchema.extend({
+  day: IsoDateSchema,
+  mealType: MealTypeSchema,
+});
+export type UpdateFoodEntryBody = z.infer<typeof UpdateFoodEntryBodySchema>;
+
 const mealBucketsSchema = z.object({
   breakfast: z.array(FoodEntryResponseSchema),
   lunch: z.array(FoodEntryResponseSchema),

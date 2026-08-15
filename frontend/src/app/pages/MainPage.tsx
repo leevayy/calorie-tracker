@@ -1,5 +1,10 @@
 import { observer } from "mobx-react-lite";
 import type { ParsedFoodSuggestion } from "@contracts/ai-food";
+import type {
+  CreateFoodEntryRequest,
+  FoodEntryResponse,
+  UpdateFoodEntryBody,
+} from "@contracts/food-log";
 import type { FormEvent } from "react";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
@@ -9,6 +14,7 @@ import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
 import { FoodSuggestion } from "../components/FoodSuggestion";
+import { FoodEntryEditor } from "../components/FoodEntryEditor";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useAppTabChat } from "../context/AppTabChatContext";
@@ -32,7 +38,10 @@ import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 
 const CHAT_SUGGESTION_LIMIT = 3;
 
-type PendingFoodSuggestion = { id: string; food: ParsedFoodSuggestion };
+type PendingFoodGroup = {
+  id: string;
+  foods: ParsedFoodSuggestion[];
+};
 
 const MainPage = observer(function MainPage() {
   useRequireAuth();
@@ -43,13 +52,16 @@ const MainPage = observer(function MainPage() {
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
-  const [pendingSuggestions, setPendingSuggestions] = useState<PendingFoodSuggestion[]>([]);
-  const pendingSuggestionIdRef = useRef(0);
-  const nextPendingSuggestionId = () => {
-    pendingSuggestionIdRef.current += 1;
-    return `pending-food-${pendingSuggestionIdRef.current}`;
+  const [pendingGroups, setPendingGroups] = useState<PendingFoodGroup[]>([]);
+  const pendingGroupIdRef = useRef(0);
+  const nextPendingGroupId = () => {
+    pendingGroupIdRef.current += 1;
+    return `pending-food-group-${pendingGroupIdRef.current}`;
   };
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [savingGroupId, setSavingGroupId] = useState<string | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<FoodEntryResponse | null>(null);
+  const [undoEntry, setUndoEntry] = useState<FoodEntryResponse | null>(null);
   const expandedInputRef = useRef<HTMLInputElement>(null);
 
   const setExpandedInputRef = useCallback((input: HTMLInputElement | null) => {
@@ -105,12 +117,11 @@ const MainPage = observer(function MainPage() {
     });
     if (aiParse.fetchState !== "success") return;
     setChatInput("");
-    const list = (aiParse.data?.suggestions ?? []).slice(0, CHAT_SUGGESTION_LIMIT);
-    const incoming = list.map((food) => ({
-      id: nextPendingSuggestionId(),
-      food,
-    }));
-    setPendingSuggestions((prev) => [...incoming, ...prev]);
+    const foods = aiParse.data?.suggestions ?? [];
+    if (foods.length > 0) {
+      const incoming = { id: nextPendingGroupId(), foods };
+      setPendingGroups((prev) => [incoming, ...prev]);
+    }
     setShowSuggestions(true);
     setChatExpanded(true);
   };
@@ -119,11 +130,10 @@ const MainPage = observer(function MainPage() {
     setChatExpanded(open);
   };
 
-  const handleAcceptFood = async (idx: number) => {
-    const entry = pendingSuggestions[idx];
-    if (!entry) return;
-    const { food } = entry;
-    await foodLog.entryCreate.create(food.day, {
+  const handleAcceptGroup = async (group: PendingFoodGroup) => {
+    if (foodLog.entriesCreate.isLoading) return;
+    const entries: CreateFoodEntryRequest[] = group.foods.map((food) => ({
+      day: food.day,
       mealType: food.mealType,
       name: food.name,
       calories: food.calories,
@@ -133,27 +143,70 @@ const MainPage = observer(function MainPage() {
       fiber: food.fiber,
       portion: food.portion,
       ...(food.mealSlug ? { mealSlug: food.mealSlug } : {}),
-    });
-    if (foodLog.entryCreate.fetchState === "success") {
-      setPendingSuggestions((prev) => {
-        const next = prev.filter((_, i) => i !== idx);
+    }));
+    setSavingGroupId(group.id);
+    try {
+      const created = await foodLog.entriesCreate.create(entries);
+      if (!created) return;
+      setPendingGroups((prev) => {
+        const next = prev.filter((candidate) => candidate.id !== group.id);
         if (next.length === 0) setShowSuggestions(false);
         return next;
       });
+    } finally {
+      setSavingGroupId(null);
     }
   };
 
-  const handleRejectFood = (idx: number) => {
-    setPendingSuggestions((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
+  const dismissGroup = (groupId: string) => {
+    setPendingGroups((prev) => {
+      const next = prev.filter((group) => group.id !== groupId);
       if (next.length === 0) setShowSuggestions(false);
       return next;
     });
   };
 
+  const openEntryEditor = (entry: FoodEntryResponse) => {
+    foodLog.entryUpdate.clearError();
+    foodLog.entryDelete.clearError();
+    setSelectedEntry(entry);
+  };
+
+  const handleSaveEntry = async (
+    entry: FoodEntryResponse,
+    body: UpdateFoodEntryBody,
+  ): Promise<boolean> => Boolean(await foodLog.entryUpdate.update(entry, body));
+
+  const handleDeleteEntry = async (entry: FoodEntryResponse): Promise<boolean> => {
+    const deleted = await foodLog.entryDelete.remove(entry);
+    if (!deleted) return false;
+    setUndoEntry(deleted);
+    return true;
+  };
+
+  const handleUndoDelete = async () => {
+    if (!undoEntry) return;
+    const restored = await foodLog.entryDelete.restore(undoEntry.id);
+    if (restored) setUndoEntry(null);
+  };
+
+  useEffect(() => {
+    if (!undoEntry) return undefined;
+    const timeoutId = window.setTimeout(() => setUndoEntry(null), 8_000);
+    return () => window.clearTimeout(timeoutId);
+  }, [undoEntry]);
+
   const dayData = foodLog.dayRead.data;
   const dayFetch = foodLog.dayRead.fetchState;
-  const deleteBusy = foodLog.entryDelete.fetchState === "loading";
+  const mutationBusy =
+    foodLog.entryUpdate.fetchState === "loading" ||
+    foodLog.entryDelete.fetchState === "loading";
+  const editorErrorKey =
+    foodLog.entryUpdate.fetchState === "error"
+      ? foodLog.entryUpdate.errorKey
+      : foodLog.entryDelete.fetchState === "error"
+        ? foodLog.entryDelete.errorKey
+        : "";
 
   useEffect(() => {
     const { from, to } = weekRangeEndingOn(today);
@@ -249,29 +302,25 @@ const MainPage = observer(function MainPage() {
                   title={t("meals.breakfast")}
                   foods={dayData.meals.breakfast}
                   emptyLabel={t("states.emptyMeals")}
-                  removeDisabled={deleteBusy}
-                  onRemove={(food) => food.id && void foodLog.entryDelete.remove(food.id)}
+                  onEdit={openEntryEditor}
                 />
                 <MealSection
                   title={t("meals.lunch")}
                   foods={dayData.meals.lunch}
                   emptyLabel={t("states.emptyMeals")}
-                  removeDisabled={deleteBusy}
-                  onRemove={(food) => food.id && void foodLog.entryDelete.remove(food.id)}
+                  onEdit={openEntryEditor}
                 />
                 <MealSection
                   title={t("meals.dinner")}
                   foods={dayData.meals.dinner}
                   emptyLabel={t("states.emptyMeals")}
-                  removeDisabled={deleteBusy}
-                  onRemove={(food) => food.id && void foodLog.entryDelete.remove(food.id)}
+                  onEdit={openEntryEditor}
                 />
                 <MealSection
                   title={t("meals.snack")}
                   foods={dayData.meals.snack ?? []}
                   emptyLabel={t("states.emptyMeals")}
-                  removeDisabled={deleteBusy}
-                  onRemove={(food) => food.id && void foodLog.entryDelete.remove(food.id)}
+                  onEdit={openEntryEditor}
                 />
               </div>
             </>
@@ -407,7 +456,7 @@ const MainPage = observer(function MainPage() {
                         type="button"
                         onClick={() => {
                           setShowSuggestions(false);
-                          setPendingSuggestions([]);
+                          setPendingGroups([]);
                         }}
                         className="group text-muted-foreground hover:text-foreground"
                       >
@@ -416,44 +465,70 @@ const MainPage = observer(function MainPage() {
                         </Text>
                       </button>
                     </div>
-                    {pendingSuggestions.length === 0 && aiParse.fetchState === "success" ? (
+                    {pendingGroups.length === 0 && aiParse.fetchState === "success" ? (
                       <Text variant="muted" className="py-2">
                         {t("states.emptySuggestions")}
                       </Text>
                     ) : null}
-                    {pendingSuggestions.map((entry, idx) => {
-                      const previous = pendingSuggestions[idx - 1]?.food;
-                      const startsTargetSection =
-                        !previous ||
-                        previous.day !== entry.food.day ||
-                        previous.mealType !== entry.food.mealType;
+                    {pendingGroups.map((group) => {
                       const locale = i18n.resolvedLanguage ?? i18n.language;
-
                       return (
-                        <Fragment key={entry.id}>
-                          {startsTargetSection ? (
-                            <Text
-                              as="h3"
-                              variant="muted"
-                              size="sm"
-                              weight="medium"
-                              className="pt-2 first:pt-0"
+                        <div
+                          key={group.id}
+                          className="space-y-2 rounded-xl border border-border/70 p-3"
+                        >
+                          {group.foods.map((food, foodIndex) => {
+                            const previous = group.foods[foodIndex - 1];
+                            const startsTargetSection =
+                              !previous ||
+                              previous.day !== food.day ||
+                              previous.mealType !== food.mealType;
+                            return (
+                              <Fragment key={`${group.id}-${foodIndex}`}>
+                                {startsTargetSection ? (
+                                  <Text
+                                    as="h3"
+                                    variant="muted"
+                                    size="sm"
+                                    weight="medium"
+                                    className="pt-2 first:pt-0"
+                                  >
+                                    {formatLogDayLabel(food.day, localIsoDate(), locale)} ·{" "}
+                                    {t(`meals.${food.mealType}`)}
+                                  </Text>
+                                ) : null}
+                                <FoodSuggestion food={food} />
+                              </Fragment>
+                            );
+                          })}
+                          <div className="flex gap-2 pt-1">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="flex-1"
+                              disabled={foodLog.entriesCreate.isLoading}
+                              onClick={() => dismissGroup(group.id)}
                             >
-                              {formatLogDayLabel(entry.food.day, localIsoDate(), locale)} ·{" "}
-                              {t(`meals.${entry.food.mealType}`)}
-                            </Text>
-                          ) : null}
-                          <FoodSuggestion
-                            food={entry.food}
-                            onAccept={() => void handleAcceptFood(idx)}
-                            onReject={() => handleRejectFood(idx)}
-                          />
-                        </Fragment>
+                              {t("main.dismissRecognizedGroup")}
+                            </Button>
+                            <Button
+                              type="button"
+                              className="flex-1"
+                              disabled={foodLog.entriesCreate.isLoading && savingGroupId !== group.id}
+                              loading={savingGroupId === group.id}
+                              onClick={() => void handleAcceptGroup(group)}
+                            >
+                              {foodLog.entriesCreate.isLoading
+                                ? t("main.loggingRecognizedGroup")
+                                : t("main.logRecognizedGroup", { count: group.foods.length })}
+                            </Button>
+                          </div>
+                        </div>
                       );
                     })}
-                    {foodLog.entryCreate.fetchState === "error" && foodLog.entryCreate.errorKey ? (
+                    {foodLog.entriesCreate.fetchState === "error" && foodLog.entriesCreate.errorKey ? (
                       <Text variant="error" className="pt-2" role="alert">
-                        {t(foodLog.entryCreate.errorKey)}
+                        {t(foodLog.entriesCreate.errorKey)}
                       </Text>
                     ) : null}
                   </div>
@@ -463,6 +538,35 @@ const MainPage = observer(function MainPage() {
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+
+      <FoodEntryEditor
+        entry={selectedEntry}
+        busy={mutationBusy}
+        errorKey={editorErrorKey}
+        onClose={() => setSelectedEntry(null)}
+        onSave={handleSaveEntry}
+        onDelete={handleDeleteEntry}
+      />
+
+      {undoEntry ? (
+        <div
+          className="fixed bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
+          role="status"
+        >
+          <Text className="min-w-0 flex-1">
+            {t("entryEditor.undoMessage", { name: undoEntry.name })}
+          </Text>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            loading={foodLog.entryDelete.isLoading}
+            onClick={() => void handleUndoDelete()}
+          >
+            {t("entryEditor.undo")}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 });

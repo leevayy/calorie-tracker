@@ -76,7 +76,34 @@
     "recentLogged": "Чаще всего на этой неделе",
     "foodLogSheetTitle": "Записать еду",
     "closeFoodSheet": "Закрыть",
-    "aiConfidence": "Уверенность в оценке: {{pct}}%"
+    "aiConfidence": "Уверенность в оценке: {{pct}}%",
+    "logRecognizedGroup": "Записать всё ({{count}})",
+    "loggingRecognizedGroup": "Записываем…",
+    "dismissRecognizedGroup": "Убрать"
+  },
+  "entryEditor": {
+    "title": "Изменить запись",
+    "description": "Исправьте данные о записанном продукте.",
+    "name": "Название",
+    "portion": "Порция",
+    "calories": "Калории",
+    "details": "Пищевая ценность",
+    "protein": "Белки",
+    "carbs": "Углеводы",
+    "fats": "Жиры",
+    "fiber": "Клетчатка",
+    "day": "Дата",
+    "meal": "Приём пищи",
+    "save": "Сохранить изменения",
+    "delete": "Удалить запись",
+    "undoMessage": "Запись «{{name}}» удалена.",
+    "undo": "Отменить",
+    "validation": {
+      "required": "Обязательное поле.",
+      "number": "Введите корректное число.",
+      "nonnegative": "Значение не может быть отрицательным.",
+      "date": "Введите корректную дату."
+    }
   },
   "meals": {
     "breakfast": "Завтрак",

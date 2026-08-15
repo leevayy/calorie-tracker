@@ -76,7 +76,34 @@
     "recentLogged": "Әлеге атнада иң еш",
     "foodLogSheetTitle": "Азыкны языгыз",
     "closeFoodSheet": "Ябу",
-    "aiConfidence": "Бәя ышаныч: {{pct}}%"
+    "aiConfidence": "Бәя ышаныч: {{pct}}%",
+    "logRecognizedGroup": "Барысын да теркәү ({{count}})",
+    "loggingRecognizedGroup": "Теркибез…",
+    "dismissRecognizedGroup": "Кире кагу"
+  },
+  "entryEditor": {
+    "title": "Язманы үзгәртү",
+    "description": "Теркәлгән азык турындагы мәгълүматны төзәтегез.",
+    "name": "Исеме",
+    "portion": "Порция",
+    "calories": "Калорияләр",
+    "details": "Туклыклылык кыйммәте",
+    "protein": "Аксымнар",
+    "carbs": "Углеводлар",
+    "fats": "Майлар",
+    "fiber": "Клетчатка",
+    "day": "Дата",
+    "meal": "Аш төре",
+    "save": "Үзгәрешләрне саклау",
+    "delete": "Язманы бетерү",
+    "undoMessage": "«{{name}}» язмасы бетерелде.",
+    "undo": "Кире кайтару",
+    "validation": {
+      "required": "Бу кырны тутырырга кирәк.",
+      "number": "Дөрес сан кертегез.",
+      "nonnegative": "Кыйммәт тискәре була алмый.",
+      "date": "Дөрес дата кертегез."
+    }
   },
   "meals": {
     "breakfast": "Иртәнге аш",

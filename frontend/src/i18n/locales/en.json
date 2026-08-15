@@ -76,7 +76,34 @@
     "recentLogged": "Logged today",
     "foodLogSheetTitle": "Log food",
     "closeFoodSheet": "Close",
-    "aiConfidence": "Estimate confidence: {{pct}}%"
+    "aiConfidence": "Estimate confidence: {{pct}}%",
+    "logRecognizedGroup": "Log all {{count}}",
+    "loggingRecognizedGroup": "Logging…",
+    "dismissRecognizedGroup": "Dismiss"
+  },
+  "entryEditor": {
+    "title": "Edit food",
+    "description": "Update this logged food.",
+    "name": "Name",
+    "portion": "Portion",
+    "calories": "Calories",
+    "details": "Nutrition details",
+    "protein": "Protein",
+    "carbs": "Carbohydrates",
+    "fats": "Fat",
+    "fiber": "Fiber",
+    "day": "Date",
+    "meal": "Meal",
+    "save": "Save changes",
+    "delete": "Delete entry",
+    "undoMessage": "{{name}} was deleted.",
+    "undo": "Undo",
+    "validation": {
+      "required": "This field is required.",
+      "number": "Enter a valid number.",
+      "nonnegative": "Must be zero or greater.",
+      "date": "Enter a valid date."
+    }
   },
   "meals": {
     "breakfast": "Breakfast",

@@ -21,26 +21,47 @@ const EnvSchema = z.object({
   YANDEX_AI_STUDIO_URL: z
     .string()
     .url()
-    .default("https://llm.api.cloud.yandex.net/v1/chat/completions"),
-  YANDEX_AI_STUDIO_MODEL: z.string().default("deepseek-v3-2/latest"),
-  YANDEX_AI_STUDIO_MODEL_QWEN3: z.string().default("qwen3-235b-a22b-fp8/latest"),
+    .default("https://ai.api.cloud.yandex.net/v1/chat/completions"),
+  YANDEX_AI_STUDIO_MODEL: z.string().default("deepseek-v4-flash"),
+  YANDEX_AI_STUDIO_MODEL_QWEN36: z.string().default("qwen3.6-35b-a3b"),
+  YANDEX_AI_STUDIO_MODEL_QWEN3: z.string().default("qwen3-235b-a22b-fp8"),
   /**
    * Override for aiModelPreference `gptoss`. Empty/unset → default slug (confirm in Model Gallery).
    */
   YANDEX_AI_STUDIO_MODEL_GPT_OSS: z.preprocess(
     (val) => {
       const s = val == null ? "" : String(val).trim();
-      return s.length > 0 ? s : "gpt-oss-20b/latest";
+      return s.length > 0 ? s : "gpt-oss-20b";
     },
     z.string().min(1),
   ),
   /**
-   * Override for aiModelPreference `alicegpt`. Empty/unset → YandexGPT slug (Alice family in product; confirm in console).
+   * Override for aiModelPreference `gptoss120`. Empty/unset → current 120B model slug.
+   */
+  YANDEX_AI_STUDIO_MODEL_GPT_OSS_120B: z.preprocess(
+    (val) => {
+      const s = val == null ? "" : String(val).trim();
+      return s.length > 0 ? s : "gpt-oss-120b";
+    },
+    z.string().min(1),
+  ),
+  /**
+   * Override for aiModelPreference `alicegpt`. Empty/unset → flagship Alice AI LLM slug.
    */
   YANDEX_AI_STUDIO_MODEL_ALICE_GPT: z.preprocess(
     (val) => {
       const s = val == null ? "" : String(val).trim();
-      return s.length > 0 ? s : "yandexgpt/latest";
+      return s.length > 0 ? s : "aliceai-llm";
+    },
+    z.string().min(1),
+  ),
+  /**
+   * Override for aiModelPreference `aliceflash`. Empty/unset → lightweight Alice AI LLM slug.
+   */
+  YANDEX_AI_STUDIO_MODEL_ALICE_FLASH: z.preprocess(
+    (val) => {
+      const s = val == null ? "" : String(val).trim();
+      return s.length > 0 ? s : "aliceai-llm-flash";
     },
     z.string().min(1),
   ),

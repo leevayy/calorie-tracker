@@ -1,10 +1,18 @@
+import type { FoodEntryResponse } from "@contracts/food-log";
 import { flow, getRoot, types } from "mobx-state-tree";
-import { apiDeleteFoodEntry } from "@/api/foodLog";
+import { apiDeleteFoodEntry, apiRestoreFoodEntry } from "@/api/foodLog";
 import { errorMessageKey } from "@/api/errors";
 import { FetchStateModel } from "./fetchState";
 
-type RootWithFoodLog = {
-  foodLog: { applyDeletedEntry(entryId: string): void };
+type RootWithFoodEntryTargets = {
+  foodLog: {
+    applyDeletedEntry(entry: FoodEntryResponse): void;
+    applyRestoredEntry(entry: FoodEntryResponse): void;
+  };
+  history: {
+    applyDeletedEntry(entry: FoodEntryResponse): void;
+    applyRestoredEntry(entry: FoodEntryResponse): void;
+  };
 };
 
 export const DeleteFoodEntryStore = types
@@ -18,18 +26,45 @@ export const DeleteFoodEntryStore = types
     },
   }))
   .actions((self) => ({
-    remove: flow(function* (entryId: string) {
+    clearError() {
       if (self.fetchState === "loading") return;
+      self.fetchState = "initial";
+      self.errorKey = "";
+    },
+    remove: flow(function* (entry: FoodEntryResponse) {
+      if (self.fetchState === "loading") return undefined;
+      self.fetchState = "loading";
+      self.errorKey = "";
+      const root = getRoot(self) as RootWithFoodEntryTargets;
+      root.foodLog.applyDeletedEntry(entry);
+      root.history.applyDeletedEntry(entry);
+      try {
+        const deleted = (yield apiDeleteFoodEntry(entry.id)) as FoodEntryResponse;
+        self.fetchState = "success";
+        return deleted;
+      } catch (e) {
+        root.foodLog.applyRestoredEntry(entry);
+        root.history.applyRestoredEntry(entry);
+        self.fetchState = "error";
+        self.errorKey = errorMessageKey(e);
+        return undefined;
+      }
+    }),
+    restore: flow(function* (entryId: string) {
+      if (self.fetchState === "loading") return undefined;
       self.fetchState = "loading";
       self.errorKey = "";
       try {
-        yield apiDeleteFoodEntry(entryId);
-        const root = getRoot(self) as RootWithFoodLog;
-        root.foodLog.applyDeletedEntry(entryId);
+        const restored = (yield apiRestoreFoodEntry(entryId)) as FoodEntryResponse;
+        const root = getRoot(self) as RootWithFoodEntryTargets;
+        root.foodLog.applyRestoredEntry(restored);
+        root.history.applyRestoredEntry(restored);
         self.fetchState = "success";
+        return restored;
       } catch (e) {
         self.fetchState = "error";
         self.errorKey = errorMessageKey(e);
+        return undefined;
       }
     }),
   }));

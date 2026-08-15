@@ -14,8 +14,8 @@ function confidenceBadgeVariant(c: number): "success" | "warning" | "secondary" 
 
 interface FoodSuggestionProps {
   food: ParsedFoodSuggestion;
-  onAccept: () => void;
-  onReject: () => void;
+  onAccept?: () => void;
+  onReject?: () => void;
 }
 
 export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps) {
@@ -46,24 +46,30 @@ export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps
             {macroLine}
           </Text>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onReject}
-            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onAccept}
-            className="h-8 w-8 text-success hover:bg-success/10"
-          >
-            <Check className="h-4 w-4" />
-          </Button>
-        </div>
+        {onAccept || onReject ? (
+          <div className="flex gap-2 shrink-0">
+            {onReject ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onReject}
+                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            ) : null}
+            {onAccept ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onAccept}
+                className="h-8 w-8 text-success hover:bg-success/10"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </Card>
   );

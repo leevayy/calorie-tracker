@@ -76,7 +76,34 @@
     "recentLogged": "Осы аптада жиі жазылған",
     "foodLogSheetTitle": "Тамақты жазу",
     "closeFoodSheet": "Жабу",
-    "aiConfidence": "Баға сенімділігі: {{pct}}%"
+    "aiConfidence": "Баға сенімділігі: {{pct}}%",
+    "logRecognizedGroup": "Барлығын жазу ({{count}})",
+    "loggingRecognizedGroup": "Жазылуда…",
+    "dismissRecognizedGroup": "Бас тарту"
+  },
+  "entryEditor": {
+    "title": "Жазбаны өңдеу",
+    "description": "Енгізілген тағам деректерін түзетіңіз.",
+    "name": "Атауы",
+    "portion": "Порция",
+    "calories": "Калория",
+    "details": "Тағамдық құндылығы",
+    "protein": "Ақуыз",
+    "carbs": "Көмірсулар",
+    "fats": "Майлар",
+    "fiber": "Талшық",
+    "day": "Күн",
+    "meal": "Ас түрі",
+    "save": "Өзгерістерді сақтау",
+    "delete": "Жазбаны жою",
+    "undoMessage": "«{{name}}» жойылды.",
+    "undo": "Қайтару",
+    "validation": {
+      "required": "Бұл өрісті толтырыңыз.",
+      "number": "Дұрыс сан енгізіңіз.",
+      "nonnegative": "Мән теріс болмауы керек.",
+      "date": "Күнді дұрыс енгізіңіз."
+    }
   },
   "meals": {
     "breakfast": "Таңғы ас",

@@ -3,11 +3,25 @@ import type { MealType } from "@contracts/common";
 
 const MEAL_KEYS: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
+function totalCalories(meals: DayLogResponse["meals"]): number {
+  return MEAL_KEYS.reduce((sum, mealType) => {
+    const bucket =
+      mealType === "snack"
+        ? meals.snack ?? []
+        : meals[mealType as "breakfast" | "lunch" | "dinner"];
+    return sum + bucket.reduce((mealSum, entry) => mealSum + entry.calories, 0);
+  }, 0);
+}
+
+function byCreatedAt(a: FoodEntryResponse, b: FoodEntryResponse): number {
+  return a.createdAt.localeCompare(b.createdAt);
+}
+
 export function mergeFoodEntry(data: DayLogResponse, entry: FoodEntryResponse): DayLogResponse {
   const meals = { ...data.meals };
   const key = entry.mealType;
   const prev = key === "snack" ? meals.snack ?? [] : meals[key];
-  const bucket = [...prev, entry];
+  const bucket = [...prev.filter((item) => item.id !== entry.id), entry].sort(byCreatedAt);
   if (key === "snack") {
     meals.snack = bucket;
   } else {
@@ -16,12 +30,20 @@ export function mergeFoodEntry(data: DayLogResponse, entry: FoodEntryResponse): 
   return {
     ...data,
     meals,
-    totalCalories: data.totalCalories + entry.calories,
+    totalCalories: totalCalories(meals),
   };
 }
 
+export function mergeFoodEntries(
+  data: DayLogResponse,
+  entries: FoodEntryResponse[],
+): DayLogResponse {
+  return entries
+    .filter((entry) => entry.day === data.day)
+    .reduce((next, entry) => mergeFoodEntry(next, entry), data);
+}
+
 export function removeFoodEntryById(data: DayLogResponse, entryId: string): DayLogResponse | null {
-  let removedCalories = 0;
   let found = false;
   const meals = { ...data.meals };
 
@@ -30,7 +52,6 @@ export function removeFoodEntryById(data: DayLogResponse, entryId: string): DayL
     if (!bucket?.length) continue;
     const idx = bucket.findIndex((e) => e.id === entryId);
     if (idx < 0) continue;
-    removedCalories = bucket[idx].calories;
     const next = bucket.filter((_, i) => i !== idx);
     if (mt === "snack") {
       meals.snack = next.length ? next : undefined;
@@ -45,6 +66,21 @@ export function removeFoodEntryById(data: DayLogResponse, entryId: string): DayL
   return {
     ...data,
     meals,
-    totalCalories: Math.max(0, data.totalCalories - removedCalories),
+    totalCalories: totalCalories(meals),
   };
+}
+
+export function replaceFoodEntry(
+  data: DayLogResponse,
+  before: FoodEntryResponse,
+  after: FoodEntryResponse,
+): DayLogResponse {
+  let next = data;
+  if (before.day === data.day) {
+    next = removeFoodEntryById(next, before.id) ?? next;
+  }
+  if (after.day === data.day) {
+    next = mergeFoodEntry(next, after);
+  }
+  return next;
 }

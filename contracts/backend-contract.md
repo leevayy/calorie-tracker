@@ -45,7 +45,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 ### `GET /me`
 
-**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `nutritionGoal`, `aiModelPreference` (`deepseek` \| `qwen3` \| `gptoss` \| `alicegpt`), `updatedAt`.
+**Response:** `200` `UserProfileResponse` — `user`, `dailyCalorieGoal`, optional `weightKg`, `heightCm`, `preferredLanguage` (`en` \| `ru` \| `pl` \| `tt` \| `kk`), `nutritionGoal`, `aiModelPreference` (`alicegpt` \| `aliceflash` \| `deepseek` \| `qwen36` \| `qwen3` \| `gptoss120` \| `gptoss`), `updatedAt`.
 
 ### `PATCH /me`
 
@@ -69,9 +69,39 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 **Response:** `201` `FoodEntryResponse`.
 
+### `POST /entries/batch`
+
+**Body:** `CreateFoodEntriesBody` — `{ "entries": CreateFoodEntryRequest[] }`. Each entry carries its own `day` and `mealType`, so one request may span calendar days and meals. The array must contain at least one entry.
+
+**Response:** `201` `CreateFoodEntriesResponse` — `{ "entries": FoodEntryResponse[] }`, in request order.
+
+**Atomicity:** Slugs are resolved before the database transaction begins. All entries are inserted in one transaction; if any insert fails, none are persisted.
+
+### `PATCH /entries/:entryId`
+
+**Body:** `UpdateFoodEntryBody` — full editable replacement containing `day`, `mealType`, and food fields (`name`, nutrition values, optional `portion`). `mealSlug` is recomputed by the server from the updated name.
+
+**Response:** `200` `FoodEntryResponse`.
+
+**Errors:** `400` invalid id/body; `404` missing, deleted, or owned by another user.
+
 ### `DELETE /entries/:entryId`
 
-**Response:** `204`.
+Soft-deletes an active entry owned by the authenticated user.
+
+**Response:** `200` `FoodEntryResponse` containing the complete deleted entry (without internal deletion metadata).
+
+**Errors:** `400` invalid id; `404` missing, already deleted, or owned by another user.
+
+### `POST /entries/:entryId/restore`
+
+Restores a soft-deleted entry owned by the authenticated user.
+
+**Response:** `200` `FoodEntryResponse`.
+
+**Errors:** `400` invalid id; `404` missing, active, or owned by another user.
+
+**Read rule:** Soft-deleted entries are excluded from day logs, frequent foods, history, and all daily-tip user/community aggregates and recent-log context.
 
 ---
 
@@ -149,7 +179,7 @@ Implementations should stay aligned with:
 - `src/contracts/common.ts`
 - `src/contracts/auth.ts`
 - `src/contracts/profile.ts`
-- `src/contracts/food-log.ts` (`CreateFoodEntryBody` for path-style create; `CreateFoodEntryRequest` when `day` is in the body)
+- `src/contracts/food-log.ts` (`CreateFoodEntryBody` for path-style create; `CreateFoodEntryRequest` when `day` is in the body; batch create and full entry update schemas)
 - `src/contracts/history.ts`
 - `src/contracts/daily-tip.ts`
 - `src/contracts/ai-food.ts`

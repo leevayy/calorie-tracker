@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS food_entries (
   carbs real NOT NULL,
   fats real NOT NULL,
   portion text,
-  created_at timestamptz NOT NULL DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
 );
 
 CREATE INDEX IF NOT EXISTS food_entries_user_day_idx ON food_entries (user_id, day);
@@ -38,6 +39,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS tip_vibe_emoji text;
 
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS meal_slug text;
 ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS fiber real NOT NULL DEFAULT 0;
+ALTER TABLE food_entries ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS maintenance_jobs (
   name text PRIMARY KEY,

@@ -1,37 +1,23 @@
-import { useEffect, useState } from "react";
+import type { FoodEntryResponse } from "@contracts/food-log";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
 import { cn } from "./ui/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { useIsMobile } from "./ui/use-mobile";
-
-export interface MealFoodItem {
-  id?: string;
-  name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fats: number;
-  fiber: number;
-}
 
 interface MealSectionProps {
   title: string;
-  foods: MealFoodItem[];
-  onRemove: (food: MealFoodItem) => void;
+  foods: FoodEntryResponse[];
+  onEdit: (food: FoodEntryResponse) => void;
   /** Shown when expanded and there are no foods */
   emptyLabel?: string;
-  /** Disables remove actions (e.g. while a delete request is in flight) */
-  removeDisabled?: boolean;
 }
 
-export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled }: MealSectionProps) {
+export function MealSection({ title, foods, onEdit, emptyLabel }: MealSectionProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const isMobile = useIsMobile();
-  const [activeFoodKey, setActiveFoodKey] = useState<string | null>(null);
 
   const totalCalories = foods.reduce((sum, food) => sum + food.calories, 0);
   const totalProtein = foods.reduce((sum, food) => sum + food.protein, 0);
@@ -41,14 +27,6 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
 
   const macroLine = (p: number, c: number, f: number, fb: number) =>
     `${t("macros.proteinLetter")}: ${p}g • ${t("macros.carbsLetter")}: ${c}g • ${t("macros.fatsLetter")}: ${f}g • ${t("macros.fiberLetter")}: ${fb}g`;
-  useEffect(() => {
-    if (!expanded) setActiveFoodKey(null);
-  }, [expanded]);
-
-  useEffect(() => {
-    // Only "tap to reveal" on mobile; on larger screens we rely on hover.
-    if (!isMobile) setActiveFoodKey(null);
-  }, [isMobile]);
 
   return (
     <Card
@@ -97,25 +75,12 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
                   {emptyLabel}
                 </Text>
               ) : null}
-              {foods.map((food, idx) => {
-                const foodKey = food.id ?? String(idx);
-
-                return (
-                  <div
-                    key={food.id ?? idx}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/50 active:bg-accent/50 group"
-                    role="button"
-                    tabIndex={isMobile ? 0 : -1}
-                    onClick={() => {
-                      if (!isMobile) return;
-                      setActiveFoodKey((prev) => (prev === foodKey ? null : foodKey));
-                    }}
-                    onKeyDown={(e) => {
-                      if (!isMobile) return;
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      e.preventDefault();
-                      setActiveFoodKey((prev) => (prev === foodKey ? null : foodKey));
-                    }}
+              {foods.map((food) => (
+                  <button
+                    type="button"
+                    key={food.id}
+                    className="flex w-full items-center justify-between rounded-lg p-2 text-left transition-colors hover:bg-accent/50 active:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={() => onEdit(food)}
                   >
                     <div className="flex-1">
                       <Text>{food.name}</Text>
@@ -123,22 +88,8 @@ export function MealSection({ title, foods, onRemove, emptyLabel, removeDisabled
                         {food.calories} cal • {macroLine(food.protein, food.carbs, food.fats, food.fiber)}
                       </Text>
                     </div>
-                    <button
-                      type="button"
-                      disabled={removeDisabled || !food.id}
-                      data-active={isMobile && activeFoodKey === foodKey ? "true" : "false"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveFoodKey(null);
-                        onRemove(food);
-                      }}
-                      className="p-1 rounded-full hover:bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 data-[active=true]:opacity-100 transition-opacity disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                );
-              })}
+                  </button>
+                ))}
             </div>
           </motion.div>
         )}

@@ -9,7 +9,15 @@ export const NutritionGoalSchema = z.enum(["maintain", "muscle_gain", "fat_loss"
 export type NutritionGoal = z.infer<typeof NutritionGoalSchema>;
 
 /** Which Yandex AI Studio model slug to use for parse-food and daily tips. */
-export const AiModelPreferenceSchema = z.enum(["deepseek", "qwen3", "gptoss", "alicegpt"]);
+export const AiModelPreferenceSchema = z.enum([
+  "alicegpt",
+  "aliceflash",
+  "deepseek",
+  "qwen36",
+  "qwen3",
+  "gptoss120",
+  "gptoss",
+]);
 export type AiModelPreference = z.infer<typeof AiModelPreferenceSchema>;
 
 /** Max length of a user-supplied tip-vibe prompt (chars). */
@@ -40,13 +48,13 @@ export const MacrosSchema = z.object({
 export type Macros = z.infer<typeof MacrosSchema>;
 
 export const FoodMacrosSchema = z.object({
-  name: z.string().min(1),
-  calories: z.number().nonnegative(),
-  protein: z.number().nonnegative(),
-  carbs: z.number().nonnegative(),
-  fats: z.number().nonnegative(),
+  name: z.string().trim().min(1),
+  calories: z.number().finite().nonnegative(),
+  protein: z.number().finite().nonnegative(),
+  carbs: z.number().finite().nonnegative(),
+  fats: z.number().finite().nonnegative(),
   /** Dietary fiber (grams). */
-  fiber: z.number().nonnegative(),
-  portion: z.string().optional(),
+  fiber: z.number().finite().nonnegative(),
+  portion: z.string().trim().min(1).optional(),
 });
 export type FoodMacros = z.infer<typeof FoodMacrosSchema>;

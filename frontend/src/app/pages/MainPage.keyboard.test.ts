@@ -32,10 +32,25 @@ const { rootStore } = vi.hoisted(() => ({
         errorKey: null,
         create: vi.fn(),
       },
+      entriesCreate: {
+        fetchState: "idle",
+        errorKey: null,
+        isLoading: false,
+        create: vi.fn(),
+      },
+      entryUpdate: {
+        fetchState: "idle",
+        errorKey: null,
+        clearError: vi.fn(),
+        update: vi.fn(),
+      },
       entryDelete: {
         fetchState: "idle",
         errorKey: null,
+        isLoading: false,
+        clearError: vi.fn(),
         remove: vi.fn(),
+        restore: vi.fn(),
       },
     },
     dailyTip: {

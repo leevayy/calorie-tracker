@@ -1,25 +1,41 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import {
+  CreateFoodEntriesBodySchema,
+  CreateFoodEntriesResponseSchema,
   CreateFoodEntryBodySchema,
   DayLogResponseSchema,
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
+  UpdateFoodEntryBodySchema,
+  type CreateFoodEntryRequest,
+  type FoodEntryResponse,
 } from "../contracts/food-log.ts";
 import {
   AiModelPreferenceSchema,
   IsoDateSchema,
   type AiModelPreference,
 } from "../contracts/common.ts";
-import { db } from "../db/client.ts";
-import { foodEntriesTable, usersTable } from "../db/schema.ts";
 import { ErrorResponseJsonSchema, sendUnauthorized, sendValidationError } from "../lib/http.ts";
 import { toJsonSchema } from "../lib/zod-schema.ts";
+import {
+  drizzleFoodLogRepository,
+  type FoodEntryRecord,
+  type FoodEntryUpdate,
+  type FoodLogRepository,
+  type FoodLogUserRecord,
+} from "../services/foodLogRepository.ts";
 import { resolveMealSlugFromLoggedName } from "../services/mealSlug.ts";
 import { sanitizeMealSlug } from "../services/slugShape.ts";
+
+export type {
+  FoodEntryRecord,
+  FoodEntryUpdate,
+  FoodLogRepository,
+  FoodLogUserRecord,
+} from "../services/foodLogRepository.ts";
 
 function coerceAiModelPreference(raw: string): AiModelPreference {
   const parsed = AiModelPreferenceSchema.safeParse(raw);
@@ -39,7 +55,87 @@ function userIdFromRequest(request: FastifyRequest): string | null {
   return payload?.sub ?? null;
 }
 
-export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void> {
+function toFoodEntryResponse(row: FoodEntryRecord): FoodEntryResponse {
+  return FoodEntryResponseSchema.parse({
+    id: row.id,
+    mealType: row.mealType,
+    day: row.day,
+    name: row.name,
+    calories: row.calories,
+    protein: row.protein,
+    carbs: row.carbs,
+    fats: row.fats,
+    fiber: row.fiber,
+    portion: row.portion ?? undefined,
+    mealSlug: row.mealSlug ?? undefined,
+    createdAt: row.createdAt.toISOString(),
+  });
+}
+
+type ResolveMealSlug = (
+  name: string,
+  context: { aiModelPreference: AiModelPreference },
+) => Promise<string>;
+
+export type FoodLogRouteDependencies = {
+  repository: FoodLogRepository;
+  resolveMealSlug: ResolveMealSlug;
+  createId: () => string;
+  now: () => Date;
+};
+
+const defaultDependencies: FoodLogRouteDependencies = {
+  repository: drizzleFoodLogRepository,
+  resolveMealSlug: resolveMealSlugFromLoggedName,
+  createId: randomUUID,
+  now: () => new Date(),
+};
+
+async function resolveSlug(
+  entry: Pick<CreateFoodEntryRequest, "name" | "mealSlug">,
+  user: FoodLogUserRecord,
+  resolver: ResolveMealSlug,
+): Promise<string> {
+  const clientSlug = entry.mealSlug ? sanitizeMealSlug(entry.mealSlug) : null;
+  return (
+    clientSlug ??
+    resolver(entry.name, {
+      aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
+    })
+  );
+}
+
+function createRecord(
+  input: CreateFoodEntryRequest,
+  userId: string,
+  mealSlug: string,
+  dependencies: FoodLogRouteDependencies,
+): FoodEntryRecord {
+  return {
+    id: dependencies.createId(),
+    userId,
+    day: input.day,
+    mealType: input.mealType,
+    name: input.name,
+    calories: input.calories,
+    protein: input.protein,
+    carbs: input.carbs,
+    fats: input.fats,
+    fiber: input.fiber,
+    portion: input.portion ?? null,
+    mealSlug,
+    createdAt: dependencies.now(),
+    deletedAt: null,
+  };
+}
+
+export async function registerFoodLogRoutes(
+  app: FastifyInstance,
+  overrides: Partial<FoodLogRouteDependencies> = {},
+): Promise<void> {
+  const dependencies = { ...defaultDependencies, ...overrides };
+  const { repository } = dependencies;
+
   app.get(
     "/frequent-foods",
     {
@@ -65,32 +161,16 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
         return sendValidationError(reply, "from must be less than or equal to to");
       }
 
-      const user = await db.query.usersTable.findFirst({
-        where: eq(usersTable.id, userId),
-      });
+      const user = await repository.findUser(userId);
       if (!user) return sendUnauthorized(reply);
 
-      const countSql = sql<number>`cast(count(*) as int)`;
-      const rows = await db
-        .select({
-          name: foodEntriesTable.name,
-          count: countSql,
-        })
-        .from(foodEntriesTable)
-        .where(
-          and(
-            eq(foodEntriesTable.userId, userId),
-            gte(foodEntriesTable.day, parsed.data.from),
-            lte(foodEntriesTable.day, parsed.data.to),
-          ),
-        )
-        .groupBy(foodEntriesTable.name)
-        .orderBy(desc(countSql), asc(foodEntriesTable.name))
-        .limit(parsed.data.limit);
-
-      const response = FrequentFoodsResponseSchema.parse({
-        items: rows.map((r) => ({ name: r.name, count: r.count })),
-      });
+      const rows = await repository.findFrequentFoods(
+        userId,
+        parsed.data.from,
+        parsed.data.to,
+        parsed.data.limit,
+      );
+      const response = FrequentFoodsResponseSchema.parse({ items: rows });
       return reply.status(200).send(response);
     },
   );
@@ -117,21 +197,15 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
       const dayParsed = DayParamSchema.safeParse(request.params);
       if (!dayParsed.success) return sendValidationError(reply);
 
-      const user = await db.query.usersTable.findFirst({
-        where: eq(usersTable.id, userId),
-      });
+      const user = await repository.findUser(userId);
       if (!user) return sendUnauthorized(reply);
 
-      const entries = await db.query.foodEntriesTable.findMany({
-        where: and(eq(foodEntriesTable.userId, userId), eq(foodEntriesTable.day, dayParsed.data.day)),
-        orderBy: (table, { asc }) => [asc(table.createdAt)],
-      });
-
+      const entries = await repository.findDayEntries(userId, dayParsed.data.day);
       const meals: {
-        breakfast: Array<z.infer<typeof FoodEntryResponseSchema>>;
-        lunch: Array<z.infer<typeof FoodEntryResponseSchema>>;
-        dinner: Array<z.infer<typeof FoodEntryResponseSchema>>;
-        snack?: Array<z.infer<typeof FoodEntryResponseSchema>>;
+        breakfast: FoodEntryResponse[];
+        lunch: FoodEntryResponse[];
+        dinner: FoodEntryResponse[];
+        snack?: FoodEntryResponse[];
       } = {
         breakfast: [],
         lunch: [],
@@ -139,20 +213,7 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
       };
 
       for (const row of entries) {
-        const item = FoodEntryResponseSchema.parse({
-          id: row.id,
-          mealType: row.mealType,
-          day: row.day,
-          name: row.name,
-          calories: row.calories,
-          protein: row.protein,
-          carbs: row.carbs,
-          fats: row.fats,
-          fiber: row.fiber,
-          portion: row.portion ?? undefined,
-          mealSlug: row.mealSlug ?? undefined,
-          createdAt: row.createdAt.toISOString(),
-        });
+        const item = toFoodEntryResponse(row);
         if (row.mealType === "snack") {
           if (!meals.snack) meals.snack = [];
           meals.snack.push(item);
@@ -162,16 +223,13 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
           meals.lunch.push(item);
         } else if (row.mealType === "dinner") {
           meals.dinner.push(item);
-        } else {
-          continue;
         }
       }
 
-      const totalCalories = entries.reduce((sum, row) => sum + row.calories, 0);
       const response = DayLogResponseSchema.parse({
         day: dayParsed.data.day,
         calorieGoal: user.dailyCalorieGoal,
-        totalCalories,
+        totalCalories: entries.reduce((sum, row) => sum + row.calories, 0),
         meals,
       });
       return reply.status(200).send(response);
@@ -200,29 +258,102 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
 
       const dayParsed = DayParamSchema.safeParse(request.params);
       if (!dayParsed.success) return sendValidationError(reply);
-
       const bodyParsed = CreateFoodEntryBodySchema.safeParse(request.body);
       if (!bodyParsed.success) return sendValidationError(reply);
 
-      const user = await db.query.usersTable.findFirst({
-        where: eq(usersTable.id, userId),
-      });
+      const user = await repository.findUser(userId);
       if (!user) return sendUnauthorized(reply);
 
-      const clientSlug = bodyParsed.data.mealSlug
-        ? sanitizeMealSlug(bodyParsed.data.mealSlug)
-        : null;
-      const mealSlug =
-        clientSlug ??
-        (await resolveMealSlugFromLoggedName(bodyParsed.data.name, {
-          aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
-        }));
+      const input: CreateFoodEntryRequest = { ...bodyParsed.data, day: dayParsed.data.day };
+      const mealSlug = await resolveSlug(input, user, dependencies.resolveMealSlug);
+      const record = createRecord(input, userId, mealSlug, dependencies);
+      const [created] = await repository.createEntriesAtomic([record]);
+      if (!created) throw new Error("Food entry insert returned no entry");
+      return reply.status(201).send(toFoodEntryResponse(created));
+    },
+  );
 
-      const createdAt = new Date();
-      const entry = {
-        id: randomUUID(),
-        userId,
-        day: dayParsed.data.day,
+  app.post(
+    "/entries/batch",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        body: toJsonSchema(CreateFoodEntriesBodySchema),
+        response: {
+          201: toJsonSchema(CreateFoodEntriesResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
+
+      const bodyParsed = CreateFoodEntriesBodySchema.safeParse(request.body);
+      if (!bodyParsed.success) return sendValidationError(reply);
+
+      const user = await repository.findUser(userId);
+      if (!user) return sendUnauthorized(reply);
+
+      // Resolve every potentially remote slug before opening the explicit DB transaction.
+      const mealSlugs = await Promise.all(
+        bodyParsed.data.entries.map((entry) =>
+          resolveSlug(entry, user, dependencies.resolveMealSlug),
+        ),
+      );
+      const records = bodyParsed.data.entries.map((entry, index) =>
+        createRecord(entry, userId, mealSlugs[index] ?? "unknown", dependencies),
+      );
+      const created = await repository.createEntriesAtomic(records);
+      if (created.length !== records.length) {
+        throw new Error("Food entry batch insert returned an incomplete group");
+      }
+      const response = CreateFoodEntriesResponseSchema.parse({
+        entries: created.map(toFoodEntryResponse),
+      });
+      return reply.status(201).send(response);
+    },
+  );
+
+  app.patch(
+    "/entries/:entryId",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        params: toJsonSchema(EntryParamSchema),
+        body: toJsonSchema(UpdateFoodEntryBodySchema),
+        response: {
+          200: toJsonSchema(FoodEntryResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+          404: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
+
+      const paramsParsed = EntryParamSchema.safeParse(request.params);
+      if (!paramsParsed.success) return sendValidationError(reply);
+      const bodyParsed = UpdateFoodEntryBodySchema.safeParse(request.body);
+      if (!bodyParsed.success) return sendValidationError(reply);
+
+      const user = await repository.findUser(userId);
+      if (!user) return sendUnauthorized(reply);
+      const current = await repository.findActiveEntry(userId, paramsParsed.data.entryId);
+      if (!current) return reply.status(404).send({ message: "Entry not found" });
+
+      const mealSlug = await dependencies.resolveMealSlug(bodyParsed.data.name, {
+        aiModelPreference: coerceAiModelPreference(user.aiModelPreference),
+      });
+      const changes: FoodEntryUpdate = {
+        day: bodyParsed.data.day,
         mealType: bodyParsed.data.mealType,
         name: bodyParsed.data.name,
         calories: bodyParsed.data.calories,
@@ -232,27 +363,10 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
         fiber: bodyParsed.data.fiber,
         portion: bodyParsed.data.portion ?? null,
         mealSlug,
-        createdAt,
       };
-
-      await db.insert(foodEntriesTable).values(entry);
-
-      const response = FoodEntryResponseSchema.parse({
-        id: entry.id,
-        mealType: entry.mealType,
-        day: entry.day,
-        name: entry.name,
-        calories: entry.calories,
-        protein: entry.protein,
-        carbs: entry.carbs,
-        fats: entry.fats,
-        fiber: entry.fiber,
-        portion: entry.portion ?? undefined,
-        mealSlug: entry.mealSlug,
-        createdAt: createdAt.toISOString(),
-      });
-
-      return reply.status(201).send(response);
+      const updated = await repository.updateEntry(userId, paramsParsed.data.entryId, changes);
+      if (!updated) return reply.status(404).send({ message: "Entry not found" });
+      return reply.status(200).send(toFoodEntryResponse(updated));
     },
   );
 
@@ -264,12 +378,10 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
         security: [{ bearerAuth: [] }],
         params: toJsonSchema(EntryParamSchema),
         response: {
+          200: toJsonSchema(FoodEntryResponseSchema),
           400: ErrorResponseJsonSchema,
           401: ErrorResponseJsonSchema,
           404: ErrorResponseJsonSchema,
-          204: {
-            type: "null",
-          },
         },
       },
       preHandler: app.authenticate,
@@ -281,16 +393,42 @@ export async function registerFoodLogRoutes(app: FastifyInstance): Promise<void>
       const parsed = EntryParamSchema.safeParse(request.params);
       if (!parsed.success) return sendValidationError(reply);
 
-      const result = await db
-        .delete(foodEntriesTable)
-        .where(and(eq(foodEntriesTable.id, parsed.data.entryId), eq(foodEntriesTable.userId, userId)))
-        .returning({ id: foodEntriesTable.id });
+      const deleted = await repository.softDeleteEntry(
+        userId,
+        parsed.data.entryId,
+        dependencies.now(),
+      );
+      if (!deleted) return reply.status(404).send({ message: "Entry not found" });
+      return reply.status(200).send(toFoodEntryResponse(deleted));
+    },
+  );
 
-      if (result.length === 0) {
-        return reply.status(404).send({ message: "Entry not found" });
-      }
+  app.post(
+    "/entries/:entryId/restore",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        params: toJsonSchema(EntryParamSchema),
+        response: {
+          200: toJsonSchema(FoodEntryResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+          404: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
 
-      return reply.status(204).send();
+      const parsed = EntryParamSchema.safeParse(request.params);
+      if (!parsed.success) return sendValidationError(reply);
+
+      const restored = await repository.restoreEntry(userId, parsed.data.entryId);
+      if (!restored) return reply.status(404).send({ message: "Entry not found" });
+      return reply.status(200).send(toFoodEntryResponse(restored));
     },
   );
 }

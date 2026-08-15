@@ -76,7 +76,34 @@
     "recentLogged": "Najczęściej w tym tygodniu",
     "foodLogSheetTitle": "Zapisz posiłek",
     "closeFoodSheet": "Zamknij",
-    "aiConfidence": "Pewność szacunku: {{pct}}%"
+    "aiConfidence": "Pewność szacunku: {{pct}}%",
+    "logRecognizedGroup": "Zapisz wszystko ({{count}})",
+    "loggingRecognizedGroup": "Zapisywanie…",
+    "dismissRecognizedGroup": "Odrzuć"
+  },
+  "entryEditor": {
+    "title": "Edytuj wpis",
+    "description": "Popraw dane zapisanego produktu.",
+    "name": "Nazwa",
+    "portion": "Porcja",
+    "calories": "Kalorie",
+    "details": "Wartości odżywcze",
+    "protein": "Białko",
+    "carbs": "Węglowodany",
+    "fats": "Tłuszcze",
+    "fiber": "Błonnik",
+    "day": "Data",
+    "meal": "Posiłek",
+    "save": "Zapisz zmiany",
+    "delete": "Usuń wpis",
+    "undoMessage": "Usunięto „{{name}}”.",
+    "undo": "Cofnij",
+    "validation": {
+      "required": "To pole jest wymagane.",
+      "number": "Wpisz prawidłową liczbę.",
+      "nonnegative": "Wartość nie może być ujemna.",
+      "date": "Wpisz prawidłową datę."
+    }
   },
   "meals": {
     "breakfast": "Śniadanie",

@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { HistoryQuerySchema, HistoryRangeResponseSchema } from "../contracts/history.ts";
 import { db } from "../db/client.ts";
@@ -59,6 +59,7 @@ export async function registerHistoryRoutes(app: FastifyInstance): Promise<void>
             eq(foodEntriesTable.userId, userId),
             gte(foodEntriesTable.day, parsed.data.from),
             lte(foodEntriesTable.day, parsed.data.to),
+            isNull(foodEntriesTable.deletedAt),
           ),
         )
         .groupBy(foodEntriesTable.day);

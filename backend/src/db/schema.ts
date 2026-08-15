@@ -37,6 +37,8 @@ export const foodEntriesTable = pgTable(
     /** Normalized meal slug `[protein?]-[main]-[style?]`; see `mealSlug` service. */
     mealSlug: text("meal_slug"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Null while visible; populated for reversible user deletion. */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => ({
     userDayIdx: index("food_entries_user_day_idx").on(table.userId, table.day),

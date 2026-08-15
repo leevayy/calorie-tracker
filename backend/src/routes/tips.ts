@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { DailyTipRequestSchema, DailyTipResponseSchema } from "../contracts/daily-tip.ts";
 import { db } from "../db/client.ts";
@@ -78,7 +78,13 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
           fiber: sql<number>`coalesce(sum(${foodEntriesTable.fiber}), 0)`.as("fiber"),
         })
         .from(foodEntriesTable)
-        .where(and(eq(foodEntriesTable.userId, userId), eq(foodEntriesTable.day, parsed.data.date)));
+        .where(
+          and(
+            eq(foodEntriesTable.userId, userId),
+            eq(foodEntriesTable.day, parsed.data.date),
+            isNull(foodEntriesTable.deletedAt),
+          ),
+        );
 
       const todayAggregate = todayAggregateRows[0] ?? {
         calories: 0,
@@ -99,6 +105,7 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
             eq(foodEntriesTable.userId, userId),
             gte(foodEntriesTable.day, addDays(parsed.data.date, -6)),
             lt(foodEntriesTable.day, addDays(parsed.data.date, 1)),
+            isNull(foodEntriesTable.deletedAt),
           ),
         )
         .groupBy(foodEntriesTable.day);
@@ -119,7 +126,12 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
           protein: sql<number>`coalesce(sum(${foodEntriesTable.protein}), 0)`.as("protein"),
         })
         .from(foodEntriesTable)
-        .where(eq(foodEntriesTable.day, parsed.data.date))
+        .where(
+          and(
+            eq(foodEntriesTable.day, parsed.data.date),
+            isNull(foodEntriesTable.deletedAt),
+          ),
+        )
         .groupBy(foodEntriesTable.userId)
         .as("community_daily");
 
@@ -150,7 +162,13 @@ export async function registerTipsRoutes(app: FastifyInstance): Promise<void> {
           mealType: foodEntriesTable.mealType,
         })
         .from(foodEntriesTable)
-        .where(and(eq(foodEntriesTable.userId, userId), gte(foodEntriesTable.createdAt, seventyTwoHoursAgo)))
+        .where(
+          and(
+            eq(foodEntriesTable.userId, userId),
+            gte(foodEntriesTable.createdAt, seventyTwoHoursAgo),
+            isNull(foodEntriesTable.deletedAt),
+          ),
+        )
         .orderBy(desc(foodEntriesTable.createdAt))
         .limit(10);
 

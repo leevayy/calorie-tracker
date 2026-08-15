@@ -252,12 +252,18 @@ async function aiChat(
 
 function modelIdForPreference(pref: AiModelPreference): string {
   switch (pref) {
-    case "qwen3":
-      return env.YANDEX_AI_STUDIO_MODEL_QWEN3;
-    case "gptoss":
-      return env.YANDEX_AI_STUDIO_MODEL_GPT_OSS;
     case "alicegpt":
       return env.YANDEX_AI_STUDIO_MODEL_ALICE_GPT;
+    case "aliceflash":
+      return env.YANDEX_AI_STUDIO_MODEL_ALICE_FLASH;
+    case "qwen36":
+      return env.YANDEX_AI_STUDIO_MODEL_QWEN36;
+    case "qwen3":
+      return env.YANDEX_AI_STUDIO_MODEL_QWEN3;
+    case "gptoss120":
+      return env.YANDEX_AI_STUDIO_MODEL_GPT_OSS_120B;
+    case "gptoss":
+      return env.YANDEX_AI_STUDIO_MODEL_GPT_OSS;
     default:
       return env.YANDEX_AI_STUDIO_MODEL;
   }
