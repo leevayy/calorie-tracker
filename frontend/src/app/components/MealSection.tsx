@@ -1,7 +1,7 @@
 import type { FoodEntryResponse } from "@contracts/food-log";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
 import { cn } from "./ui/utils";
@@ -13,9 +13,20 @@ interface MealSectionProps {
   onEdit: (food: FoodEntryResponse) => void;
   /** Shown when expanded and there are no foods */
   emptyLabel?: string;
+  pendingFoods?: Array<{
+    id: string;
+    label: string;
+    phase: "parsing" | "saving";
+  }>;
 }
 
-export function MealSection({ title, foods, onEdit, emptyLabel }: MealSectionProps) {
+export function MealSection({
+  title,
+  foods,
+  onEdit,
+  emptyLabel,
+  pendingFoods = [],
+}: MealSectionProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
@@ -59,6 +70,25 @@ export function MealSection({ title, foods, onEdit, emptyLabel }: MealSectionPro
           <ChevronDown className="h-5 w-5 text-muted-foreground" />
         )}
       </button>
+
+      {pendingFoods.length > 0 ? (
+        <div className="space-y-1 border-t border-border/50 py-2" aria-live="polite">
+          {pendingFoods.map((pending) => (
+            <div
+              key={pending.id}
+              className="flex min-h-9 items-center gap-2 rounded-lg bg-muted/40 px-2"
+            >
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+              <Text as="span" className="min-w-0 flex-1 truncate">
+                {pending.label}
+              </Text>
+              <Text as="span" variant="muted" size="sm" className="shrink-0">
+                {t(`main.pending.${pending.phase}`)}
+              </Text>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <AnimatePresence>
         {expanded && (

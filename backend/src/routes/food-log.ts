@@ -6,6 +6,8 @@ import {
   CreateFoodEntriesResponseSchema,
   CreateFoodEntryBodySchema,
   DayLogResponseSchema,
+  DeleteFoodEntriesBodySchema,
+  DeleteFoodEntriesResponseSchema,
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
   FrequentFoodsResponseSchema,
@@ -367,6 +369,41 @@ export async function registerFoodLogRoutes(
       const updated = await repository.updateEntry(userId, paramsParsed.data.entryId, changes);
       if (!updated) return reply.status(404).send({ message: "Entry not found" });
       return reply.status(200).send(toFoodEntryResponse(updated));
+    },
+  );
+
+  app.delete(
+    "/entries/batch",
+    {
+      schema: {
+        tags: ["food-log"],
+        security: [{ bearerAuth: [] }],
+        body: toJsonSchema(DeleteFoodEntriesBodySchema),
+        response: {
+          200: toJsonSchema(DeleteFoodEntriesResponseSchema),
+          400: ErrorResponseJsonSchema,
+          401: ErrorResponseJsonSchema,
+          404: ErrorResponseJsonSchema,
+        },
+      },
+      preHandler: app.authenticate,
+    },
+    async (request, reply) => {
+      const userId = userIdFromRequest(request);
+      if (!userId) return sendUnauthorized(reply);
+
+      const parsed = DeleteFoodEntriesBodySchema.safeParse(request.body);
+      if (!parsed.success) return sendValidationError(reply);
+      const deleted = await repository.softDeleteEntriesAtomic(
+        userId,
+        parsed.data.entryIds,
+        dependencies.now(),
+      );
+      if (!deleted) return reply.status(404).send({ message: "Entry group not found" });
+      const response = DeleteFoodEntriesResponseSchema.parse({
+        entries: deleted.map(toFoodEntryResponse),
+      });
+      return reply.status(200).send(response);
     },
   );
 

@@ -79,7 +79,16 @@
     "aiConfidence": "Баға сенімділігі: {{pct}}%",
     "logRecognizedGroup": "Барлығын жазу ({{count}})",
     "loggingRecognizedGroup": "Жазылуда…",
-    "dismissRecognizedGroup": "Бас тарту"
+    "dismissRecognizedGroup": "Бас тарту",
+    "pending": {
+      "parsing": "Танылуда…",
+      "saving": "Сақталуда…"
+    },
+    "retrySubmission": "Қайталау",
+    "addedReceipt": "Қосылды: {{count}}",
+    "undoSubmission": "Қайтару",
+    "edit": "Өңдеу",
+    "editAddedFood": "{{name}} өңдеу"
   },
   "entryEditor": {
     "title": "Жазбаны өңдеу",

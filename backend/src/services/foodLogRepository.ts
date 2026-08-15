@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db/client.ts";
 import { foodEntriesTable, usersTable } from "../db/schema.ts";
 
@@ -34,6 +34,8 @@ export type FrequentFoodRecord = {
   count: number;
 };
 
+class IncompleteFoodEntryBatchError extends Error {}
+
 export interface FoodLogRepository {
   findUser(userId: string): Promise<FoodLogUserRecord | null>;
   findFrequentFoods(
@@ -55,6 +57,11 @@ export interface FoodLogRepository {
     entryId: string,
     deletedAt: Date,
   ): Promise<FoodEntryRecord | null>;
+  softDeleteEntriesAtomic(
+    userId: string,
+    entryIds: string[],
+    deletedAt: Date,
+  ): Promise<FoodEntryRecord[] | null>;
   restoreEntry(userId: string, entryId: string): Promise<FoodEntryRecord | null>;
 }
 
@@ -148,6 +155,30 @@ export const drizzleFoodLogRepository: FoodLogRepository = {
       )
       .returning();
     return rows[0] ?? null;
+  },
+
+  async softDeleteEntriesAtomic(userId, entryIds, deletedAt) {
+    const uniqueIds = [...new Set(entryIds)];
+    try {
+      return await db.transaction(async (transaction) => {
+        const rows = await transaction
+          .update(foodEntriesTable)
+          .set({ deletedAt })
+          .where(
+            and(
+              eq(foodEntriesTable.userId, userId),
+              inArray(foodEntriesTable.id, uniqueIds),
+              isNull(foodEntriesTable.deletedAt),
+            ),
+          )
+          .returning();
+        if (rows.length !== uniqueIds.length) throw new IncompleteFoodEntryBatchError();
+        return rows;
+      });
+    } catch (error) {
+      if (error instanceof IncompleteFoodEntryBatchError) return null;
+      throw error;
+    }
   },
 
   async restoreEntry(userId, entryId) {

@@ -77,6 +77,14 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 **Atomicity:** Slugs are resolved before the database transaction begins. All entries are inserted in one transaction; if any insert fails, none are persisted.
 
+### `DELETE /entries/batch`
+
+**Body:** `DeleteFoodEntriesBody` — `{ "entryIds": string[] }`, identifying every entry created by one logging submission.
+
+**Response:** `200` `DeleteFoodEntriesResponse` — `{ "entries": FoodEntryResponse[] }` for the deleted group.
+
+**Atomicity:** Every id must name an active entry owned by the authenticated user. The group is soft-deleted in one transaction; otherwise no entry is deleted and the response is `404`.
+
 ### `PATCH /entries/:entryId`
 
 **Body:** `UpdateFoodEntryBody` — full editable replacement containing `day`, `mealType`, and food fields (`name`, nutrition values, optional `portion`). `mealSlug` is recomputed by the server from the updated name.

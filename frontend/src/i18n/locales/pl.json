@@ -79,7 +79,16 @@
     "aiConfidence": "Pewność szacunku: {{pct}}%",
     "logRecognizedGroup": "Zapisz wszystko ({{count}})",
     "loggingRecognizedGroup": "Zapisywanie…",
-    "dismissRecognizedGroup": "Odrzuć"
+    "dismissRecognizedGroup": "Odrzuć",
+    "pending": {
+      "parsing": "Analizowanie…",
+      "saving": "Zapisywanie…"
+    },
+    "retrySubmission": "Spróbuj ponownie",
+    "addedReceipt": "Dodano: {{count}}",
+    "undoSubmission": "Cofnij",
+    "edit": "Edytuj",
+    "editAddedFood": "Edytuj {{name}}"
   },
   "entryEditor": {
     "title": "Edytuj wpis",

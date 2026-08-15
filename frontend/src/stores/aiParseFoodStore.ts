@@ -9,24 +9,29 @@ export const AiParseFoodStore = types
     data: types.maybe(types.frozen<ParseFoodResponse>()),
     fetchState: types.optional(FetchStateModel, "initial"),
     errorKey: types.optional(types.string, ""),
+    pendingCount: types.optional(types.number, 0),
   })
   .views((self) => ({
     get isLoading() {
-      return self.fetchState === "loading";
+      return self.pendingCount > 0;
     },
   }))
   .actions((self) => ({
     parse: flow(function* (body: ParseFoodRequest) {
-      if (self.fetchState === "loading") return;
+      self.pendingCount += 1;
       self.fetchState = "loading";
       self.errorKey = "";
       try {
         const data = (yield apiParseFood(body)) as ParseFoodResponse;
         self.data = data;
-        self.fetchState = "success";
+        return { data };
       } catch (e) {
-        self.fetchState = "error";
-        self.errorKey = errorMessageKey(e);
+        const errorKey = errorMessageKey(e);
+        self.errorKey = errorKey;
+        return { errorKey };
+      } finally {
+        self.pendingCount -= 1;
+        self.fetchState = self.pendingCount > 0 ? "loading" : self.errorKey ? "error" : "success";
       }
     }),
   }));

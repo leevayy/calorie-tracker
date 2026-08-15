@@ -13,15 +13,17 @@ export const CreateFoodEntriesStore = types
   .model({
     fetchState: types.optional(FetchStateModel, "initial"),
     errorKey: types.optional(types.string, ""),
+    pendingCount: types.optional(types.number, 0),
   })
   .views((self) => ({
     get isLoading() {
-      return self.fetchState === "loading";
+      return self.pendingCount > 0;
     },
   }))
   .actions((self) => ({
     create: flow(function* (entries: CreateFoodEntryRequest[]) {
-      if (self.fetchState === "loading" || entries.length === 0) return undefined;
+      if (entries.length === 0) return undefined;
+      self.pendingCount += 1;
       self.fetchState = "loading";
       self.errorKey = "";
       try {
@@ -31,12 +33,14 @@ export const CreateFoodEntriesStore = types
         const root = getRoot(self) as RootWithFoodEntryTargets;
         root.foodLog.applyCreatedEntries(response.entries);
         root.history.applyCreatedEntries(response.entries);
-        self.fetchState = "success";
-        return response.entries;
+        return { entries: response.entries };
       } catch (e) {
-        self.fetchState = "error";
-        self.errorKey = errorMessageKey(e);
-        return undefined;
+        const errorKey = errorMessageKey(e);
+        self.errorKey = errorKey;
+        return { errorKey };
+      } finally {
+        self.pendingCount -= 1;
+        self.fetchState = self.pendingCount > 0 ? "loading" : self.errorKey ? "error" : "success";
       }
     }),
   }));

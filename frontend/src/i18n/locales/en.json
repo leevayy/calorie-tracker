@@ -79,7 +79,16 @@
     "aiConfidence": "Estimate confidence: {{pct}}%",
     "logRecognizedGroup": "Log all {{count}}",
     "loggingRecognizedGroup": "Logging…",
-    "dismissRecognizedGroup": "Dismiss"
+    "dismissRecognizedGroup": "Dismiss",
+    "pending": {
+      "parsing": "Understanding…",
+      "saving": "Saving…"
+    },
+    "retrySubmission": "Retry",
+    "addedReceipt": "Added {{count}}",
+    "undoSubmission": "Undo",
+    "edit": "Edit",
+    "editAddedFood": "Edit {{name}}"
   },
   "entryEditor": {
     "title": "Edit food",

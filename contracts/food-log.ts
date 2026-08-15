@@ -36,6 +36,17 @@ export const CreateFoodEntriesResponseSchema = z.object({
 });
 export type CreateFoodEntriesResponse = z.infer<typeof CreateFoodEntriesResponseSchema>;
 
+/** `DELETE /entries/batch` — reverses one atomically-created logging submission. */
+export const DeleteFoodEntriesBodySchema = z.object({
+  entryIds: z.array(z.string().uuid()).min(1),
+});
+export type DeleteFoodEntriesBody = z.infer<typeof DeleteFoodEntriesBodySchema>;
+
+export const DeleteFoodEntriesResponseSchema = z.object({
+  entries: z.array(FoodEntryResponseSchema).min(1),
+});
+export type DeleteFoodEntriesResponse = z.infer<typeof DeleteFoodEntriesResponseSchema>;
+
 /** `PATCH /entries/:entryId` — full editable replacement; `mealSlug` is server-derived. */
 export const UpdateFoodEntryBodySchema = FoodMacrosSchema.extend({
   day: IsoDateSchema,

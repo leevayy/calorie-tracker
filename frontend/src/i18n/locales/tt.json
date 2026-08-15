@@ -79,7 +79,16 @@
     "aiConfidence": "Бәя ышаныч: {{pct}}%",
     "logRecognizedGroup": "Барысын да теркәү ({{count}})",
     "loggingRecognizedGroup": "Теркибез…",
-    "dismissRecognizedGroup": "Кире кагу"
+    "dismissRecognizedGroup": "Кире кагу",
+    "pending": {
+      "parsing": "Таныйбыз…",
+      "saving": "Саклыйбыз…"
+    },
+    "retrySubmission": "Кабатлау",
+    "addedReceipt": "Өстәлде: {{count}}",
+    "undoSubmission": "Кире кайтару",
+    "edit": "Үзгәртү",
+    "editAddedFood": "{{name}} үзгәртү"
   },
   "entryEditor": {
     "title": "Язманы үзгәртү",

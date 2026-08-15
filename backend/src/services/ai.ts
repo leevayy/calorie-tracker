@@ -37,6 +37,11 @@ Convert the user input into structured nutrition data.
 
 STRICT RULES:
 
+0. EXPLICIT USER VALUES HAVE HIGHEST PRIORITY
+- Preserve every explicit portion, calorie, protein, carbohydrate, fat, and fiber value from the user's description exactly for the food it describes.
+- Never replace, normalize, scale, or "correct" an explicit user value, even when it conflicts with a typical estimate or the calorie-to-macro formula.
+- Estimate only values the user omitted. Use explicit values as constraints when estimating the missing fields.
+
 1. FOOD GROUPING
 - If the input is a recipe or mixed dish -> output ONE food item (the dish as a whole).
 - DO NOT list individual ingredients as separate foods.
@@ -46,8 +51,8 @@ STRICT RULES:
 - Estimate portion size in grams when possible.
 - Keep it short (e.g. "~350g", "1 bowl", "2 pcs").
 
-3. NUTRITION CONSISTENCY (CRITICAL)
-- Ensure internal consistency:
+3. NUTRITION CONSISTENCY (CRITICAL FOR INFERRED VALUES)
+- For inferred values only, ensure internal consistency:
   calories ~= protein*4 + carbs*4 + fat*9
 - If mismatch >10%, FIX the numbers.
 - NEVER output unrealistically low fat for fatty foods (e.g. mince, cheese).

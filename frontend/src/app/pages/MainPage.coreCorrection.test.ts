@@ -56,6 +56,7 @@ const { rootStore } = vi.hoisted(() => ({
         isLoading: false,
         clearError: vi.fn(),
         remove: vi.fn(),
+        removeMany: vi.fn(),
         restore: vi.fn(),
       },
     },
@@ -107,14 +108,19 @@ vi.mock("../components/FoodEntryEditor", () => ({
   }) =>
     entry
       ? createElement(
-          "button",
-          {
-            type: "button",
-            onClick: async () => {
-              if (await onDelete(entry)) onClose();
+          "div",
+          null,
+          createElement(
+            "button",
+            {
+              type: "button",
+              onClick: async () => {
+                if (await onDelete(entry)) onClose();
+              },
             },
-          },
-          "delete-editor-entry",
+            "delete-editor-entry",
+          ),
+          createElement("button", { type: "button", onClick: onClose }, "close-editor"),
         )
       : null,
 }));
@@ -140,7 +146,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("MainPage core corrections", () => {
-  it("offers one action for every food in a parse and keeps the group after failure", async () => {
+  it("automatically saves every recognized food and offers one grouped undo", async () => {
     const suggestions = Array.from({ length: 4 }, (_, index) => ({
       name: `Food ${index + 1}`,
       calories: 100 + index,
@@ -155,10 +161,15 @@ describe("MainPage core corrections", () => {
     rootStore.aiParse.parse.mockImplementation(async () => {
       rootStore.aiParse.data = { suggestions };
       rootStore.aiParse.fetchState = "success";
+      return { data: { suggestions } };
     });
-    rootStore.foodLog.entriesCreate.create
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(suggestions.map((food, index) => ({ ...food, id: String(index) })));
+    const created = suggestions.map((food, index) => ({
+      ...food,
+      id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      createdAt: `2026-08-15T12:00:0${index}.000Z`,
+    }));
+    rootStore.foodLog.entriesCreate.create.mockResolvedValue({ entries: created });
+    rootStore.foodLog.entryDelete.removeMany.mockResolvedValue(created);
 
     renderMainPage();
     fireEvent.click(screen.getByRole("button", { name: "main.logFoodPlaceholder" }));
@@ -166,20 +177,16 @@ describe("MainPage core corrections", () => {
     fireEvent.change(input, { target: { value: "four foods" } });
     fireEvent.submit(input.closest("form")!);
 
-    await waitFor(() => expect(screen.getByText("Food 4")).toBeTruthy());
-    const logAll = screen.getByRole("button", { name: "main.logRecognizedGroup" });
-    await act(async () => fireEvent.click(logAll));
-
-    expect(rootStore.foodLog.entriesCreate.create).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ name: "Food 1" }),
-        expect.objectContaining({ name: "Food 4" }),
-      ]),
-    );
+    await waitFor(() => expect(rootStore.foodLog.entriesCreate.create).toHaveBeenCalled());
     expect(rootStore.foodLog.entriesCreate.create.mock.calls[0]?.[0]).toHaveLength(4);
     expect(screen.getByText("Food 4")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "main.logRecognizedGroup" })).toBeNull();
 
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "main.logRecognizedGroup" })));
+    fireEvent.click(screen.getAllByRole("button", { name: "main.editAddedFood" })[0]!);
+    expect(rootStore.foodLog.entryUpdate.clearError).toHaveBeenCalled();
+
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "main.undoSubmission" })));
+    expect(rootStore.foodLog.entryDelete.removeMany).toHaveBeenCalledWith(created);
     await waitFor(() => expect(screen.queryByText("Food 4")).toBeNull());
   });
 

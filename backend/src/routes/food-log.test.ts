@@ -131,6 +131,22 @@ class MemoryFoodLogRepository implements FoodLogRepository {
     return { ...deleted };
   }
 
+  async softDeleteEntriesAtomic(
+    userId: string,
+    entryIds: string[],
+    deletedAt: Date,
+  ): Promise<FoodEntryRecord[] | null> {
+    const ids = new Set(entryIds);
+    const matches = this.entries.filter(
+      (item) => item.userId === userId && ids.has(item.id) && item.deletedAt === null,
+    );
+    if (matches.length !== ids.size) return null;
+    this.entries = this.entries.map((item) =>
+      matches.some((match) => match.id === item.id) ? { ...item, deletedAt } : item,
+    );
+    return matches.map((item) => ({ ...item, deletedAt }));
+  }
+
   async restoreEntry(userId: string, entryId: string): Promise<FoodEntryRecord | null> {
     const index = this.entries.findIndex(
       (item) => item.userId === userId && item.id === entryId && item.deletedAt !== null,
@@ -246,6 +262,47 @@ describe("food log routes", () => {
         lunch: [],
       },
     });
+  });
+
+  test("undoes a multi-food logging submission atomically", async () => {
+    const first = entry();
+    const second = entry({
+      id: "22222222-2222-4222-8222-222222222222",
+      mealType: "lunch",
+      name: "Soup",
+    });
+    const repository = new MemoryFoodLogRepository([first, second]);
+    const app = await buildTestApp(repository);
+
+    const response = await app.inject({
+      method: "DELETE",
+      url: "/entries/batch",
+      payload: { entryIds: [first.id, second.id] },
+    });
+    const day = await app.inject({ method: "GET", url: "/days/2026-08-15" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().entries).toHaveLength(2);
+    expect(day.json().totalCalories).toBe(0);
+  });
+
+  test("does not partially undo a logging submission outside the owner boundary", async () => {
+    const owned = entry();
+    const other = entry({
+      id: "22222222-2222-4222-8222-222222222222",
+      userId: OTHER_USER_ID,
+    });
+    const repository = new MemoryFoodLogRepository([owned, other]);
+    const app = await buildTestApp(repository);
+
+    const response = await app.inject({
+      method: "DELETE",
+      url: "/entries/batch",
+      payload: { entryIds: [owned.id, other.id] },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(repository.entries.every((item) => item.deletedAt === null)).toBe(true);
   });
 
   test("updates every editable field on an owned entry", async () => {

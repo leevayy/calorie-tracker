@@ -92,7 +92,11 @@ function EditorField({
         step={type === "number" ? "any" : undefined}
         value={value}
         variant={error ? "error" : "default"}
-        className="min-w-0"
+        className={
+          type === "date"
+            ? "inline-flex h-11 max-h-11 min-w-0 appearance-none px-0 py-0 [-webkit-appearance:none] [&::-webkit-date-and-time-value]:box-border [&::-webkit-date-and-time-value]:h-[1.5em] [&::-webkit-date-and-time-value]:px-3 [&::-webkit-date-and-time-value]:text-left"
+            : "min-w-0"
+        }
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : undefined}
         onChange={(event) => onChange(event.target.value)}
@@ -191,7 +195,7 @@ export function FoodEntryEditor({
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-3">
             <EditorField
               field="day"
               label={t("entryEditor.day")}
@@ -208,7 +212,10 @@ export function FoodEntryEditor({
                 value={draft.mealType}
                 onValueChange={(value) => setField("mealType", value as MealType)}
               >
-                <SelectTrigger aria-label={t("entryEditor.meal")}>
+                <SelectTrigger
+                  aria-label={t("entryEditor.meal")}
+                  className="data-[size=default]:h-11"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

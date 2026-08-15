@@ -50,6 +50,7 @@ const { rootStore } = vi.hoisted(() => ({
         isLoading: false,
         clearError: vi.fn(),
         remove: vi.fn(),
+        removeMany: vi.fn(),
         restore: vi.fn(),
       },
     },

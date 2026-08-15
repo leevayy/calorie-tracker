@@ -2,6 +2,8 @@ import type {
   CreateFoodEntryBody,
   CreateFoodEntriesBody,
   CreateFoodEntriesResponse,
+  DeleteFoodEntriesBody,
+  DeleteFoodEntriesResponse,
   DayLogResponse,
   FoodEntryResponse,
   FrequentFoodsQuery,
@@ -10,6 +12,7 @@ import type {
 } from "@contracts/food-log";
 import {
   CreateFoodEntriesResponseSchema,
+  DeleteFoodEntriesResponseSchema,
   DayLogResponseSchema,
   FoodEntryResponseSchema,
   FrequentFoodsQuerySchema,
@@ -58,6 +61,18 @@ export async function apiCreateFoodEntries(
     throw new ApiError("errors.http_generic", res.status);
   }
   return parseResponse(CreateFoodEntriesResponseSchema, res.data);
+}
+
+export async function apiDeleteFoodEntries(
+  body: DeleteFoodEntriesBody,
+): Promise<DeleteFoodEntriesResponse> {
+  const res = await apiClient.delete("/api/v1/entries/batch", { data: body });
+  if (res.status !== 200) {
+    if (res.status === 400) throw new ApiError("errors.http_400", res.status);
+    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
+    throw new ApiError("errors.http_generic", res.status);
+  }
+  return parseResponse(DeleteFoodEntriesResponseSchema, res.data);
 }
 
 export async function apiUpdateFoodEntry(

@@ -19,4 +19,15 @@ describe("food parser timing prompt", () => {
     expect(prompt).toContain("завтрак/обед/ужин/перекус");
     expect(prompt).toContain("16:00–21:59 dinner");
   });
+
+  it("gives explicit portions, calories, and nutrients priority over estimates", () => {
+    const prompt = buildNutritionParserSystem("en", "maintain");
+
+    expect(prompt).toContain("EXPLICIT USER VALUES HAVE HIGHEST PRIORITY");
+    expect(prompt).toContain(
+      "Preserve every explicit portion, calorie, protein, carbohydrate, fat, and fiber value",
+    );
+    expect(prompt).toContain("Never replace, normalize, scale, or \"correct\" an explicit user value");
+    expect(prompt).toContain("Estimate only values the user omitted");
+  });
 });

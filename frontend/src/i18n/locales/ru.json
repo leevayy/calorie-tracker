@@ -79,7 +79,16 @@
     "aiConfidence": "Уверенность в оценке: {{pct}}%",
     "logRecognizedGroup": "Записать всё ({{count}})",
     "loggingRecognizedGroup": "Записываем…",
-    "dismissRecognizedGroup": "Убрать"
+    "dismissRecognizedGroup": "Убрать",
+    "pending": {
+      "parsing": "Распознаём…",
+      "saving": "Сохраняем…"
+    },
+    "retrySubmission": "Повторить",
+    "addedReceipt": "Добавлено: {{count}}",
+    "undoSubmission": "Отменить",
+    "edit": "Изменить",
+    "editAddedFood": "Изменить {{name}}"
   },
   "entryEditor": {
     "title": "Изменить запись",

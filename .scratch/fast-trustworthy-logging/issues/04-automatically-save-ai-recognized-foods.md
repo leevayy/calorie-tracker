@@ -6,8 +6,12 @@
 
 **Status:** ready-for-agent
 
-- [ ] Submitting a valid food description parses and logs the complete result without a separate review step.
-- [ ] The result uses the currently selected meal and day.
-- [ ] A compact confirmation identifies what was added and exposes working Edit and Undo actions.
-- [ ] Multi-food results remain a single recoverable submission rather than a series of unrelated saves.
-- [ ] The former per-suggestion accept/reject interaction is no longer part of the default flow.
+- [x] Submitting a valid food description parses and logs the complete result without a separate review step.
+- [x] The result uses the currently selected meal and day.
+- [x] A compact confirmation identifies what was added and exposes working Edit and Undo actions.
+- [x] Multi-food results remain a single recoverable submission rather than a series of unrelated saves.
+- [x] The former per-suggestion accept/reject interaction is no longer part of the default flow.
+
+## Comments
+
+- 2026-08-15: Replaced suggestion review with automatic atomic persistence. Added grouped receipts with per-entry Edit and transaction-backed Undo for the complete submission.

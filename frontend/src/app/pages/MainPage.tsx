@@ -1,19 +1,19 @@
 import { observer } from "mobx-react-lite";
-import type { ParsedFoodSuggestion } from "@contracts/ai-food";
+import type { ParseFoodResponse, ParsedFoodSuggestion } from "@contracts/ai-food";
+import type { MealType } from "@contracts/common";
 import type {
   CreateFoodEntryRequest,
   FoodEntryResponse,
   UpdateFoodEntryBody,
 } from "@contracts/food-log";
 import type { FormEvent } from "react";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
-import { Send, RefreshCw } from "lucide-react";
+import { Check, Pencil, RefreshCw, RotateCcw, Send } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
-import { FoodSuggestion } from "../components/FoodSuggestion";
 import { FoodEntryEditor } from "../components/FoodEntryEditor";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
@@ -38,9 +38,19 @@ import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 
 const CHAT_SUGGESTION_LIMIT = 3;
 
-type PendingFoodGroup = {
+type LoggingSubmission = {
   id: string;
+  text: string;
+  phase: "parsing" | "saving" | "failed";
+  retryFrom?: "parse" | "save";
+  errorKey?: string;
   foods: ParsedFoodSuggestion[];
+  timing: ReturnType<typeof buildParseFoodTiming>;
+};
+
+type LoggingReceipt = {
+  id: string;
+  entries: FoodEntryResponse[];
 };
 
 const MainPage = observer(function MainPage() {
@@ -52,14 +62,15 @@ const MainPage = observer(function MainPage() {
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
-  const [pendingGroups, setPendingGroups] = useState<PendingFoodGroup[]>([]);
-  const pendingGroupIdRef = useRef(0);
-  const nextPendingGroupId = () => {
-    pendingGroupIdRef.current += 1;
-    return `pending-food-group-${pendingGroupIdRef.current}`;
+  const [loggingSubmissions, setLoggingSubmissions] = useState<LoggingSubmission[]>([]);
+  const [loggingReceipts, setLoggingReceipts] = useState<LoggingReceipt[]>([]);
+  const submissionIdRef = useRef(0);
+  const nextSubmissionId = () => {
+    submissionIdRef.current += 1;
+    return `logging-submission-${submissionIdRef.current}`;
   };
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [savingGroupId, setSavingGroupId] = useState<string | null>(null);
+  const [undoingReceiptId, setUndoingReceiptId] = useState<string | null>(null);
+  const [receiptErrorId, setReceiptErrorId] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<FoodEntryResponse | null>(null);
   const [undoEntry, setUndoEntry] = useState<FoodEntryResponse | null>(null);
   const expandedInputRef = useRef<HTMLInputElement>(null);
@@ -106,33 +117,25 @@ const MainPage = observer(function MainPage() {
     );
   }, [foodLog.dayRead.data, dailyTip, today, preferredLanguage]);
 
-  const handleChatSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const text = chatInput.trim();
-    if (!text) return;
-    await aiParse.parse({
-      text,
-      preferredLanguage: coercePreferredLanguage(profile.read.profile?.preferredLanguage ?? i18n.language),
-      ...buildParseFoodTiming(),
+  const updateSubmission = (
+    id: string,
+    changes: Partial<Omit<LoggingSubmission, "id" | "text" | "timing">>,
+  ) => {
+    setLoggingSubmissions((current) =>
+      current.map((submission) =>
+        submission.id === id ? { ...submission, ...changes } : submission,
+      ),
+    );
+  };
+
+  const saveSubmission = async (submission: LoggingSubmission, foods: ParsedFoodSuggestion[]) => {
+    updateSubmission(submission.id, {
+      phase: "saving",
+      foods,
+      retryFrom: undefined,
+      errorKey: undefined,
     });
-    if (aiParse.fetchState !== "success") return;
-    setChatInput("");
-    const foods = aiParse.data?.suggestions ?? [];
-    if (foods.length > 0) {
-      const incoming = { id: nextPendingGroupId(), foods };
-      setPendingGroups((prev) => [incoming, ...prev]);
-    }
-    setShowSuggestions(true);
-    setChatExpanded(true);
-  };
-
-  const onFoodLogSheetOpenChange = (open: boolean) => {
-    setChatExpanded(open);
-  };
-
-  const handleAcceptGroup = async (group: PendingFoodGroup) => {
-    if (foodLog.entriesCreate.isLoading) return;
-    const entries: CreateFoodEntryRequest[] = group.foods.map((food) => ({
+    const entries: CreateFoodEntryRequest[] = foods.map((food) => ({
       day: food.day,
       mealType: food.mealType,
       name: food.name,
@@ -144,26 +147,90 @@ const MainPage = observer(function MainPage() {
       portion: food.portion,
       ...(food.mealSlug ? { mealSlug: food.mealSlug } : {}),
     }));
-    setSavingGroupId(group.id);
-    try {
-      const created = await foodLog.entriesCreate.create(entries);
-      if (!created) return;
-      setPendingGroups((prev) => {
-        const next = prev.filter((candidate) => candidate.id !== group.id);
-        if (next.length === 0) setShowSuggestions(false);
-        return next;
+    const result = (await foodLog.entriesCreate.create(entries)) as
+      | { entries: FoodEntryResponse[] }
+      | { errorKey: string }
+      | undefined;
+    if (!result || "errorKey" in result) {
+      updateSubmission(submission.id, {
+        phase: "failed",
+        retryFrom: "save",
+        errorKey: result?.errorKey ?? "errors.unknown",
       });
-    } finally {
-      setSavingGroupId(null);
+      return;
     }
+    setLoggingSubmissions((current) =>
+      current.filter((candidate) => candidate.id !== submission.id),
+    );
+    setLoggingReceipts((current) => [
+      { id: submission.id, entries: result.entries },
+      ...current,
+    ]);
+    focusChatInput();
   };
 
-  const dismissGroup = (groupId: string) => {
-    setPendingGroups((prev) => {
-      const next = prev.filter((group) => group.id !== groupId);
-      if (next.length === 0) setShowSuggestions(false);
-      return next;
+  const parseAndSaveSubmission = async (submission: LoggingSubmission) => {
+    updateSubmission(submission.id, {
+      phase: "parsing",
+      foods: [],
+      retryFrom: undefined,
+      errorKey: undefined,
     });
+    const result = (await aiParse.parse({
+      text: submission.text,
+      preferredLanguage: coercePreferredLanguage(
+        profile.read.profile?.preferredLanguage ?? i18n.language,
+      ),
+      ...submission.timing,
+    })) as { data: ParseFoodResponse } | { errorKey: string } | undefined;
+    if (!result || "errorKey" in result) {
+      updateSubmission(submission.id, {
+        phase: "failed",
+        retryFrom: "parse",
+        errorKey: result?.errorKey ?? "errors.unknown",
+      });
+      return;
+    }
+    const parsed = result.data;
+    if (parsed.suggestions.length === 0) {
+      updateSubmission(submission.id, {
+        phase: "failed",
+        retryFrom: "parse",
+        errorKey: "states.emptySuggestions",
+      });
+      return;
+    }
+    await saveSubmission(submission, parsed.suggestions);
+  };
+
+  const handleChatSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const submission: LoggingSubmission = {
+      id: nextSubmissionId(),
+      text: chatInput,
+      phase: "parsing",
+      foods: [],
+      timing: { ...buildParseFoodTiming(), defaultLogDay: today },
+    };
+    setChatInput("");
+    setLoggingSubmissions((current) => [submission, ...current]);
+    setChatExpanded(true);
+    void parseAndSaveSubmission(submission);
+    focusChatInput();
+  };
+
+  const onFoodLogSheetOpenChange = (open: boolean) => {
+    setChatExpanded(open);
+  };
+
+  const handleRetrySubmission = (submission: LoggingSubmission) => {
+    if (submission.retryFrom === "save") {
+      void saveSubmission(submission, submission.foods);
+    } else {
+      void parseAndSaveSubmission(submission);
+    }
+    focusChatInput();
   };
 
   const openEntryEditor = (entry: FoodEntryResponse) => {
@@ -175,13 +242,52 @@ const MainPage = observer(function MainPage() {
   const handleSaveEntry = async (
     entry: FoodEntryResponse,
     body: UpdateFoodEntryBody,
-  ): Promise<boolean> => Boolean(await foodLog.entryUpdate.update(entry, body));
+  ): Promise<boolean> => {
+    const updated = await foodLog.entryUpdate.update(entry, body);
+    if (!updated) return false;
+    if (typeof updated === "object") {
+      setLoggingReceipts((current) =>
+        current.map((receipt) => ({
+          ...receipt,
+          entries: receipt.entries.map((candidate) =>
+            candidate.id === entry.id ? updated : candidate,
+          ),
+        })),
+      );
+    }
+    return true;
+  };
 
   const handleDeleteEntry = async (entry: FoodEntryResponse): Promise<boolean> => {
     const deleted = await foodLog.entryDelete.remove(entry);
     if (!deleted) return false;
+    setLoggingReceipts((current) =>
+      current
+        .map((receipt) => ({
+          ...receipt,
+          entries: receipt.entries.filter((candidate) => candidate.id !== entry.id),
+        }))
+        .filter((receipt) => receipt.entries.length > 0),
+    );
     setUndoEntry(deleted);
     return true;
+  };
+
+  const handleUndoReceipt = async (receipt: LoggingReceipt) => {
+    setUndoingReceiptId(receipt.id);
+    setReceiptErrorId(null);
+    try {
+      const deleted = await foodLog.entryDelete.removeMany(receipt.entries);
+      if (!deleted) {
+        setReceiptErrorId(receipt.id);
+        return;
+      }
+      setLoggingReceipts((current) =>
+        current.filter((candidate) => candidate.id !== receipt.id),
+      );
+    } finally {
+      setUndoingReceiptId(null);
+    }
   };
 
   const handleUndoDelete = async () => {
@@ -207,6 +313,31 @@ const MainPage = observer(function MainPage() {
       : foodLog.entryDelete.fetchState === "error"
         ? foodLog.entryDelete.errorKey
         : "";
+
+  const pendingFoodsForMeal = (mealType: MealType) =>
+    loggingSubmissions.flatMap((submission) => {
+      if (
+        submission.phase === "parsing" &&
+        submission.timing.defaultLogDay === today &&
+        submission.timing.defaultMealType === mealType
+      ) {
+        return [{
+          id: submission.id,
+          label: submission.text,
+          phase: "parsing" as const,
+        }];
+      }
+      if (submission.phase !== "saving") return [];
+      return submission.foods.flatMap((food, index) =>
+        food.day === today && food.mealType === mealType
+          ? [{
+              id: `${submission.id}-${index}`,
+              label: food.name,
+              phase: "saving" as const,
+            }]
+          : [],
+      );
+    });
 
   useEffect(() => {
     const { from, to } = weekRangeEndingOn(today);
@@ -303,24 +434,28 @@ const MainPage = observer(function MainPage() {
                   foods={dayData.meals.breakfast}
                   emptyLabel={t("states.emptyMeals")}
                   onEdit={openEntryEditor}
+                  pendingFoods={pendingFoodsForMeal("breakfast")}
                 />
                 <MealSection
                   title={t("meals.lunch")}
                   foods={dayData.meals.lunch}
                   emptyLabel={t("states.emptyMeals")}
                   onEdit={openEntryEditor}
+                  pendingFoods={pendingFoodsForMeal("lunch")}
                 />
                 <MealSection
                   title={t("meals.dinner")}
                   foods={dayData.meals.dinner}
                   emptyLabel={t("states.emptyMeals")}
                   onEdit={openEntryEditor}
+                  pendingFoods={pendingFoodsForMeal("dinner")}
                 />
                 <MealSection
                   title={t("meals.snack")}
                   foods={dayData.meals.snack ?? []}
                   emptyLabel={t("states.emptyMeals")}
                   onEdit={openEntryEditor}
+                  pendingFoods={pendingFoodsForMeal("snack")}
                 />
               </div>
             </>
@@ -347,7 +482,6 @@ const MainPage = observer(function MainPage() {
                 inputVariants(),
                 "flex-1 cursor-text items-center text-left font-normal touch-manipulation",
               )}
-              disabled={aiParse.fetchState === "loading"}
             >
               <span
                 className={cn(
@@ -361,8 +495,7 @@ const MainPage = observer(function MainPage() {
             <Button
               type="submit"
               size="icon"
-              disabled={!chatInput.trim() || aiParse.fetchState === "loading"}
-              loading={aiParse.fetchState === "loading"}
+              disabled={!chatInput.trim()}
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -393,33 +526,126 @@ const MainPage = observer(function MainPage() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 className="flex-1"
-                disabled={aiParse.fetchState === "loading"}
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={!chatInput.trim() || aiParse.fetchState === "loading"}
-                loading={aiParse.fetchState === "loading"}
+                disabled={!chatInput.trim()}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </form>
 
-            {aiParse.fetchState === "loading" ? (
-              <Text variant="muted" className="mt-2 shrink-0">
-                {t("main.parsingFood")}
-              </Text>
-            ) : null}
-
-            {aiParse.fetchState === "error" && aiParse.errorKey ? (
-              <Text variant="error" className="mt-2 shrink-0" role="alert">
-                {t(aiParse.errorKey)}
-              </Text>
-            ) : null}
-
             <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
-                {aiParse.fetchState !== "loading" && foodLog.frequentWeekRead.items.length > 0 ? (
+                {loggingSubmissions.some((submission) => submission.phase !== "failed") ? (
+                  <div className="space-y-1" aria-live="polite">
+                    {loggingSubmissions
+                      .filter((submission) => submission.phase !== "failed")
+                      .map((submission) => (
+                        <div
+                          key={submission.id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
+                        >
+                          <Text className="min-w-0 flex-1 truncate">{submission.text}</Text>
+                          <Text variant="muted" size="sm" className="shrink-0">
+                            {t(`main.pending.${submission.phase}`)}
+                          </Text>
+                        </div>
+                      ))}
+                  </div>
+                ) : null}
+
+                {loggingSubmissions.some((submission) => submission.phase === "failed") ? (
+                  <div className="space-y-2">
+                    {loggingSubmissions
+                      .filter((submission) => submission.phase === "failed")
+                      .map((submission) => (
+                        <Card key={submission.id} className="border-destructive/40 bg-destructive/5 px-3 py-3">
+                          <Text weight="medium" className="break-words">
+                            {submission.text}
+                          </Text>
+                          <Text variant="error" size="sm" className="mt-1" role="alert">
+                            {t(submission.errorKey ?? "errors.unknown")}
+                          </Text>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="mt-2"
+                            onClick={() => handleRetrySubmission(submission)}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {t("main.retrySubmission")}
+                          </Button>
+                        </Card>
+                      ))}
+                  </div>
+                ) : null}
+
+                {loggingReceipts.length > 0 ? (
+                  <div className="space-y-2" aria-live="polite">
+                    {loggingReceipts.map((receipt) => (
+                      <Card key={receipt.id} className="border-success/35 bg-success/5 px-3 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Check className="h-4 w-4 shrink-0 text-success" />
+                            <Text weight="semibold">
+                              {t("main.addedReceipt", { count: receipt.entries.length })}
+                            </Text>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            loading={undoingReceiptId === receipt.id}
+                            disabled={undoingReceiptId !== null && undoingReceiptId !== receipt.id}
+                            onClick={() => void handleUndoReceipt(receipt)}
+                          >
+                            {t("main.undoSubmission")}
+                          </Button>
+                        </div>
+                        <div className="mt-2 divide-y divide-border/60">
+                          {receipt.entries.map((entry) => (
+                            <div key={entry.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
+                              <div className="min-w-0 flex-1">
+                                <Text className="truncate">{entry.name}</Text>
+                                <Text variant="muted" size="sm">
+                                  {formatLogDayLabel(
+                                    entry.day,
+                                    localIsoDate(),
+                                    i18n.resolvedLanguage ?? i18n.language,
+                                  )}{" "}
+                                  · {t(`meals.${entry.mealType}`)}
+                                </Text>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                aria-label={t("main.editAddedFood", { name: entry.name })}
+                                onClick={() => {
+                                  setChatExpanded(false);
+                                  openEntryEditor(entry);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                                {t("main.edit")}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        {receiptErrorId === receipt.id ? (
+                          <Text variant="error" size="sm" className="mt-2" role="alert">
+                            {t(foodLog.entryDelete.errorKey || "errors.unknown")}
+                          </Text>
+                        ) : null}
+                      </Card>
+                    ))}
+                  </div>
+                ) : null}
+
+                {foodLog.frequentWeekRead.items.length > 0 ? (
                   <div className="shrink-0 rounded-xl bg-muted/35">
                     <Text weight="semibold" className="px-4 pt-3 pb-2">
                       {t("main.recentLogged")}
@@ -448,91 +674,6 @@ const MainPage = observer(function MainPage() {
                   </div>
                 ) : null}
 
-                {showSuggestions ? (
-                  <div className="space-y-2 border-t border-border/60 pt-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <Text weight="medium">{t("main.recognizedFoods")}</Text>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowSuggestions(false);
-                          setPendingGroups([]);
-                        }}
-                        className="group text-muted-foreground hover:text-foreground"
-                      >
-                        <Text as="span" variant="muted" className="group-hover:text-foreground">
-                          {t("main.clear")}
-                        </Text>
-                      </button>
-                    </div>
-                    {pendingGroups.length === 0 && aiParse.fetchState === "success" ? (
-                      <Text variant="muted" className="py-2">
-                        {t("states.emptySuggestions")}
-                      </Text>
-                    ) : null}
-                    {pendingGroups.map((group) => {
-                      const locale = i18n.resolvedLanguage ?? i18n.language;
-                      return (
-                        <div
-                          key={group.id}
-                          className="space-y-2 rounded-xl border border-border/70 p-3"
-                        >
-                          {group.foods.map((food, foodIndex) => {
-                            const previous = group.foods[foodIndex - 1];
-                            const startsTargetSection =
-                              !previous ||
-                              previous.day !== food.day ||
-                              previous.mealType !== food.mealType;
-                            return (
-                              <Fragment key={`${group.id}-${foodIndex}`}>
-                                {startsTargetSection ? (
-                                  <Text
-                                    as="h3"
-                                    variant="muted"
-                                    size="sm"
-                                    weight="medium"
-                                    className="pt-2 first:pt-0"
-                                  >
-                                    {formatLogDayLabel(food.day, localIsoDate(), locale)} ·{" "}
-                                    {t(`meals.${food.mealType}`)}
-                                  </Text>
-                                ) : null}
-                                <FoodSuggestion food={food} />
-                              </Fragment>
-                            );
-                          })}
-                          <div className="flex gap-2 pt-1">
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              className="flex-1"
-                              disabled={foodLog.entriesCreate.isLoading}
-                              onClick={() => dismissGroup(group.id)}
-                            >
-                              {t("main.dismissRecognizedGroup")}
-                            </Button>
-                            <Button
-                              type="button"
-                              className="flex-1"
-                              disabled={foodLog.entriesCreate.isLoading && savingGroupId !== group.id}
-                              loading={savingGroupId === group.id}
-                              onClick={() => void handleAcceptGroup(group)}
-                            >
-                              {foodLog.entriesCreate.isLoading
-                                ? t("main.loggingRecognizedGroup")
-                                : t("main.logRecognizedGroup", { count: group.foods.length })}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {foodLog.entriesCreate.fetchState === "error" && foodLog.entriesCreate.errorKey ? (
-                      <Text variant="error" className="pt-2" role="alert">
-                        {t(foodLog.entriesCreate.errorKey)}
-                      </Text>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
             </div>
           </Drawer.Content>

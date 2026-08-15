@@ -26,7 +26,7 @@ const entry: FoodEntryResponse = {
 afterEach(cleanup);
 
 describe("FoodEntryEditor", () => {
-  it("leaves focus alone and stacks the schedule fields on mobile", async () => {
+  it("leaves focus alone and keeps the schedule fields in compact columns", async () => {
     render(
       createElement(FoodEntryEditor, {
         entry,
@@ -39,11 +39,40 @@ describe("FoodEntryEditor", () => {
 
     const name = screen.getByLabelText("entryEditor.name") as HTMLInputElement;
     const day = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
+    const meal = screen.getByRole("combobox", { name: "entryEditor.meal" });
     const scheduleFields = day.parentElement?.parentElement;
 
     await waitFor(() => expect(document.activeElement).not.toBe(name));
-    expect(scheduleFields?.className).toContain("grid-cols-1");
-    expect(scheduleFields?.className).toContain("sm:grid-cols-2");
+    expect(scheduleFields?.classList.contains("grid-cols-2")).toBe(true);
+    expect(scheduleFields?.classList.contains("grid-cols-1")).toBe(false);
+    expect(meal.className).toContain("data-[size=default]:h-11");
+  });
+
+  it("clamps the native date control to the shared input height on WebKit", () => {
+    render(
+      createElement(FoodEntryEditor, {
+        entry,
+        busy: false,
+        onClose: vi.fn(),
+        onSave: vi.fn(async () => true),
+        onDelete: vi.fn(async () => true),
+      }),
+    );
+
+    const day = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
+
+    expect(day.type).toBe("date");
+    expect(day.classList.contains("inline-flex")).toBe(true);
+    expect(day.classList.contains("flex")).toBe(false);
+    expect(day.className).toContain("max-h-11");
+    expect(day.className).toContain("appearance-none");
+    expect(day.className).toContain("px-0");
+    expect(day.className).toContain("py-0");
+    expect(day.classList.contains("px-3")).toBe(false);
+    expect(day.classList.contains("py-2")).toBe(false);
+    expect(day.className).toContain("[&::-webkit-date-and-time-value]:h-[1.5em]");
+    expect(day.className).toContain("[&::-webkit-date-and-time-value]:px-3");
+    expect(day.className).toContain("[&::-webkit-date-and-time-value]:text-left");
   });
 
   it("opens prefilled and keeps invalid edits while showing field feedback", async () => {

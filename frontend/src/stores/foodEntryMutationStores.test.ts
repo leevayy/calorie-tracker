@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({
   apiCreateFoodEntry: vi.fn(),
   apiCreateFoodEntries: vi.fn(),
   apiDeleteFoodEntry: vi.fn(),
+  apiDeleteFoodEntries: vi.fn(),
   apiGetDayLog: vi.fn(),
   apiGetFrequentFoods: vi.fn(),
   apiRestoreFoodEntry: vi.fn(),
@@ -63,6 +64,14 @@ const history: HistoryRangeResponse = {
   ],
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
 function createStore() {
   return RootStore.create({
     session: {},
@@ -84,6 +93,36 @@ function createStore() {
 beforeEach(() => vi.clearAllMocks());
 
 describe("food entry mutation stores", () => {
+  it("allows consecutive recognized groups to save while an earlier group is pending", async () => {
+    const first = deferred<{ entries: FoodEntryResponse[] }>();
+    const second = deferred<{ entries: FoodEntryResponse[] }>();
+    api.apiCreateFoodEntries
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    const store = createStore();
+    const request = [{
+      day: before.day,
+      mealType: before.mealType,
+      name: before.name,
+      calories: before.calories,
+      protein: before.protein,
+      carbs: before.carbs,
+      fats: before.fats,
+      fiber: before.fiber,
+      portion: before.portion,
+    }];
+
+    const firstSave = store.foodLog.entriesCreate.create(request);
+    const secondSave = store.foodLog.entriesCreate.create(request);
+
+    expect(api.apiCreateFoodEntries).toHaveBeenCalledTimes(2);
+    expect(store.foodLog.entriesCreate.isLoading).toBe(true);
+    first.resolve({ entries: [{ ...before, id: "22222222-2222-4222-8222-222222222222" }] });
+    second.resolve({ entries: [{ ...before, id: "33333333-3333-4333-8333-333333333333" }] });
+    await Promise.all([firstSave, secondSave]);
+    expect(store.foodLog.entriesCreate.isLoading).toBe(false);
+  });
+
   it("applies a persisted move to the visible source day and mounted history", async () => {
     const after: FoodEntryResponse = {
       ...before,
@@ -144,5 +183,26 @@ describe("food entry mutation stores", () => {
       fats: before.fats,
       fiber: before.fiber,
     });
+  });
+
+  it("rolls back every optimistic removal when grouped undo fails", async () => {
+    const second = {
+      ...before,
+      id: "22222222-2222-4222-8222-222222222222",
+      name: "Banana",
+      calories: 90,
+    };
+    const store = createStore();
+    store.foodLog.dayRead.setData({
+      ...day,
+      totalCalories: before.calories + second.calories,
+      meals: { ...day.meals, breakfast: [before, second] },
+    });
+    api.apiDeleteFoodEntries.mockRejectedValue(new Error("offline"));
+
+    const result = await store.foodLog.entryDelete.removeMany([before, second]);
+
+    expect(result).toBeUndefined();
+    expect(store.foodLog.dayRead.data?.meals.breakfast).toEqual([before, second]);
   });
 });

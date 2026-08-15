@@ -1,6 +1,6 @@
 import type { FoodEntryResponse } from "@contracts/food-log";
 import { flow, getRoot, types } from "mobx-state-tree";
-import { apiDeleteFoodEntry, apiRestoreFoodEntry } from "@/api/foodLog";
+import { apiDeleteFoodEntries, apiDeleteFoodEntry, apiRestoreFoodEntry } from "@/api/foodLog";
 import { errorMessageKey } from "@/api/errors";
 import { FetchStateModel } from "./fetchState";
 
@@ -45,6 +45,31 @@ export const DeleteFoodEntryStore = types
       } catch (e) {
         root.foodLog.applyRestoredEntry(entry);
         root.history.applyRestoredEntry(entry);
+        self.fetchState = "error";
+        self.errorKey = errorMessageKey(e);
+        return undefined;
+      }
+    }),
+    removeMany: flow(function* (entries: FoodEntryResponse[]) {
+      if (self.fetchState === "loading" || entries.length === 0) return undefined;
+      const root = getRoot(self) as RootWithFoodEntryTargets;
+      for (const entry of entries) {
+        root.foodLog.applyDeletedEntry(entry);
+        root.history.applyDeletedEntry(entry);
+      }
+      self.fetchState = "loading";
+      self.errorKey = "";
+      try {
+        const response = (yield apiDeleteFoodEntries({
+          entryIds: entries.map((entry) => entry.id),
+        })) as { entries: FoodEntryResponse[] };
+        self.fetchState = "success";
+        return response.entries;
+      } catch (e) {
+        for (const entry of entries) {
+          root.foodLog.applyRestoredEntry(entry);
+          root.history.applyRestoredEntry(entry);
+        }
         self.fetchState = "error";
         self.errorKey = errorMessageKey(e);
         return undefined;
