@@ -80,7 +80,7 @@ function EditorField({
   const inputId = `food-entry-${field}`;
   const error = errors[field];
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <Text as="label" htmlFor={inputId} size="sm" weight="medium">
         {label}
       </Text>
@@ -92,6 +92,7 @@ function EditorField({
         step={type === "number" ? "any" : undefined}
         value={value}
         variant={error ? "error" : "default"}
+        className="min-w-0"
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : undefined}
         onChange={(event) => onChange(event.target.value)}
@@ -154,7 +155,10 @@ export function FoodEntryEditor({
 
   return (
     <Dialog open={entry != null} onOpenChange={(open) => !open && !busy && onClose()}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md">
+      <DialogContent
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{t("entryEditor.title")}</DialogTitle>
           <DialogDescription>{t("entryEditor.description")}</DialogDescription>
@@ -187,7 +191,7 @@ export function FoodEntryEditor({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <EditorField
               field="day"
               label={t("entryEditor.day")}
@@ -196,7 +200,7 @@ export function FoodEntryEditor({
               onChange={(value) => setField("day", value)}
               type="date"
             />
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Text as="label" size="sm" weight="medium">
                 {t("entryEditor.meal")}
               </Text>

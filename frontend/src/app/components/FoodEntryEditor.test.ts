@@ -26,6 +26,26 @@ const entry: FoodEntryResponse = {
 afterEach(cleanup);
 
 describe("FoodEntryEditor", () => {
+  it("leaves focus alone and stacks the schedule fields on mobile", async () => {
+    render(
+      createElement(FoodEntryEditor, {
+        entry,
+        busy: false,
+        onClose: vi.fn(),
+        onSave: vi.fn(async () => true),
+        onDelete: vi.fn(async () => true),
+      }),
+    );
+
+    const name = screen.getByLabelText("entryEditor.name") as HTMLInputElement;
+    const day = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
+    const scheduleFields = day.parentElement?.parentElement;
+
+    await waitFor(() => expect(document.activeElement).not.toBe(name));
+    expect(scheduleFields?.className).toContain("grid-cols-1");
+    expect(scheduleFields?.className).toContain("sm:grid-cols-2");
+  });
+
   it("opens prefilled and keeps invalid edits while showing field feedback", async () => {
     const onSave = vi.fn(async () => true);
     render(
