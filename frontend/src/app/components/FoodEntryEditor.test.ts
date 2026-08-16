@@ -33,10 +33,17 @@ const entry: FoodEntryResponse = {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  apiCorrectFoodEntry.mockReset();
 });
 
+function openSchedule() {
+  fireEvent.click(
+    screen.getByRole("button", { name: "entryEditor.day · entryEditor.meal" }),
+  );
+}
+
 describe("FoodEntryEditor", () => {
-  it("leaves focus alone and keeps the schedule fields in compact columns", async () => {
+  it("uses a mobile sheet, leaves focus alone, and progressively reveals the schedule", async () => {
     render(
       createElement(FoodEntryEditor, {
         entry,
@@ -47,14 +54,33 @@ describe("FoodEntryEditor", () => {
       }),
     );
 
+    const dialog = screen.getByRole("dialog");
     const instruction = screen.getByLabelText("entryEditor.instruction") as HTMLInputElement;
+    const scheduleTrigger = screen.getByRole("button", {
+      name: "entryEditor.day · entryEditor.meal",
+    });
+
+    expect(dialog.className).toContain("bottom-0");
+    expect(dialog.className).toContain("env(safe-area-inset-top,0px)");
+    expect(dialog.className).toContain("sm:top-[50%]");
+    expect(scheduleTrigger.getAttribute("aria-label")).toBe(
+      "entryEditor.day · entryEditor.meal",
+    );
+    const scheduleDescriptionId = scheduleTrigger.getAttribute("aria-describedby");
+    expect(scheduleDescriptionId).toBe("food-entry-schedule-summary");
+    expect(document.getElementById(scheduleDescriptionId ?? "")?.textContent).toBe(
+      "August 15, 2026 · meals.lunch",
+    );
+    expect(screen.queryByLabelText("entryEditor.day")).toBeNull();
+    openSchedule();
+
     const day = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
     const meal = screen.getByRole("combobox", { name: "entryEditor.meal" });
     const scheduleFields = day.parentElement?.parentElement;
 
     await waitFor(() => expect(document.activeElement).not.toBe(instruction));
-    expect(scheduleFields?.classList.contains("grid-cols-2")).toBe(true);
-    expect(scheduleFields?.classList.contains("grid-cols-1")).toBe(false);
+    expect(scheduleFields?.classList.contains("grid-cols-1")).toBe(true);
+    expect(scheduleFields?.className).toContain("min-[360px]:grid-cols-2");
     expect(meal.className).toContain("data-[size=default]:h-11");
   });
 
@@ -69,6 +95,7 @@ describe("FoodEntryEditor", () => {
       }),
     );
 
+    openSchedule();
     const day = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
 
     expect(day.type).toBe("date");
@@ -103,6 +130,7 @@ describe("FoodEntryEditor", () => {
     const calories = screen.getByLabelText("entryEditor.calories") as HTMLInputElement;
     expect(name.value).toBe("Soup");
     expect((screen.getByLabelText("entryEditor.portion") as HTMLInputElement).value).toBe("350 ml");
+    openSchedule();
     expect((screen.getByLabelText("entryEditor.day") as HTMLInputElement).value).toBe("2026-08-15");
 
     expect(screen.queryByLabelText("entryEditor.protein")).toBeNull();
@@ -136,6 +164,7 @@ describe("FoodEntryEditor", () => {
     fireEvent.change(screen.getByLabelText("entryEditor.name"), {
       target: { value: "Tomato soup" },
     });
+    openSchedule();
     fireEvent.change(screen.getByLabelText("entryEditor.day"), {
       target: { value: "2026-08-16" },
     });
@@ -183,7 +212,10 @@ describe("FoodEntryEditor", () => {
       }),
     );
 
-    expect(screen.getByText("entryEditor.aiMode")).toBeTruthy();
+    expect(screen.getByText("entryEditor.aiTitle")).toBeTruthy();
+    expect(screen.queryByText("entryEditor.aiMode")).toBeNull();
+    expect(screen.queryByText("entryEditor.currentResult")).toBeNull();
+    openSchedule();
     expect(screen.getByLabelText("entryEditor.day")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "entryEditor.meal" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("entryEditor.day"), {
@@ -198,7 +230,7 @@ describe("FoodEntryEditor", () => {
       preferredLanguage: "en",
     }));
     expect(await screen.findByText((_, element) =>
-      element?.textContent === "350 ml · 440 history.calShort",
+      element?.textContent === "350 ml · 440\u00a0history.calShort",
     )).toBeTruthy();
     expect(screen.getByText("entryEditor.proposedResult")).toBeTruthy();
     expect((screen.getByLabelText("entryEditor.day") as HTMLInputElement).value).toBe(
@@ -251,7 +283,7 @@ describe("FoodEntryEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "entryEditor.previewCorrection" }));
 
     expect(await screen.findByText((_, element) =>
-      element?.textContent === "entryEditor.noPortion · 220 history.calShort",
+      element?.textContent === "entryEditor.noPortion · 220\u00a0history.calShort",
     )).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "entryEditor.editFields" }));
@@ -269,6 +301,108 @@ describe("FoodEntryEditor", () => {
       day: "2026-08-15",
       mealType: "lunch",
     });
+  });
+
+  it("shows placeholders for invalid shared-draft numbers after a proposal", async () => {
+    apiCorrectFoodEntry.mockResolvedValueOnce({
+      draft: {
+        name: "Soup",
+        portion: "350 ml",
+        calories: 440,
+        protein: 24,
+        carbs: 50,
+        fats: 16,
+        fiber: 8,
+        day: "2026-08-15",
+        mealType: "lunch",
+      },
+    });
+    render(
+      createElement(FoodEntryEditor, {
+        entry,
+        busy: false,
+        onClose: vi.fn(),
+        onSave: vi.fn(async () => true),
+        onDelete: vi.fn(async () => true),
+      }),
+    );
+
+    fireEvent.change(screen.getByLabelText("entryEditor.instruction"), {
+      target: { value: "adjust the nutrition" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.previewCorrection" }));
+    await screen.findByText("entryEditor.proposedResult");
+
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.editFields" }));
+    fireEvent.change(screen.getByLabelText("entryEditor.calories"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.details" }));
+    fireEvent.change(screen.getByLabelText("entryEditor.protein"), {
+      target: { value: "-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.backToAi" }));
+
+    const proposal = screen.getByText("entryEditor.proposedResult").parentElement;
+    expect(proposal?.textContent).toContain("350 ml · —");
+    expect(proposal?.textContent).toContain("macros.proteinLetter —");
+    expect(proposal?.textContent).not.toContain("0\u00a0history.calShort");
+
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.editFields" }));
+    expect((screen.getByLabelText("entryEditor.calories") as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText("entryEditor.protein") as HTMLInputElement).value).toBe("-1");
+  });
+
+  it("reveals hidden invalid nutrition and schedule fields before saving", async () => {
+    const onSave = vi.fn(async () => true);
+    apiCorrectFoodEntry.mockResolvedValueOnce({
+      draft: {
+        name: "Soup",
+        portion: "350 ml",
+        calories: 220,
+        protein: -1,
+        carbs: 25,
+        fats: 8,
+        fiber: 4,
+        day: "2026-08-15",
+        mealType: "lunch",
+      },
+    });
+    render(
+      createElement(FoodEntryEditor, {
+        entry,
+        busy: false,
+        onClose: vi.fn(),
+        onSave,
+        onDelete: vi.fn(async () => true),
+      }),
+    );
+
+    fireEvent.change(screen.getByLabelText("entryEditor.instruction"), {
+      target: { value: "adjust the nutrition" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.previewCorrection" }));
+    await screen.findByText("entryEditor.proposedResult");
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.save" }));
+
+    const protein = await screen.findByLabelText("entryEditor.protein");
+    expect(protein.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("entryEditor.validation.nonnegative")).toBeTruthy();
+    expect(onSave).not.toHaveBeenCalled();
+
+    fireEvent.change(protein, { target: { value: "12" } });
+    openSchedule();
+    fireEvent.change(screen.getByLabelText("entryEditor.day"), {
+      target: { value: "not-a-date" },
+    });
+    openSchedule();
+    expect(screen.queryByLabelText("entryEditor.day")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.save" }));
+
+    const day = await screen.findByLabelText("entryEditor.day");
+    expect(day.getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("entryEditor.validation.date")).toBeTruthy();
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it("preserves the instruction and shared draft on AI failure and mode switches", async () => {
@@ -296,9 +430,13 @@ describe("FoodEntryEditor", () => {
     fireEvent.change(name, { target: { value: "Clear soup" } });
     fireEvent.click(screen.getByRole("button", { name: "entryEditor.backToAi" }));
 
-    expect(screen.getByText("Clear soup")).toBeTruthy();
     expect((screen.getByLabelText("entryEditor.instruction") as HTMLInputElement).value).toBe(
       "make it better somehow",
+    );
+    expect(screen.queryByText("entryEditor.currentResult")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.editFields" }));
+    expect((screen.getByLabelText("entryEditor.name") as HTMLInputElement).value).toBe(
+      "Clear soup",
     );
   });
 });

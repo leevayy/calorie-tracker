@@ -36,9 +36,9 @@ const AuthPage = observer(function AuthPage() {
   const showError = session.authFetchState === "error" && session.authErrorKey.length > 0;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/10 via-background to-accent/20">
-      <Card variant="elevated" className="w-full max-w-md">
-        <CardHeader className="text-center pb-2">
+    <div className="flex min-h-dvh items-center justify-center bg-muted/30 px-4 py-8">
+      <Card variant="elevated" className="w-full max-w-sm">
+        <CardHeader className="pb-5">
           <CardTitle className="text-2xl">{t("auth.title")}</CardTitle>
           <CardDescription>
             {isLogin ? t("auth.signInSubtitle") : t("auth.signUpSubtitle")}
@@ -52,7 +52,7 @@ const AuthPage = observer(function AuthPage() {
               </Text>
             ) : null}
             <div className="space-y-2">
-              <Text as="label" htmlFor="auth-email">
+              <Text as="label" htmlFor="auth-email" weight="medium">
                 {t("auth.email")}
               </Text>
               <Input
@@ -66,7 +66,7 @@ const AuthPage = observer(function AuthPage() {
               />
             </div>
             <div className="space-y-2">
-              <Text as="label" htmlFor="auth-password">
+              <Text as="label" htmlFor="auth-password" weight="medium">
                 {t("auth.password")}
               </Text>
               <Input
@@ -85,12 +85,15 @@ const AuthPage = observer(function AuthPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
-            <button type="button" onClick={toggleMode} className="hover:underline">
-              <Text as="span" variant="primary">
-                {isLogin ? t("auth.toggleToSignUp") : t("auth.toggleToSignIn")}
-              </Text>
-            </button>
+          <div className="mt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full whitespace-normal text-primary-ink"
+              onClick={toggleMode}
+            >
+              {isLogin ? t("auth.toggleToSignUp") : t("auth.toggleToSignIn")}
+            </Button>
           </div>
         </CardContent>
       </Card>

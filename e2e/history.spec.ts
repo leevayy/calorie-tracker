@@ -19,6 +19,15 @@ function displayDay(day: string): string {
   }).format(new Date(`${day}T12:00:00Z`));
 }
 
+function inlineDisplayDay(day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -40,7 +49,10 @@ async function openHistory(page: Page): Promise<void> {
 }
 
 function historyDayButton(page: Page, day: string): Locator {
-  return page.getByRole("button", { name: `Open log for ${displayDay(day)}`, exact: true });
+  return page.getByRole("button", {
+    name: `Open log: ${inlineDisplayDay(day)}`,
+    exact: true,
+  });
 }
 
 async function openHistoryDay(page: Page, day: string): Promise<Locator> {
@@ -71,16 +83,33 @@ async function openFieldsEditor(
   entryName: string,
 ): Promise<Locator> {
   await (await revealEntry(detail, meal, entryName)).click();
-  const dialog = page.getByRole("dialog", { name: "Correct food" });
-  await expect(dialog).toBeVisible();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toHaveAccessibleName("Correct food");
   await dialog.getByRole("button", { name: "Edit fields" }).click();
-  await expect(dialog.getByText("Edit fields", { exact: true })).toBeVisible();
+  await expect(dialog).toHaveAccessibleName("Edit food");
   await dialog.getByRole("button", { name: "Nutrition details" }).click();
   return dialog;
 }
 
+async function expandEditorSchedule(dialog: Locator): Promise<void> {
+  const disclosure = dialog.getByRole("button", { name: "Date · Meal", exact: true });
+  await expect(disclosure).toBeVisible();
+  await dialog.evaluate(async (editor) => {
+    await Promise.all(
+      editor
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished.catch(() => undefined)),
+    );
+  });
+  if ((await disclosure.getAttribute("aria-expanded")) !== "true") {
+    await disclosure.click();
+  }
+  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+}
+
 async function chooseEditorMeal(dialog: Locator, meal: string): Promise<void> {
-  await dialog.getByRole("combobox", { name: "Meal" }).click();
+  await expandEditorSchedule(dialog);
+  await dialog.getByRole("combobox", { name: "Meal", exact: true }).click();
   await dialog.page().getByRole("option", { name: meal, exact: true }).click();
 }
 
@@ -124,16 +153,16 @@ test.describe("History detail", () => {
     await openHistory(page);
 
     let detail = await openHistoryDay(page, HISTORY_DAY);
-    await expect(detail.getByText("800 cal", { exact: true })).toBeVisible();
-    await expect(detail.getByText("P 54", { exact: true })).toBeVisible();
-    await expect(detail.getByText("C 70", { exact: true })).toBeVisible();
+    await expect(detail.getByText("800 kcal", { exact: true })).toBeVisible();
+    await expect(detail.getByText("P 54\u00a0g", { exact: true })).toBeVisible();
+    await expect(detail.getByText("C 70\u00a0g", { exact: true })).toBeVisible();
     await expect(await revealEntry(detail, "Breakfast", "History oatmeal")).toBeVisible();
     await expect(await revealEntry(detail, "Dinner", "History salmon")).toBeVisible();
 
     await detail.getByRole("button", { name: "Back to history" }).click();
     await page.reload();
     detail = await openHistoryDay(page, HISTORY_DAY);
-    await expect(detail.getByText("800 cal", { exact: true })).toBeVisible();
+    await expect(detail.getByText("800 kcal", { exact: true })).toBeVisible();
 
     await detail.getByRole("button", { name: "Back to history" }).click();
     detail = await openHistoryDay(page, TODAY);
@@ -175,7 +204,8 @@ test.describe("History detail", () => {
     await saveEditor(editor);
 
     editor = await openFieldsEditor(page, detail, "Breakfast", "Corrected history workflow");
-    await editor.getByLabel("Date").fill(DESTINATION_DAY);
+    await expandEditorSchedule(editor);
+    await editor.getByRole("textbox", { name: "Date", exact: true }).fill(DESTINATION_DAY);
     await chooseEditorMeal(editor, "Lunch");
     await saveEditor(editor);
 
@@ -195,8 +225,13 @@ test.describe("History detail", () => {
     detail = await openHistoryDay(page, DESTINATION_DAY);
     editor = await openFieldsEditor(page, detail, "Lunch", "Corrected history workflow");
     await expect(editor.getByLabel("Calories")).toHaveValue("400");
-    await expect(editor.getByLabel("Date")).toHaveValue(DESTINATION_DAY);
-    await expect(editor.getByRole("combobox", { name: "Meal" })).toContainText("Lunch");
+    await expandEditorSchedule(editor);
+    await expect(
+      editor.getByRole("textbox", { name: "Date", exact: true }),
+    ).toHaveValue(DESTINATION_DAY);
+    await expect(
+      editor.getByRole("combobox", { name: "Meal", exact: true }),
+    ).toContainText("Lunch");
   });
 
   test("reconciles history detail and aggregate after a correction", async ({
@@ -234,16 +269,16 @@ test.describe("History detail", () => {
     await editor.getByLabel("Protein").fill("30");
     await saveEditor(editor);
 
-    await expect(detail.getByText("650 cal", { exact: true })).toBeVisible();
-    await expect(detail.getByText("P 50", { exact: true })).toBeVisible();
+    await expect(detail.getByText("650 kcal", { exact: true })).toBeVisible();
+    await expect(detail.getByText("P 50\u00a0g", { exact: true })).toBeVisible();
     await detail.getByRole("button", { name: "Back to history" }).click();
-    await expect(historyDayButton(page, HISTORY_DAY)).toContainText("650 / 2000 cal");
+    await expect(historyDayButton(page, HISTORY_DAY)).toContainText("650 / 2000 kcal");
 
     await page.reload();
-    await expect(historyDayButton(page, HISTORY_DAY)).toContainText("650 / 2000 cal");
+    await expect(historyDayButton(page, HISTORY_DAY)).toContainText("650 / 2000 kcal");
     detail = await openHistoryDay(page, HISTORY_DAY);
-    await expect(detail.getByText("650 cal", { exact: true })).toBeVisible();
-    await expect(detail.getByText("P 50", { exact: true })).toBeVisible();
+    await expect(detail.getByText("650 kcal", { exact: true })).toBeVisible();
+    await expect(detail.getByText("P 50\u00a0g", { exact: true })).toBeVisible();
   });
 
   test("returns to the same history scroll context", async ({ page, e2eControls }) => {

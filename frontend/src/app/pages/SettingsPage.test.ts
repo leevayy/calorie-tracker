@@ -71,4 +71,21 @@ describe("SettingsPage retired coaching settings", () => {
       heightCm: 175,
     });
   });
+
+  it("uses full-size controls and exposes theme state as a switch", () => {
+    const view = render(createElement(SettingsPage));
+
+    const themeSwitch = screen.getByRole("switch", { name: "settings.darkMode" });
+    expect(themeSwitch.getAttribute("aria-checked")).toBe("false");
+    expect(themeSwitch.className).toContain("h-11");
+
+    const languageSelect = screen.getByLabelText("settings.languageLabel");
+    const goalSelect = screen.getByLabelText("settings.goalLabel");
+    expect(languageSelect.className).toContain("h-11");
+    expect(goalSelect.className).toContain("h-11");
+
+    const scroller = view.container.querySelector(".overflow-y-auto");
+    expect(scroller?.className).toContain("pb-[max(1.5rem,env(safe-area-inset-bottom))]");
+    expect(scroller?.className).not.toContain("7rem");
+  });
 });

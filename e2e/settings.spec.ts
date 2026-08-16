@@ -22,7 +22,7 @@ test.describe("Supported profile settings", () => {
     await expect(page).toHaveURL(/\/settings$/);
 
     await expect(page.getByLabel("Язык приложения")).toHaveValue("ru");
-    await expect(page.getByLabel("Ваша задача")).toHaveValue("muscle_gain");
+    await expect(page.getByLabel("Ваша цель")).toHaveValue("muscle_gain");
     await expect(page.getByLabel("Дневная норма калорий")).toHaveValue("2450");
     await expect(page.getByLabel("Вес (кг)")).toHaveValue("74.5");
     await expect(page.getByLabel("Рост (см)")).toHaveValue("181");
@@ -74,14 +74,16 @@ test.describe("Supported profile settings", () => {
     await page.keyboard.press("Escape");
     await expect(
       page.getByRole("button", {
-        name: /^(Breakfast|Lunch|Dinner|Snack)\b.*320 cal/,
+        name: /^(Breakfast|Lunch|Dinner|Snack)\b.*320\s+kcal/,
       }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "History" }).click();
     await expect(page).toHaveURL(/\/history$/);
     await expect(
-      page.getByRole("button", { name: /Open log for/ }).filter({ hasText: "320 / 2000 cal" }),
+      page.getByRole("button", { name: /Open log:/ }).filter({
+        hasText: "320 / 2000 kcal",
+      }),
     ).toBeVisible();
     await expect(page.getByText(/^Tip$/i)).toHaveCount(0);
   });

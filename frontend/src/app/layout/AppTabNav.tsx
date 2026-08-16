@@ -59,14 +59,14 @@ export default function AppTabNav({ progress, onSelectTab, activeTabIndex }: App
   }, []);
 
   return (
-    <div className="px-4 pb-3 pt-1">
+    <div className="px-4 pb-1">
       <div ref={trackRef} className="relative grid grid-cols-3">
         <div
-          className="pointer-events-none absolute left-0 top-1/2 h-10 w-full -translate-y-1/2"
+          className="pointer-events-none absolute left-0 top-1/2 h-11 w-full -translate-y-1/2"
           aria-hidden
         >
           <div
-            className="absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary"
+            className="absolute top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary"
             style={{ left: `${leftPct}%` }}
           />
         </div>
@@ -75,7 +75,7 @@ export default function AppTabNav({ progress, onSelectTab, activeTabIndex }: App
             <button
               type="button"
               onClick={() => onSelectTab(index)}
-              className={`rounded-full p-2 transition-colors ${
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 tabHighlight(p, trackWidth, index, n)
                   ? "text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"

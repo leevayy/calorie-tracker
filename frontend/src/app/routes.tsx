@@ -6,7 +6,7 @@ import { DEFAULT_APP_TAB_SEGMENT, isAppTabSegment } from "./navigation/appTabs";
 
 export const router = createBrowserRouter([
   { path: "/", Component: AuthPage },
-  { path: "/design-system", Component: DesignSystemPage },
+  ...(import.meta.env.DEV ? [{ path: "/design-system", Component: DesignSystemPage }] : []),
   {
     path: "/:tab",
     Component: AppTabShell,

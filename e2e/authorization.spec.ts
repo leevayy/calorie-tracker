@@ -44,6 +44,15 @@ function displayDay(day: string): string {
   }).format(new Date(`${day}T12:00:00Z`));
 }
 
+function inlineDisplayDay(day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
+}
+
 function apiUrl(pathname: string): string {
   const origin = process.env.E2E_API_URL?.trim() || "http://127.0.0.1:3000";
   return new URL(pathname, `${origin.replace(/\/$/, "")}/`).toString();
@@ -154,7 +163,9 @@ test.describe("Authorization boundaries", () => {
 
     await signOutThroughVisibleUi(page);
     session = await loginThroughSetup(page, owner);
-    await expect(page.getByRole("button", { name: /^Breakfast\b/ })).toContainText("410 cal");
+    await expect(page.getByRole("button", { name: /^Breakfast\b/ })).toContainText(
+      "410\u00a0kcal",
+    );
     await page.getByRole("button", { name: /^Breakfast\b/ }).click();
     await expect(page.getByRole("button", { name: new RegExp(`^${ownerName}\\b`) })).toBeVisible();
 
@@ -200,7 +211,7 @@ test.describe("Authorization boundaries", () => {
     await page.getByRole("button", { name: "History", exact: true }).click();
     await expect(page).toHaveURL(/\/history$/);
     await page
-      .getByRole("button", { name: `Open log for ${displayDay(sourceDay)}`, exact: true })
+      .getByRole("button", { name: `Open log: ${inlineDisplayDay(sourceDay)}`, exact: true })
       .click();
     const attackerDetail = page.getByRole("region", {
       name: displayDay(sourceDay),
@@ -236,7 +247,7 @@ test.describe("Authorization boundaries", () => {
     session = await loginThroughSetup(page, owner);
     await page.getByRole("button", { name: "History", exact: true }).click();
     await page
-      .getByRole("button", { name: `Open log for ${displayDay(sourceDay)}`, exact: true })
+      .getByRole("button", { name: `Open log: ${inlineDisplayDay(sourceDay)}`, exact: true })
       .click();
     const ownerDetail = page.getByRole("region", {
       name: displayDay(sourceDay),

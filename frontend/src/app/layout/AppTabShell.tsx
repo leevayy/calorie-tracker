@@ -16,18 +16,21 @@ import { useRootStore } from "@/stores/StoreContext";
 const AppTabChromeHeader = observer(function AppTabChromeHeader() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const { session } = useRootStore();
   const titleKey = pathToTitleKey(location.pathname);
 
   return (
-    <div className="flex items-center justify-between px-4 pb-2 pt-2">
-      <Text as="h1" size="xl" weight="medium">
+    <div className="flex items-center justify-between px-4 py-1">
+      <Text as="h1" size="xl" weight="semibold">
         {t(titleKey)}
       </Text>
       <button
         type="button"
         title={session.user?.email}
-        className="rounded-full p-2 transition-colors hover:bg-accent"
+        aria-label={t("settings.account")}
+        onClick={() => navigate(indexToPath(0), { replace: true })}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <User className="h-5 w-5" />
       </button>
@@ -149,7 +152,7 @@ const AppTabShellInner = observer(function AppTabShellInner() {
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-background">
-      <header className="z-20 shrink-0 border-b border-border bg-background/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0px)]">
+      <header className="z-20 shrink-0 bg-background/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0px)]">
         <AppTabChromeHeader />
         <AppTabNav
           progress={scrollProgress}

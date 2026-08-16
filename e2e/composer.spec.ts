@@ -37,7 +37,7 @@ function nextBatchResponse(page: Page) {
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
-  const caloriePattern = calories === undefined ? ".*" : `.*${calories} cal`;
+  const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
   return page.getByRole("button", {
     name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
   });
@@ -202,13 +202,36 @@ test.describe("Keyboard-fast food composer", () => {
     await page.reload();
     await mealButton(page, parseBody.defaultMealType).click();
     const savedEntry = mealSection(page, parseBody.defaultMealType).getByRole("button", {
-      name: /^E2E trail mix 913 cal .*P: 17g .*C: 23g .*F: 29g .*Fi: 31g$/,
+      name: /^E2E trail mix 913\s+kcal • P: 17\s+g • C: 23\s+g • F: 29\s+g • Fi: 31\s+g$/,
     });
     await expect(savedEntry).toBeVisible();
     await savedEntry.click();
 
-    const editor = page.getByRole("dialog", { name: "Correct food" });
-    await expect(editor).toContainText("37 g · 913 cal");
-    await expect(editor).toContainText("P 17 · C 23 · F 29 · Fi 31");
+    await expect(page.getByRole("dialog", { name: "Correct food" })).toBeVisible();
+
+    // The title changes with editor mode, so keep a stable content locator
+    // after asserting the initial AI state.
+    const editor = page.locator('[data-slot="dialog-content"]');
+    const context = editor.locator('[data-slot="dialog-description"]');
+    await expect(editor).toHaveCount(1);
+    await expect(context).toContainText("E2E trail mix");
+    await expect(context).toContainText("913\u00a0kcal");
+    await expect(editor.getByText("Current saved values", { exact: true })).toHaveCount(0);
+    await expect(editor.getByText("Proposed result", { exact: true })).toHaveCount(0);
+
+    await editor.getByRole("button", { name: "Edit fields", exact: true }).click();
+    await expect(editor.getByRole("heading", { name: "Edit food", exact: true })).toBeVisible();
+    await expect(editor.getByLabel("Name", { exact: true })).toHaveValue("E2E trail mix");
+    await expect(editor.getByLabel("Portion", { exact: true })).toHaveValue("37 g");
+    await expect(editor.getByLabel("Calories", { exact: true })).toHaveValue("913");
+
+    await editor.getByRole("button", { name: "Nutrition details", exact: true }).click();
+    await expect(editor.getByLabel("Protein", { exact: true })).toHaveValue("17");
+    await expect(editor.getByLabel("Carbohydrates", { exact: true })).toHaveValue("23");
+    await expect(editor.getByLabel("Fat", { exact: true })).toHaveValue("29");
+    await expect(editor.getByLabel("Fiber", { exact: true })).toHaveValue("31");
+
+    await editor.locator('[data-slot="dialog-close"]').click();
+    await expect(editor).toBeHidden();
   });
 });

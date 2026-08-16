@@ -18,7 +18,7 @@ test.describe("Authentication", () => {
     await page.getByRole("button", { name: "Don't have an account? Sign up" }).click();
     await page.getByLabel("Email").fill(user.email);
     await page.getByLabel("Password").fill(user.password);
-    await page.getByRole("button", { name: "Sign Up" }).click();
+    await page.getByRole("button", { name: "Sign up" }).click();
     await expect(page).toHaveURL(/\/app$/);
 
     await page.reload();
@@ -38,7 +38,7 @@ test.describe("Authentication", () => {
     await openSettingsThroughVisibleUi(page);
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   });
 
   test("shows validation and rejects invalid credentials without losing input", async ({
@@ -52,7 +52,7 @@ test.describe("Authentication", () => {
     const passwordInput = page.getByLabel("Password");
     await emailInput.fill(isolatedUser.email);
     await passwordInput.fill("short");
-    await page.getByRole("button", { name: "Sign Up" }).click();
+    await page.getByRole("button", { name: "Sign up" }).click();
 
     expect(
       await passwordInput.evaluate((element: HTMLInputElement) => element.validationMessage),
@@ -63,7 +63,7 @@ test.describe("Authentication", () => {
 
     await page.getByRole("button", { name: "Already have an account? Sign in" }).click();
     await passwordInput.fill("definitely-wrong-password");
-    await page.getByRole("button", { name: "Sign In" }).click();
+    await page.getByRole("button", { name: "Sign in" }).click();
 
     await expect(page.getByRole("alert")).toHaveText("Invalid email or password.");
     await expect(emailInput).toHaveValue(isolatedUser.email);

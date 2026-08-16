@@ -26,6 +26,8 @@ controls.
 | Authentication lifecycle | `e2e/auth.spec.ts` — `signs up, signs in, persists the session, and signs out` | Yes | Yes | — |
 | Authentication validation | `e2e/auth.spec.ts` — `shows validation and rejects invalid credentials without losing input` | Yes | Yes | — |
 | Supported profile/settings | `e2e/settings.spec.ts` — `updates supported profile fields and language after reload` | Yes | Yes | — |
+| English UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent` | Yes | Yes | — |
+| Russian UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
 | Entry ownership | `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |
 | Historical ownership | `e2e/authorization.spec.ts` — `cannot open or duplicate another user's historical meal` | Yes | Yes | — |
 
@@ -43,7 +45,7 @@ controls.
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
 | 02.1 | Tapping a saved food opens an editor populated from persisted values. | `e2e/ai-correction.spec.ts` — `opens a saved entry in the AI-first editor with its persisted draft` | Yes | Yes | — |
-| 02.2 | Common fields are easy to reach and detailed nutrients remain editable without overwhelming the initial view. | `e2e/ai-correction.spec.ts` — `switches to Edit fields and exposes detailed nutrients without losing the draft` | Yes | Yes | — |
+| 02.2 | The initial editor and generated proposal stay concise and contained; long names and macro rows wrap; manual fields, nutrients, and schedule use progressive disclosure; and footer actions remain reachable while the body scrolls. | `e2e/ai-correction.spec.ts` — `switches to Edit fields and exposes detailed nutrients without losing the draft`; `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent`; `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
 | 02.3 | Valid changes persist and refresh the row, meal/day totals, and history aggregate. | `e2e/ai-correction.spec.ts` — `saves a structured correction and reconciles every aggregate after reload` | Yes | Yes | — |
 | 02.4 | Invalid values show field-level feedback without losing edits. | `e2e/ai-correction.spec.ts` — `keeps invalid structured edits with field-level feedback` | Yes | Yes | — |
 | 02.5 | Owned updates succeed; unauthorized updates are rejected. | `e2e/ai-correction.spec.ts` — `saves a structured correction and reconciles every aggregate after reload`; `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |
@@ -132,13 +134,13 @@ controls.
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
-| 13.1 | Tapping a saved food opens AI correction by default with a visible instruction input. | `e2e/ai-correction.spec.ts` — `opens AI correction by default for a saved entry`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
+| 13.1 | Tapping a saved food opens a concise AI correction state with stored-food context, a visible instruction input, a collapsed schedule summary, and no proposal card before preview. | `e2e/ai-correction.spec.ts` — `opens AI correction by default for a saved entry`; `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent`; `keeps Russian core screens contained and typographically consistent`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
 | 13.2 | The correction request uses the stored entry as structured context. | `e2e/ai-correction.spec.ts` — `uses the stored structured entry as correction context`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
-| 13.3 | Schema-validated AI output becomes a complete inspectable draft before persistence. | `e2e/ai-correction.spec.ts` — `validates a complete AI draft before Save persists it`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
-| 13.4 | Proportional instructions scale calories and all nutrients exactly; portion changes only when implied. | `e2e/ai-correction.spec.ts` — `scales calories and every nutrient exactly for a proportional instruction` | Yes | Yes | — |
+| 13.3 | Schema-validated AI output becomes a complete inspectable draft before persistence. | `e2e/ai-correction.spec.ts` — `validates a complete AI draft before Save persists it`; both localized `e2e/ui-consistency.spec.ts` scenarios; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
+| 13.4 | Proportional instructions scale calories and all nutrients exactly; portion changes only when implied. | `e2e/ai-correction.spec.ts` — `scales calories and every nutrient exactly for a proportional instruction`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
 | 13.5 | Application code performs deterministic arithmetic after operation identification. | `e2e/ai-correction.spec.ts` — `scales calories and every nutrient exactly for a proportional instruction` | Yes | Yes | — |
-| 13.6 | Date and meal remain explicit selectors in AI mode. | `e2e/ai-correction.spec.ts` — `moves the AI correction draft with explicit date and meal selectors` | Yes | Yes | — |
-| 13.7 | A secondary Edit fields control opens the complete structured fallback. | `e2e/ai-correction.spec.ts` — `switches to Edit fields and exposes detailed nutrients without losing the draft` | Yes | Yes | — |
+| 13.6 | Date and meal remain explicit selectors behind a compact schedule summary shared by both modes. | `e2e/ai-correction.spec.ts` — `moves the AI correction draft with explicit date and meal selectors`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
+| 13.7 | A secondary Edit fields control opens the structured fallback, with nutrition and schedule rows expanding on demand and fixed footer actions remaining reachable. | `e2e/ai-correction.spec.ts` — `switches to Edit fields and exposes detailed nutrients without losing the draft`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
 | 13.8 | AI and structured modes share one draft without discarding changes. | `e2e/ai-correction.spec.ts` — `shares one correction draft while switching AI and structured modes` | Yes | Yes | — |
 | 13.9 | Invalid/ambiguous/failed AI leaves persistence unchanged, preserves instruction, and offers fallback. | `e2e/ai-correction.spec.ts` — `preserves the instruction and persisted entry after a failed AI correction` | Yes | Yes | — |
 | 13.10 | Either mode updates row, source/destination totals, and history exactly once through owned update. | `e2e/ai-correction.spec.ts` — `saves either correction mode exactly once and reconciles every aggregate`; `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |

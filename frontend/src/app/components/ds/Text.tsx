@@ -2,24 +2,24 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../ui/utils";
 
-const textVariants = cva("leading-normal", {
+const textVariants = cva("", {
   variants: {
     variant: {
       body: "text-foreground",
       muted: "text-muted-foreground",
-      error: "text-destructive",
-      success: "text-success",
-      warning: "text-warning",
-      primary: "text-primary",
+      error: "text-destructive-ink",
+      success: "text-success-ink",
+      warning: "text-warning-ink",
+      primary: "text-primary-ink",
     },
     size: {
-      xs: "text-xs",
-      sm: "text-sm",
-      base: "text-base",
-      lg: "text-lg",
-      xl: "text-xl",
-      "2xl": "text-2xl",
-      "3xl": "text-3xl",
+      xs: "text-xs leading-4",
+      sm: "text-sm leading-5",
+      base: "text-base leading-6",
+      lg: "text-lg leading-6",
+      xl: "text-xl leading-7",
+      "2xl": "text-2xl leading-8",
+      "3xl": "text-3xl leading-9",
     },
     weight: {
       normal: "font-normal",
@@ -42,6 +42,17 @@ const textVariants = cva("leading-normal", {
 
 export type TextAs = "p" | "span" | "div" | "label" | "h1" | "h2" | "h3" | "h4" | "a";
 
+type TextSize = NonNullable<VariantProps<typeof textVariants>["size"]>;
+type TextWeight = NonNullable<VariantProps<typeof textVariants>["weight"]>;
+
+const semanticTextDefaults: Partial<Record<TextAs, { size: TextSize; weight: TextWeight }>> = {
+  h1: { size: "2xl", weight: "semibold" },
+  h2: { size: "xl", weight: "semibold" },
+  h3: { size: "lg", weight: "semibold" },
+  h4: { size: "base", weight: "semibold" },
+  label: { size: "sm", weight: "medium" },
+};
+
 export interface TextProps
   extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof textVariants> {
@@ -50,9 +61,18 @@ export interface TextProps
 
 const Text = React.forwardRef<HTMLElement, TextProps>(
   ({ className, variant, size, weight, align, as: Component = "p", ...props }, ref) => {
+    const semanticDefaults = semanticTextDefaults[Component];
     return (
       <Component
-        className={cn(textVariants({ variant, size, weight, align }), className)}
+        className={cn(
+          textVariants({
+            variant,
+            size: size ?? semanticDefaults?.size,
+            weight: weight ?? semanticDefaults?.weight,
+            align,
+          }),
+          className,
+        )}
         ref={ref as React.Ref<never>}
         {...props}
       />

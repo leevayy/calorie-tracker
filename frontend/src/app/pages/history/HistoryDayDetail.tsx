@@ -16,8 +16,14 @@ import {
   removeFoodEntryById,
   replaceFoodEntry,
 } from "@/stores/foodLogMerge";
-import { formatCalendarDate, localIsoDate } from "@/utils/date";
-import { formatMacroGrams, sumDayMacros } from "@/utils/macroTotals";
+import { localIsoDate } from "@/utils/date";
+import {
+  formatInlineCalendarDate,
+  formatLocalizedGrams,
+  formatLocalizedNumber,
+  formatStandaloneCalendarDate,
+} from "@/utils/localeFormat";
+import { sumDayMacros } from "@/utils/macroTotals";
 import { AsyncSection, type AsyncFetchState } from "../../components/AsyncSection";
 import { FoodEntryEditor } from "../../components/FoodEntryEditor";
 import { MealSection } from "../../components/MealSection";
@@ -57,6 +63,9 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
 }: HistoryDayDetailProps) {
   const { t, i18n } = useTranslation();
   const { foodLog } = useRootStore();
+  const language = i18n.resolvedLanguage ?? i18n.language;
+  const formatWholeNumber = (value: number) =>
+    formatLocalizedNumber(value, language, { maximumFractionDigits: 0 });
   const [data, setData] = useState<DayLogResponse>();
   const [fetchState, setFetchState] = useState<AsyncFetchState>("initial");
   const [fetchErrorKey, setFetchErrorKey] = useState("");
@@ -200,14 +209,15 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
       : foodLog.entryDelete.fetchState === "error"
         ? foodLog.entryDelete.errorKey
         : "";
-  const formattedDay = formatCalendarDate(day, i18n.language);
+  const formattedDay = formatStandaloneCalendarDate(day, language);
+  const inlineDay = formatInlineCalendarDate(day, language);
 
   return (
     <section
       className="absolute inset-0 z-30 flex min-h-0 flex-col bg-background"
       aria-labelledby="history-day-detail-title"
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+      <div className="flex shrink-0 items-center gap-2 bg-background/95 px-3 py-1 backdrop-blur-sm">
         <Button
           type="button"
           variant="ghost"
@@ -218,7 +228,12 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0">
-          <Text id="history-day-detail-title" as="h2" weight="medium" className="truncate">
+          <Text
+            id="history-day-detail-title"
+            as="h2"
+            weight="medium"
+            className="break-words leading-snug"
+          >
             {formattedDay}
           </Text>
           <Text variant="muted" size="sm">
@@ -227,7 +242,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <AsyncSection
           fetchState={fetchState}
           errorKey={fetchErrorKey}
@@ -240,25 +255,27 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                   <div>
                     <Text variant="muted">{t("history.dayTotal")}</Text>
                     <Text size="2xl" weight="semibold" className="tabular-nums">
-                      {Math.round(data.totalCalories)} {t("history.calShort")}
+                      {formatWholeNumber(Math.round(data.totalCalories))} {t("history.calShort")}
                     </Text>
                   </div>
                   <Text variant="muted" className="tabular-nums">
-                    {t("history.goalTotal", { goal: Math.round(data.calorieGoal) })}
+                    {t("history.goalTotal", {
+                      goal: formatWholeNumber(Math.round(data.calorieGoal)),
+                    })}
                   </Text>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Badge size="sm" variant="secondary" className="tabular-nums">
-                    {t("macros.proteinLetter")} {formatMacroGrams(macros.protein)}
+                    {t("macros.proteinLetter")} {formatLocalizedGrams(macros.protein, language)}
                   </Badge>
                   <Badge size="sm" variant="secondary" className="tabular-nums">
-                    {t("macros.fatsLetter")} {formatMacroGrams(macros.fats)}
+                    {t("macros.fatsLetter")} {formatLocalizedGrams(macros.fats, language)}
                   </Badge>
                   <Badge size="sm" variant="secondary" className="tabular-nums">
-                    {t("macros.carbsLetter")} {formatMacroGrams(macros.carbs)}
+                    {t("macros.carbsLetter")} {formatLocalizedGrams(macros.carbs, language)}
                   </Badge>
                   <Badge size="sm" variant="secondary" className="tabular-nums">
-                    {t("macros.fiberLetter")} {formatMacroGrams(macros.fiber)}
+                    {t("macros.fiberLetter")} {formatLocalizedGrams(macros.fiber, language)}
                   </Badge>
                 </div>
               </Card>
@@ -269,13 +286,16 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
               {duplicateReceipt ? (
                 <Card
                   variant="elevated"
-                  className="space-y-3 border border-success/40 bg-success/10"
+                  className="space-y-3 bg-success/10"
                   role="status"
                 >
                   <Text>
                     {t("history.duplicateSuccess", {
                       count: duplicateReceipt.count,
-                      date: formatCalendarDate(duplicateReceipt.destinationDay, i18n.language),
+                      date: formatInlineCalendarDate(
+                        duplicateReceipt.destinationDay,
+                        language,
+                      ),
                       meal: t(`meals.${duplicateReceipt.destinationMealType}`),
                     })}
                   </Text>
@@ -312,23 +332,22 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                           emptyLabel={t("states.emptyMeals")}
                           onEdit={openEntryEditor}
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                          disabled={mealEntries.length === 0 || duplicateLoading}
-                          onClick={() => openDuplicateMeal(mealType)}
-                        >
-                          <Copy className="h-4 w-4" aria-hidden="true" />
-                          {t("history.duplicateMeal", { meal: t(`meals.${mealType}`) })}
-                        </Button>
+                        {mealEntries.length > 0 ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            className="w-full"
+                            disabled={duplicateLoading}
+                            onClick={() => openDuplicateMeal(mealType)}
+                          >
+                            <Copy className="h-4 w-4" aria-hidden="true" />
+                            {t("history.duplicateMeal", { meal: t(`meals.${mealType}`) })}
+                          </Button>
+                        ) : null}
 
                         {duplicateSourceMealType === mealType ? (
-                          <Card
-                            variant="elevated"
-                            className="space-y-4 border border-border"
-                          >
+                          <Card className="space-y-4 rounded-xl bg-muted/45 p-4">
                             <div>
                               <Text as="h4" weight="medium">
                                 {t("history.duplicateMealTitle", {
@@ -338,7 +357,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                               <Text variant="muted" size="sm">
                                 {t("history.duplicateMealDescription", {
                                   count: mealEntries.length,
-                                  date: formattedDay,
+                                  date: inlineDay,
                                 })}
                               </Text>
                             </div>
@@ -349,7 +368,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                               })}
                               onSubmit={(event) => void handleDuplicateMeal(event)}
                             >
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div className="min-w-0 space-y-1.5">
                                   <Text
                                     as="label"
@@ -381,7 +400,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                                   </Text>
                                   <select
                                     id={`duplicate-destination-meal-${mealType}`}
-                                    className="h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     value={duplicateDestinationMealType}
                                     disabled={duplicateLoading}
                                     onChange={(event) =>
@@ -408,7 +427,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                                 </Text>
                               ) : null}
 
-                              <div className="flex justify-end gap-2">
+                              <div className="flex flex-wrap justify-end gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -457,7 +476,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
 
       {undoEntry ? (
         <div
-          className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
+          className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl bg-card px-4 py-3 shadow-lg"
           role="status"
         >
           <Text className="min-w-0 flex-1">

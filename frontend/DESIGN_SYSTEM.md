@@ -9,17 +9,17 @@ A mobile-first, opinionated design system for semantic calorie tracking applicat
 - **Moderate Rounding**: 10px base border radius for comfortable, modern feel
 - **Semantic States**: Clear visual feedback for initial, loading, error, success, and disabled states
 - **Dark Mode Support**: Full dark theme with adjusted colors for optimal contrast
-- **Subtle Gradients**: Hover effects use shallow right-to-left gradients (600→700 color values)
-- **Inter Font**: Clean, modern typography with 14px base size
+- **Flat Interaction States**: Solid token-based hover colors with restrained press motion
+- **Local UI Font Stack**: Fast, offline-safe Latin and Cyrillic typography with a 16px base size
 - **Consistent Text**: Text component for unified typography across the app
 
 ## Color System
 
 ### Light Mode
-- **Primary**: Ice Blue (#0ea5e9) - Main brand color
+- **Primary**: Ice Blue (#0ea5e9) with dark foreground text - Main brand color
 - **Secondary**: Light gray (#f1f5f9) - Secondary actions
 - **Success**: Green (#10b981) - Positive feedback
-- **Destructive**: Red (#ef4444) - Errors and deletion
+- **Destructive**: Red (#dc2626) - Errors and deletion
 - **Warning**: Amber (#f59e0b) - Attention required
 
 ### Dark Mode
@@ -40,9 +40,9 @@ Location: `/src/app/components/ds/Button.tsx`
 - `ghost` - No background, minimal style
 
 **Sizes:**
-- `sm` - 36px height, compact
+- `sm` - 44px height with compact horizontal padding
 - `md` - 44px height, default
-- `lg` - 52px height, prominent
+- `lg` - 48px height, prominent
 - `icon` - 44px square for icons
 
 **States:**
@@ -52,8 +52,10 @@ Location: `/src/app/components/ds/Button.tsx`
 - `success` - Green variant for completed actions
 - `error` - Red variant for failed actions
 
-**Hover Effect:**
-Primary and secondary buttons show subtle gradient transitions (600→700 color values) on hover.
+**Interaction:**
+Primary and secondary buttons transition to solid semantic hover tokens. Buttons use no hover
+shadow or decorative gradient. Pressed buttons scale to 98%; reduced-motion preferences disable
+the transform.
 
 ### Input
 Location: `/src/app/components/ds/Input.tsx`
@@ -64,14 +66,16 @@ Location: `/src/app/components/ds/Input.tsx`
 - `error` - Red border for invalid input
 
 **Sizes:**
-- `sm` - 36px height
+- `sm` - 44px height with compact density
 - `md` - 44px height, default
-- `lg` - 52px height
+- `lg` - 48px height
 
 ### Card
 Location: `/src/app/components/ds/Card.tsx`
 
-Container component with border and shadow. Includes:
+Container component with two intentional levels of containment. `plain` (the default) adds no
+border, background, padding, radius, or shadow. `elevated` adds a card surface, 20px padding,
+moderate rounding, and one subtle shadow for focused/transactional content. Includes:
 - `Card` - Main container
 - `CardHeader` - Top section with padding
 - `CardTitle` - Heading text
@@ -110,7 +114,9 @@ Loading indicator component.
 ### Text
 Location: `/src/app/components/ds/Text.tsx`
 
-Unified typography component for consistent text rendering with 14px base size and Inter font.
+Unified typography component for consistent 16px body text using the local platform UI font stack.
+Semantic elements receive a default hierarchy unless a caller explicitly chooses a size: `h1`
+24px, `h2` 20px, `h3` 18px, `h4` 16px, and labels 14px.
 
 **Variants:**
 - `body` - Default foreground color
@@ -122,10 +128,10 @@ Unified typography component for consistent text rendering with 14px base size a
 
 **Sizes:**
 - `xs` - 12px
-- `sm` - 13px
-- `base` - 14px (default)
-- `lg` - 16px
-- `xl` - 18px
+- `sm` - 14px
+- `base` - 16px (default)
+- `lg` - 18px
+- `xl` - 20px
 - `2xl` - 24px
 - `3xl` - 30px
 
@@ -305,13 +311,13 @@ To customize:
 - Focus visible rings on interactive elements
 - Proper button states (disabled, loading)
 - Semantic HTML elements
-- Color contrast meets WCAG AA standards
+- Semantic foreground/background token pairs meet WCAG AA contrast for normal text
 - Touch targets sized appropriately for mobile (44px minimum)
 
 ## Animation & Transitions
 
-- Button hover: Gradient transition (200ms)
-- Button active: Scale down to 98% (spring animation)
+- Button hover: Solid token color transition (150ms)
+- Button active: Scale down to 98% (disabled for reduced motion)
 - Card expansion: Height animation with spring physics
 - Chat input: Smooth height transition with Motion
 - Loading spinners: Continuous rotation

@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import {
   behavioralIsoDay,
   expect,
@@ -75,6 +75,15 @@ async function openFoodComposer(page: Page) {
   return input;
 }
 
+async function expandEditorSchedule(dialog: Locator): Promise<void> {
+  const disclosure = dialog.getByRole("button", { name: "Date · Meal", exact: true });
+  await expect(disclosure).toBeVisible();
+  if ((await disclosure.getAttribute("aria-expanded")) !== "true") {
+    await disclosure.click();
+  }
+  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+}
+
 test.describe("Live AI smoke journeys", () => {
   test("@live-ai parses and saves a real multi-food description", async ({
     authenticatedPage: page,
@@ -144,20 +153,27 @@ test.describe("Live AI smoke journeys", () => {
     await page
       .getByRole("button", { name: new RegExp(`^${escapeRegExp(seedName)}\\b`) })
       .click();
-    const dialog = page.getByRole("dialog", { name: "Correct food" });
-    await expect(dialog).toBeVisible();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toHaveAccessibleName("Correct food");
 
     await dialog
       .getByLabel("What should change?")
       .fill("Make the saved serving exactly twice as large and double every nutrition value.");
     await dialog.getByRole("button", { name: "Preview correction" }).click();
-    await expect(dialog.getByText("Proposed result", { exact: true })).toBeVisible();
-    await expect(dialog.getByText(seedName, { exact: true }).first()).toBeVisible();
+    const proposedResult = dialog.getByText("Proposed result", { exact: true }).locator("..");
+    await expect(proposedResult).toBeVisible();
+    await expect(proposedResult.getByText(seedName, { exact: true })).toBeVisible();
 
     await dialog.getByRole("button", { name: "Edit fields" }).click();
+    await expect(dialog).toHaveAccessibleName("Edit food");
     await expect(dialog.getByLabel("Name")).toHaveValue(seedName);
-    await expect(dialog.getByLabel("Date")).toHaveValue(day);
-    await expect(dialog.getByRole("combobox", { name: "Meal" })).toContainText("Lunch");
+    await expandEditorSchedule(dialog);
+    await expect(
+      dialog.getByRole("textbox", { name: "Date", exact: true }),
+    ).toHaveValue(day);
+    await expect(
+      dialog.getByRole("combobox", { name: "Meal", exact: true }),
+    ).toContainText("Lunch");
     const proposedCalories = Number(await dialog.getByLabel("Calories").inputValue());
     await dialog.getByRole("button", { name: "Nutrition details" }).click();
     const proposedProtein = Number(await dialog.getByLabel("Protein").inputValue());
@@ -186,7 +202,7 @@ test.describe("Live AI smoke journeys", () => {
     });
 
     await expect(page.getByRole("button", { name: /^Lunch\b/ })).toContainText(
-      `${proposedCalories} cal`,
+      new RegExp(`${proposedCalories}\\s*kcal\\b`),
     );
     await page.getByRole("button", { name: /^Lunch\b/ }).click();
     await expect(

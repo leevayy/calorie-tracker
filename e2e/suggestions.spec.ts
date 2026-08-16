@@ -75,7 +75,7 @@ function suggestionList(page: Page) {
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
-  const caloriePattern = calories === undefined ? ".*" : `.*${calories} cal`;
+  const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
   return page.getByRole("button", {
     name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
   });
@@ -104,8 +104,8 @@ test.describe("Historical food suggestions", () => {
     await expect(list).toBeVisible();
     const option = list.getByRole("option", { name: /Greek Yogurt/ });
     await expect(option).toBeVisible();
-    await expect(option).toContainText("170 g · 150 cal");
-    await expect(option).toContainText("Used 3×");
+    await expect(option).toContainText("170 g · 150 kcal");
+    await expect(option).toContainText("Uses: 3");
     await expect(option).toContainText("Yesterday");
   });
 
@@ -133,8 +133,8 @@ test.describe("Historical food suggestions", () => {
 
     const options = suggestionList(page).getByRole("option", { name: /Greek yogurt/ });
     await expect(options).toHaveCount(2);
-    await expect(options.filter({ hasText: "170 g · 150 cal" })).toHaveCount(1);
-    await expect(options.filter({ hasText: "300 g · 260 cal" })).toHaveCount(1);
+    await expect(options.filter({ hasText: "170 g · 150 kcal" })).toHaveCount(1);
+    await expect(options.filter({ hasText: "300 g · 260 kcal" })).toHaveCount(1);
   });
 
   test("ranks historical suggestions by relevance frequency and recency", async ({
@@ -230,7 +230,9 @@ test.describe("Historical food suggestions", () => {
     await page.reload();
     await page.getByRole("button", { name: "Previous day" }).click();
     await mealButton(page, targetMeal as MealType).click();
-    await expect(page.getByRole("button", { name: /Stored porridge.*222 cal/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Stored porridge.*222\s+kcal/ }),
+    ).toBeVisible();
     await expect(mealButton(page, targetMeal as MealType, 222)).toBeVisible();
   });
 

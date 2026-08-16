@@ -5,6 +5,7 @@ import { Badge } from "./ds/Badge";
 import { Card } from "./ds/Card";
 import { Button } from "./ds/Button";
 import { Text } from "./ds/Text";
+import { formatLocalizedEnergy, formatLocalizedGrams } from "@/utils/localeFormat";
 
 function confidenceBadgeVariant(c: number): "success" | "warning" | "secondary" {
   if (c >= 0.72) return "success";
@@ -19,8 +20,14 @@ interface FoodSuggestionProps {
 }
 
 export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps) {
-  const { t } = useTranslation();
-  const macroLine = `${t("macros.proteinLetter")}: ${food.protein}g • ${t("macros.carbsLetter")}: ${food.carbs}g • ${t("macros.fatsLetter")}: ${food.fats}g • ${t("macros.fiberLetter")}: ${food.fiber}g`;
+  const { t, i18n } = useTranslation();
+  const language = i18n.resolvedLanguage ?? i18n.language;
+  const macroLine = [
+    `${t("macros.proteinLetter")}: ${formatLocalizedGrams(food.protein, language)}`,
+    `${t("macros.carbsLetter")}: ${formatLocalizedGrams(food.carbs, language)}`,
+    `${t("macros.fatsLetter")}: ${formatLocalizedGrams(food.fats, language)}`,
+    `${t("macros.fiberLetter")}: ${formatLocalizedGrams(food.fiber, language)}`,
+  ].join(" • ");
   const conf =
     typeof food.confidence === "number" && Number.isFinite(food.confidence)
       ? Math.min(1, Math.max(0, food.confidence))
@@ -40,7 +47,8 @@ export function FoodSuggestion({ food, onAccept, onReject }: FoodSuggestionProps
             </Badge>
           ) : null}
           <Text variant="muted" className="mt-1">
-            {food.portion} • {food.calories} cal
+            {food.portion} •{" "}
+            {formatLocalizedEnergy(food.calories, language, t("history.calShort"))}
           </Text>
           <Text variant="muted">
             {macroLine}

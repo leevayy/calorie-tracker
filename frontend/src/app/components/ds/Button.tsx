@@ -4,26 +4,23 @@ import { cn } from "../ui/utils";
 import { Loader2 } from "lucide-react";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "relative inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-[var(--radius)] text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-45",
   {
     variants: {
       variant: {
-        primary:
-          "bg-primary text-primary-foreground hover:shadow-md active:scale-[0.98]",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:shadow-sm active:scale-[0.98]",
-        success:
-          "bg-success text-success-foreground hover:shadow-md active:scale-[0.98]",
+        primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
+        success: "bg-success text-success-foreground hover:bg-success-hover",
         destructive:
-          "bg-destructive text-destructive-foreground hover:shadow-md active:scale-[0.98]",
+          "bg-destructive text-destructive-foreground hover:bg-destructive-hover",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
-        ghost: "hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
+          "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground",
+        ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
       },
       size: {
-        sm: "h-9 px-3 text-base",
+        sm: "h-11 px-3",
         md: "h-11 px-4",
-        lg: "h-13 px-6",
+        lg: "h-12 px-6 text-base",
         icon: "h-11 w-11",
       },
       state: {
@@ -46,7 +43,6 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   loading?: boolean;
-  asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -55,17 +51,22 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     
     return (
       <button
-        className={cn(
-          buttonVariants({ variant, size, state: buttonState }),
-          className,
-          variant === "primary" && !disabled && !loading && "hover:bg-gradient-to-r hover:from-[#0284c7]/90 hover:to-[#0369a1]/90",
-          variant === "secondary" && !disabled && !loading && "hover:bg-gradient-to-r hover:from-[#e2e8f0]/80 hover:to-[#cbd5e1]/80 dark:hover:from-[#334155]/80 dark:hover:to-[#475569]/80"
-        )}
+        className={cn(buttonVariants({ variant, size, state: buttonState }), className)}
         ref={ref}
         disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        data-state={buttonState}
         {...props}
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
+        {loading ? <Loader2 className="absolute h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+        <span
+          className={cn(
+            "inline-flex items-center justify-center gap-2",
+            loading && "opacity-0",
+          )}
+        >
+          {children}
+        </span>
       </button>
     );
   }

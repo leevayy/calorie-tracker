@@ -16,6 +16,9 @@ import { useRootStore } from "@/stores/StoreContext";
 import { NUTRITION_GOAL_OPTIONS, coerceNutritionGoal } from "@/utils/nutritionGoal";
 import { PREFERRED_LANGUAGE_OPTIONS } from "@/utils/preferredLanguage";
 
+const SETTINGS_SELECT_CLASS_NAME =
+  "mt-2 h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-base text-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
+
 const SettingsPage = observer(function SettingsPage() {
   useRequireAuth();
   const { t } = useTranslation();
@@ -61,9 +64,9 @@ const SettingsPage = observer(function SettingsPage() {
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))]">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <Card>
-          <Text as="h3" weight="medium" className="mb-4">
+          <Text as="h3" className="mb-4">
             {t("settings.language")}
           </Text>
           <Text as="label" htmlFor="settings-language">
@@ -71,7 +74,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Text>
           <select
             id="settings-language"
-            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-base"
+            className={SETTINGS_SELECT_CLASS_NAME}
             value={preferredLanguage}
             onChange={(e) => setPreferredLanguage(e.target.value as PreferredLanguage)}
           >
@@ -81,13 +84,13 @@ const SettingsPage = observer(function SettingsPage() {
               </option>
             ))}
           </select>
-          <Text variant="muted" className="mt-2">
+          <Text variant="muted" size="sm" className="mt-2">
             {t("settings.languageHint")}
           </Text>
         </Card>
 
         <Card>
-          <Text as="h3" weight="medium" className="mb-4">
+          <Text as="h3" className="mb-4">
             {t("settings.goal")}
           </Text>
           <Text as="label" htmlFor="settings-nutrition-goal">
@@ -95,7 +98,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Text>
           <select
             id="settings-nutrition-goal"
-            className="mt-2 w-full border border-border rounded-[var(--radius)] bg-background text-foreground py-2 px-3 text-base"
+            className={SETTINGS_SELECT_CLASS_NAME}
             value={nutritionGoal}
             onChange={(e) => setNutritionGoal(e.target.value as NutritionGoal)}
           >
@@ -105,13 +108,13 @@ const SettingsPage = observer(function SettingsPage() {
               </option>
             ))}
           </select>
-          <Text variant="muted" className="mt-2">
+          <Text variant="muted" size="sm" className="mt-2">
             {t("settings.goalHint")}
           </Text>
         </Card>
 
         <Card>
-          <Text as="h3" weight="medium" className="mb-4">
+          <Text as="h3" className="mb-4">
             {t("settings.appearance")}
           </Text>
           <div className="flex items-center justify-between">
@@ -123,21 +126,32 @@ const SettingsPage = observer(function SettingsPage() {
               )}
               <div>
                 <Text>{t("settings.darkMode")}</Text>
-                <Text variant="muted">{darkMode ? t("settings.enabled") : t("settings.disabled")}</Text>
+                <Text variant="muted" size="sm">
+                  {darkMode ? t("settings.enabled") : t("settings.disabled")}
+                </Text>
               </div>
             </div>
             <button
               type="button"
+              role="switch"
+              aria-checked={darkMode}
+              aria-label={t("settings.darkMode")}
               onClick={toggleTheme}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
-                darkMode ? "bg-primary" : "bg-secondary"
-              }`}
+              className="inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <div
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                  darkMode ? "translate-x-6" : "translate-x-0"
+              <span
+                className={`relative h-7 w-12 rounded-full transition-colors ${
+                  darkMode ? "bg-primary" : "bg-muted-foreground/35"
                 }`}
-              />
+              >
+                <span
+                  className={`absolute left-1 top-1 h-5 w-5 rounded-full shadow-sm transition-[transform,background-color] ${
+                    darkMode
+                      ? "translate-x-5 bg-primary-foreground"
+                      : "translate-x-0 bg-background"
+                  }`}
+                />
+              </span>
             </button>
           </div>
         </Card>
@@ -148,7 +162,7 @@ const SettingsPage = observer(function SettingsPage() {
           onRetry={() => void profile.read.load()}
         >
           <Card>
-            <Text as="h3" weight="medium" className="mb-4">
+            <Text as="h3" className="mb-4">
               {t("settings.dailyGoals")}
             </Text>
             <div className="space-y-4">
@@ -164,7 +178,7 @@ const SettingsPage = observer(function SettingsPage() {
                   onChange={(e) => setDailyGoal(Number(e.target.value))}
                   className="mt-2"
                 />
-                <Text variant="muted" className="mt-1">
+                <Text variant="muted" size="sm" className="mt-1">
                   {t("settings.recommendedCalories")}
                 </Text>
               </div>
@@ -172,7 +186,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Card>
 
           <Card>
-            <Text as="h3" weight="medium" className="mb-4">
+            <Text as="h3" className="mb-4">
               {t("settings.profile")}
             </Text>
             <div className="space-y-4">
@@ -224,7 +238,7 @@ const SettingsPage = observer(function SettingsPage() {
         </AsyncSection>
 
         <Card>
-          <Text as="h3" weight="medium" className="mb-4">
+          <Text as="h3" className="mb-4">
             {t("settings.account")}
           </Text>
           <Button variant="destructive" className="w-full" onClick={handleLogout}>
@@ -234,11 +248,13 @@ const SettingsPage = observer(function SettingsPage() {
         </Card>
 
         <Card>
-          <Text as="h3" weight="medium" className="mb-2">
+          <Text as="h3" className="mb-2">
             {t("settings.about")}
           </Text>
-          <Text variant="muted">{t("settings.version")}</Text>
-          <Text variant="muted" className="mt-2">
+          <Text variant="muted" size="sm">
+            {t("settings.version")}
+          </Text>
+          <Text variant="muted" size="sm" className="mt-2">
             {t("settings.aboutBody")}
           </Text>
         </Card>

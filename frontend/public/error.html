@@ -4,23 +4,44 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>Calorie Tracker — Error</title>
+    <title>Calorie Tracker — Page not found</title>
+    <script>
+      try {
+        var savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark" || savedTheme === "light") {
+          document.documentElement.dataset.theme = savedTheme;
+          document.documentElement.style.colorScheme = savedTheme;
+        }
+      } catch (error) {
+        // Storage can be unavailable in privacy-restricted contexts.
+      }
+    </script>
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #fafafa;
-        --fg: #0a0a0a;
-        --muted: #737373;
-        --border: #e5e5e5;
-        --accent: #0ea5e9;
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --fg: #0f172a;
+        --muted: #475569;
+        --accent: #0369a1;
+        --on-accent: #ffffff;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --fg: #f8fafc;
+        --muted: #cbd5e1;
+        --accent: #38bdf8;
+        --on-accent: #0f172a;
       }
       @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0a0a0a;
-          --fg: #fafafa;
-          --muted: #a3a3a3;
-          --border: #262626;
+        :root:not([data-theme]) {
+          --bg: #0f172a;
+          --surface: #1e293b;
+          --fg: #f8fafc;
+          --muted: #cbd5e1;
           --accent: #38bdf8;
+          --on-accent: #0f172a;
         }
       }
       * {
@@ -28,19 +49,23 @@
       }
       body {
         margin: 0;
-        min-height: 100vh;
+        min-height: 100dvh;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 1.5rem;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
         background: var(--bg);
         color: var(--fg);
         line-height: 1.5;
       }
       main {
+        width: 100%;
         max-width: 24rem;
-        text-align: center;
+        padding: 1.5rem;
+        border-radius: 0.625rem;
+        background: var(--surface);
+        box-shadow: 0 8px 24px rgb(15 23 42 / 12%);
       }
       h1 {
         font-size: 1.25rem;
@@ -53,27 +78,53 @@
         font-size: 0.9375rem;
       }
       a {
-        display: inline-block;
-        color: var(--accent);
+        display: inline-flex;
+        min-height: 2.75rem;
+        align-items: center;
+        justify-content: center;
+        color: var(--on-accent);
+        background: var(--accent);
         text-decoration: none;
         font-weight: 500;
-        padding: 0.5rem 1rem;
-        border: 1px solid var(--border);
-        border-radius: 0.5rem;
+        padding: 0 1rem;
+        border-radius: 0.625rem;
       }
       a:hover {
-        text-decoration: underline;
+        filter: brightness(0.94);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>Page not found</h1>
-      <p>
+      <h1 id="error-title">Page not found</h1>
+      <p id="error-description">
         The page you requested is missing or the link is wrong. You can return to
         the app and try again.
       </p>
-      <a href="/">Back to Calorie Tracker</a>
+      <a id="error-action" href="/">Back to Calorie Tracker</a>
     </main>
+    <script>
+      (function () {
+        var language = "en";
+        try {
+          var stored = localStorage.getItem("calorie-tracker-language");
+          var browser = navigator.language || "";
+          if (stored === "ru" || (!stored && /^ru(?:-|$)/i.test(browser))) language = "ru";
+        } catch (error) {
+          // Storage can be unavailable in privacy-restricted contexts.
+        }
+        if (language !== "ru") return;
+        document.documentElement.lang = "ru";
+        document.title = "Трекер калорий — Страница не найдена";
+        document.getElementById("error-title").textContent = "Страница не найдена";
+        document.getElementById("error-description").textContent =
+          "Страница отсутствует или ссылка неверна. Вернитесь в приложение и попробуйте снова.";
+        document.getElementById("error-action").textContent = "Вернуться в Трекер калорий";
+      })();
+    </script>
   </body>
 </html>

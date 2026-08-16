@@ -29,13 +29,16 @@ import { useRootStore } from "@/stores/StoreContext";
 import {
   buildParseFoodTiming,
   addDaysLocal,
-  formatCalendarDate,
   formatLogDayLabel,
   localIsoDate,
   weekRangeEndingOn,
 } from "@/utils/date";
 import { sumDayMacros } from "@/utils/macroTotals";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
+import {
+  formatLocalizedEnergy,
+  formatStandaloneCalendarDate,
+} from "@/utils/localeFormat";
 
 const CHAT_SUGGESTION_LIMIT = 3;
 
@@ -397,7 +400,7 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.25rem))] pt-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4">
         <div className="mb-4 flex items-center justify-between gap-2" aria-label={t("main.dateNavigation")}>
           <Button
             type="button"
@@ -409,8 +412,11 @@ const MainPage = observer(function MainPage() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0 flex-1 text-center">
-            <Text weight="semibold" className="capitalize">
-              {formatCalendarDate(selectedDay, i18n.resolvedLanguage ?? i18n.language)}
+            <Text weight="semibold">
+              {formatStandaloneCalendarDate(
+                selectedDay,
+                i18n.resolvedLanguage ?? i18n.language,
+              )}
             </Text>
             {selectedDay !== today ? (
               <Button
@@ -441,9 +447,8 @@ const MainPage = observer(function MainPage() {
         >
           {dayData ? (
             <>
-              <div className="mb-6 flex flex-col gap-4">
-                {/* Две колонки одной высоты: grid тянет ячейки по высоте ряда */}
-                <div className="grid min-h-0 grid-cols-2 gap-3 sm:gap-4">
+              <div className="mb-5 flex flex-col gap-4">
+                <div className="grid min-h-0 grid-cols-2 gap-4">
                   <CaloriePieChart
                     className="min-h-0 min-w-0 h-full"
                     consumed={dayData.totalCalories}
@@ -452,7 +457,7 @@ const MainPage = observer(function MainPage() {
                   />
                   <Card className="flex h-full min-h-0 min-w-0 flex-col px-0 py-2">
                     <div className="flex w-full flex-1 flex-col items-center justify-center">
-                      <div className="box-border h-[188px] w-[140px] shrink-0 rounded-[var(--radius)] px-2.5 py-1.5">
+                      <div className="box-border h-[140px] w-full max-w-[140px] shrink-0 px-2.5 py-1.5">
                         <DayMacrosLabels totals={sumDayMacros(dayData)} />
                       </div>
                       <Text variant="muted" align="center" className="mt-2 w-full">
@@ -463,7 +468,7 @@ const MainPage = observer(function MainPage() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <MealSection
                   title={t("meals.breakfast")}
                   foods={dayData.meals.breakfast}
@@ -505,8 +510,8 @@ const MainPage = observer(function MainPage() {
       {!chatExpanded ? (
         // Keep tab chrome inside Home: sibling carousel tabs stay mounted and a
         // viewport-fixed composer would otherwise intercept their controls.
-        <div className="absolute bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md border-t border-border bg-background p-3 shadow-[0_-6px_24px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <form onSubmit={(e) => void handleChatSubmit(e)} className="flex gap-2">
+        <div className="absolute bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md bg-background/95 p-3 shadow-[0_-8px_28px_rgba(15,23,42,0.12)] backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <form onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 gap-2">
             {/* A text input here would open the keyboard before the drawer field exists. */}
             <button
               type="button"
@@ -517,7 +522,7 @@ const MainPage = observer(function MainPage() {
               onClick={() => setChatExpanded(true)}
               className={cn(
                 inputVariants(),
-                "flex-1 cursor-text items-center text-left font-normal touch-manipulation",
+                "min-w-0 flex-1 cursor-text items-center text-left font-normal touch-manipulation",
               )}
             >
               <span
@@ -532,6 +537,7 @@ const MainPage = observer(function MainPage() {
             <Button
               type="submit"
               size="icon"
+              className="shrink-0"
               disabled={!chatInput.trim()}
             >
               <Send className="h-4 w-4" />
@@ -552,21 +558,24 @@ const MainPage = observer(function MainPage() {
           <Drawer.Content
             id="food-log-sheet"
             aria-describedby={undefined}
-            className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl border-x border-t border-border bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] outline-none"
+            className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-16px_48px_rgba(15,23,42,0.22)] outline-none"
           >
-            <Drawer.Title className="sr-only">{t("main.foodLogSheetTitle")}</Drawer.Title>
+            <Drawer.Title data-slot="drawer-title" className="sr-only">
+              {t("main.foodLogSheetTitle")}
+            </Drawer.Title>
             <Drawer.Handle className="mb-2 shrink-0 bg-muted" />
-            <form onSubmit={(e) => void handleChatSubmit(e)} className="flex shrink-0 gap-2 pt-2">
+            <form onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 shrink-0 gap-2 pt-2">
               <Input
                 ref={setExpandedInputRef}
                 placeholder={t("main.logFoodPlaceholder")}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                className="flex-1"
+                className="min-w-0 flex-1"
               />
               <Button
                 type="submit"
                 size="icon"
+                className="shrink-0"
                 disabled={!chatInput.trim()}
               >
                 <Send className="h-4 w-4" />
@@ -598,7 +607,7 @@ const MainPage = observer(function MainPage() {
                     {loggingSubmissions
                       .filter((submission) => submission.phase === "failed")
                       .map((submission) => (
-                        <Card key={submission.id} className="border-destructive/40 bg-destructive/5 px-3 py-3">
+                        <Card key={submission.id} className="bg-destructive/10 px-3 py-3">
                           <Text weight="medium" className="break-words">
                             {submission.text}
                           </Text>
@@ -623,7 +632,7 @@ const MainPage = observer(function MainPage() {
                 {loggingReceipts.length > 0 ? (
                   <div className="space-y-2" aria-live="polite">
                     {loggingReceipts.map((receipt) => (
-                      <Card key={receipt.id} className="border-success/35 bg-success/5 px-3 py-3">
+                      <Card key={receipt.id} className="bg-success/10 px-3 py-3">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex min-w-0 items-center gap-2">
                             <Check className="h-4 w-4 shrink-0 text-success" />
@@ -642,9 +651,9 @@ const MainPage = observer(function MainPage() {
                             {t("main.undoSubmission")}
                           </Button>
                         </div>
-                        <div className="mt-2 divide-y divide-border/60">
+                        <div className="mt-2 space-y-2">
                           {receipt.entries.map((entry) => (
-                            <div key={entry.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
+                            <div key={entry.id} className="flex items-center gap-2">
                               <div className="min-w-0 flex-1">
                                 <Text className="truncate">{entry.name}</Text>
                                 <Text variant="muted" size="sm">
@@ -683,7 +692,7 @@ const MainPage = observer(function MainPage() {
                 ) : null}
 
                 {chatInput.trim() && foodLog.historicalSuggestions.items.length > 0 ? (
-                  <div className="shrink-0 rounded-xl border border-border bg-card" role="listbox" aria-label={t("main.historicalSuggestions")}>
+                  <div className="shrink-0 rounded-xl bg-muted/35" role="listbox" aria-label={t("main.historicalSuggestions")}>
                     <Text weight="semibold" className="px-4 pt-3 pb-2">
                       {t("main.historicalSuggestions")}
                     </Text>
@@ -706,7 +715,12 @@ const MainPage = observer(function MainPage() {
                                   {item.name}
                                 </Text>
                                 <Text as="span" variant="muted" size="sm" className="mt-0.5 block">
-                                  {item.portion ?? t("main.portionNotRecorded")} · {t("main.caloriesValue", { calories: item.calories })}
+                                  {item.portion ?? t("main.portionNotRecorded")} ·{" "}
+                                  {formatLocalizedEnergy(
+                                    item.calories,
+                                    i18n.resolvedLanguage ?? i18n.language,
+                                    t("history.calShort"),
+                                  )}
                                 </Text>
                               </div>
                               <Text as="span" variant="muted" size="sm" className="shrink-0 text-right">
@@ -773,7 +787,7 @@ const MainPage = observer(function MainPage() {
       {undoEntry ? (
         // This page remains mounted offscreen while another carousel tab is active.
         <div
-          className="absolute bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg"
+          className="absolute bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl bg-card px-4 py-3 shadow-lg"
           role="status"
         >
           <Text className="min-w-0 flex-1">

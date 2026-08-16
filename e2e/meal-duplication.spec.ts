@@ -19,6 +19,15 @@ function displayDay(day: string): string {
   }).format(new Date(`${day}T12:00:00Z`));
 }
 
+function inlineDisplayDay(day: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -36,7 +45,10 @@ async function arrangeMeals(
 }
 
 function dayButton(page: Page, day: string): Locator {
-  return page.getByRole("button", { name: `Open log for ${displayDay(day)}`, exact: true });
+  return page.getByRole("button", {
+    name: `Open log: ${inlineDisplayDay(day)}`,
+    exact: true,
+  });
 }
 
 async function openDay(page: Page, day: string): Promise<Locator> {
@@ -80,7 +92,9 @@ async function submitDuplicate(
   await form.getByLabel("Destination meal").selectOption({ label: destinationMeal });
   await form.getByRole("button", { name: "Duplicate meal" }).click();
   const status = detail.getByRole("status");
-  await expect(status).toContainText(/^Copied \d+ foods to /);
+  await expect(status).toContainText(
+    `Entries copied: 2. ${destinationMeal}, ${inlineDisplayDay(destinationDay)}.`,
+  );
   return status;
 }
 
@@ -98,8 +112,10 @@ async function editEntry(
   name: string,
 ): Promise<Locator> {
   await (await revealEntry(detail, meal, name)).click();
-  const dialog = page.getByRole("dialog", { name: "Correct food" });
-  await expect(dialog).toBeVisible();
+  const namedDialog = page.getByRole("dialog", { name: "Correct food" });
+  await expect(namedDialog).toBeVisible();
+  const dialog = page.locator('[data-slot="dialog-content"]');
+  await expect(dialog).toHaveCount(1);
   await dialog.getByRole("button", { name: "Edit fields" }).click();
   await dialog.getByRole("button", { name: "Nutrition details" }).click();
   return dialog;
@@ -158,7 +174,9 @@ test.describe("Historical meal duplication", () => {
     await form.getByRole("button", { name: "Duplicate meal" }).click();
 
     const status = detail.getByRole("status");
-    await expect(status).toContainText(`Copied 2 foods to Dinner on ${displayDay(DESTINATION_DAY)}.`);
+    await expect(status).toContainText(
+      `Entries copied: 2. Dinner, ${inlineDisplayDay(DESTINATION_DAY)}.`,
+    );
     detail = await openCopiedDay(page, status, DESTINATION_DAY);
     await expect(await revealEntry(detail, "Dinner", "Duplicate oatmeal")).toBeVisible();
     await expect(await revealEntry(detail, "Dinner", "Duplicate berries")).toBeVisible();
@@ -199,7 +217,7 @@ test.describe("Historical meal duplication", () => {
 
     await page.reload();
     detail = await openDay(page, DESTINATION_DAY);
-    await expect(detail.getByText("505 cal", { exact: true })).toBeVisible();
+    await expect(detail.getByText("505 kcal", { exact: true })).toBeVisible();
     await expect(await revealEntry(detail, "Lunch", "Duplicate oatmeal")).toBeVisible();
     await expect(await revealEntry(detail, "Lunch", "Duplicate berries")).toBeVisible();
     await expect(entryButton(detail, "Duplicate oatmeal")).toHaveCount(1);
@@ -216,10 +234,10 @@ test.describe("Historical meal duplication", () => {
     await submitDuplicate(detail, form, DESTINATION_DAY, "Snack");
 
     await page.reload();
-    await expect(dayButton(page, SOURCE_DAY)).toContainText("505 / 2000 cal");
-    await expect(dayButton(page, DESTINATION_DAY)).toContainText("505 / 2000 cal");
+    await expect(dayButton(page, SOURCE_DAY)).toContainText("505 / 2000 kcal");
+    await expect(dayButton(page, DESTINATION_DAY)).toContainText("505 / 2000 kcal");
     detail = await openDay(page, SOURCE_DAY);
-    await expect(detail.getByText("505 cal", { exact: true })).toBeVisible();
+    await expect(detail.getByText("505 kcal", { exact: true })).toBeVisible();
     await expect(await revealEntry(detail, "Breakfast", "Duplicate oatmeal")).toBeVisible();
     await expect(await revealEntry(detail, "Breakfast", "Duplicate berries")).toBeVisible();
     await expect(entryButton(detail, "Duplicate oatmeal")).toHaveCount(1);
@@ -281,12 +299,12 @@ test.describe("Historical meal duplication", () => {
     await expect(await revealEntry(detail, "Breakfast", "Duplicate oatmeal")).toBeVisible();
     await expect(await revealEntry(detail, "Breakfast", "Duplicate berries")).toBeVisible();
     await detail.getByRole("button", { name: "Back to history" }).click();
-    await expect(dayButton(page, SOURCE_DAY)).toContainText("505 / 2000 cal");
-    await expect(dayButton(page, DESTINATION_DAY)).toContainText("75 / 2000 cal");
+    await expect(dayButton(page, SOURCE_DAY)).toContainText("505 / 2000 kcal");
+    await expect(dayButton(page, DESTINATION_DAY)).toContainText("75 / 2000 kcal");
 
     await page.reload();
-    await expect(dayButton(page, SOURCE_DAY)).toContainText("505 / 2000 cal");
-    await expect(dayButton(page, DESTINATION_DAY)).toContainText("75 / 2000 cal");
+    await expect(dayButton(page, SOURCE_DAY)).toContainText("505 / 2000 kcal");
+    await expect(dayButton(page, DESTINATION_DAY)).toContainText("75 / 2000 kcal");
     detail = await openDay(page, DESTINATION_DAY);
     await expect(await revealEntry(detail, "Dinner", "Rollback anchor")).toBeVisible();
     await expect(entryButton(detail, "Duplicate oatmeal")).toHaveCount(0);

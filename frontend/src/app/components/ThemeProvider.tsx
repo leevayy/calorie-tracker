@@ -41,6 +41,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
+    root.style.colorScheme = theme;
     if (hasUserPreferredTheme) {
       try {
         localStorage.setItem("theme", theme);

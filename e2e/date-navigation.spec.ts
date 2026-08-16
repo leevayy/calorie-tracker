@@ -91,7 +91,7 @@ function nextBatchResponse(page: Page) {
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
-  const caloriePattern = calories === undefined ? ".*" : `.*${calories} cal`;
+  const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
   return page.getByRole("button", {
     name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
   });
@@ -112,11 +112,11 @@ test.describe("Dashboard date navigation", () => {
     await page.getByRole("button", { name: "Next day" }).click();
     const tomorrowLabel = await selectedDateLabel(page);
     expect(tomorrowLabel).not.toBe(todayLabel);
-    await expect(page.getByRole("button", { name: "Return to today" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible();
 
     await page.getByRole("button", { name: "Previous day" }).click();
     await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(todayLabel);
-    await expect(page.getByRole("button", { name: "Return to today" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Previous day" }).click();
     const yesterdayLabel = await selectedDateLabel(page);
@@ -221,7 +221,7 @@ test.describe("Dashboard date navigation", () => {
     await expect(page.getByText("Stored date porridge", { exact: true })).toBeVisible();
     await expect(mealButton(page, targetMeal as MealType, 542)).toBeVisible();
 
-    await page.getByRole("button", { name: "Return to today" }).click();
+    await page.getByRole("button", { name: "Today" }).click();
     await expect(page.getByText("E2E oatmeal", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Stored date porridge", { exact: true })).toHaveCount(0);
     await expect(mealButton(page, targetMeal as MealType, 0)).toBeVisible();
@@ -234,9 +234,9 @@ test.describe("Dashboard date navigation", () => {
     await page.getByRole("button", { name: "Previous day" }).click();
     expect(await selectedDateLabel(page)).not.toBe(todayLabel);
 
-    await page.getByRole("button", { name: "Return to today" }).click();
+    await page.getByRole("button", { name: "Today" }).click();
     await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(todayLabel);
-    await expect(page.getByRole("button", { name: "Return to today" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
   });
 
   test("does not leak submissions across calendar-day boundaries", async ({
@@ -267,7 +267,7 @@ test.describe("Dashboard date navigation", () => {
     expect((await batchResponsePromise).status()).toBe(201);
     await expect(mealButton(page, parseBody.defaultMealType, 0)).toBeVisible();
 
-    await page.getByRole("button", { name: "Return to today" }).click();
+    await page.getByRole("button", { name: "Today" }).click();
     await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
     await mealButton(page, parseBody.defaultMealType).click();
     await expect(page.getByText("E2E oatmeal", { exact: true })).toBeVisible();

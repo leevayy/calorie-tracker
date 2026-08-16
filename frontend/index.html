@@ -1,19 +1,28 @@
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="color-scheme" content="light dark" />
-      <title>Calorie Tracker</title>
+    <title>Calorie Tracker</title>
     <script>
       // Prevent a "flash" of the wrong theme by applying the user's preferred
       // color scheme before React mounts.
       (function () {
         try {
+          var storedLanguage = localStorage.getItem("calorie-tracker-language");
+          var prefersRussian =
+            storedLanguage === "ru" ||
+            (!storedLanguage && /^ru(?:-|$)/i.test(navigator.language || ""));
+          if (prefersRussian) {
+            document.documentElement.lang = "ru";
+            document.title = "Трекер калорий";
+          }
+
           var stored = localStorage.getItem("theme");
           if (stored === "dark" || stored === "light") {
             if (stored === "dark") document.documentElement.classList.add("dark");
@@ -40,11 +49,10 @@
         }
       }
     </style>
-    </head>
+  </head>
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,8 +1,12 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-size: 15px;
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Keep the rem grid at the browser default so Tailwind geometry remains exact. */
+  --font-size: 16px;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
   
   /* Ice Blue Color System */
   --ice-blue-50: #f0f9ff;
@@ -25,12 +29,13 @@
   
   /* Primary is Ice Blue */
   --primary: #0ea5e9;
-  --primary-foreground: #ffffff;
-  --primary-hover: linear-gradient(90deg, #0284c7 0%, #0369a1 100%);
+  --primary-foreground: #0f172a;
+  --primary-hover: #38bdf8;
+  --primary-ink: #0369a1;
   
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
-  --secondary-hover: linear-gradient(90deg, #e2e8f0 0%, #cbd5e1 100%);
+  --secondary-hover: #e2e8f0;
   
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
@@ -38,24 +43,26 @@
   --accent: #e0f2fe;
   --accent-foreground: #0c4a6e;
   
-  --destructive: #ef4444;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
+  --destructive-hover: #b91c1c;
+  --destructive-ink: #b91c1c;
   
   --success: #10b981;
-  --success-foreground: #ffffff;
+  --success-foreground: #052e16;
+  --success-hover: #34d399;
+  --success-ink: #047857;
   
   --warning: #f59e0b;
-  --warning-foreground: #ffffff;
+  --warning-foreground: #451a03;
+  --warning-ink: #92400e;
   
   --border: #e2e8f0;
   --input: #e2e8f0;
   --input-background: #f8fafc;
-  --ring: #0ea5e9;
+  --ring: #0369a1;
   
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  
-  --chart-1: #0ea5e9;
+  --chart-1: #0369a1;
   --chart-2: #10b981;
   --chart-3: #f59e0b;
   --chart-4: #8b5cf6;
@@ -84,11 +91,12 @@
   /* Primary Ice Blue for dark mode */
   --primary: #38bdf8;
   --primary-foreground: #0f172a;
-  --primary-hover: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%);
+  --primary-hover: #7dd3fc;
+  --primary-ink: #7dd3fc;
   
-  --secondary: #1e293b;
+  --secondary: #273449;
   --secondary-foreground: #f8fafc;
-  --secondary-hover: linear-gradient(90deg, #334155 0%, #475569 100%);
+  --secondary-hover: #334155;
   
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
@@ -96,14 +104,19 @@
   --accent: #1e293b;
   --accent-foreground: #7dd3fc;
   
-  --destructive: #dc2626;
-  --destructive-foreground: #f8fafc;
+  --destructive: #f87171;
+  --destructive-foreground: #450a0a;
+  --destructive-hover: #fca5a5;
+  --destructive-ink: #fca5a5;
   
-  --success: #059669;
-  --success-foreground: #f8fafc;
+  --success: #34d399;
+  --success-foreground: #052e16;
+  --success-hover: #6ee7b7;
+  --success-ink: #6ee7b7;
   
-  --warning: #d97706;
-  --warning-foreground: #f8fafc;
+  --warning: #fbbf24;
+  --warning-foreground: #451a03;
+  --warning-ink: #fcd34d;
   
   --border: #334155;
   --input: #334155;
@@ -135,18 +148,26 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-ink: var(--primary-ink);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-hover: var(--secondary-hover);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-ink: var(--destructive-ink);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-hover: var(--success-hover);
+  --color-success-ink: var(--success-ink);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-ink: var(--warning-ink);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-input-background: var(--input-background);
@@ -192,23 +213,23 @@
   }
 
   h1 {
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.25;
   }
 
   h2 {
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.3;
   }
 
   h3 {
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.35;
   }
 
   h4 {
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1.4;
   }
 
   label {
@@ -216,12 +237,21 @@
     line-height: 1.5;
   }
 
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
   button {
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
   }
 
-  input {
+  input,
+  select,
+  textarea {
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }

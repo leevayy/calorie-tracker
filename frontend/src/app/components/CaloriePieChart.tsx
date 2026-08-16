@@ -2,6 +2,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { cn } from "./ui/utils";
 import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
+import { useTranslation } from "react-i18next";
+import { formatLocalizedNumber } from "@/utils/localeFormat";
 
 interface CaloriePieChartProps {
   consumed: number;
@@ -17,13 +19,15 @@ export function CaloriePieChart({
   caption = "Calories today",
   className,
 }: CaloriePieChartProps) {
+  const { i18n } = useTranslation();
+  const language = i18n.resolvedLanguage ?? i18n.language;
   const remaining = Math.max(0, goal - consumed);
   const data = [
     { name: "Consumed", value: consumed },
     { name: "Remaining", value: remaining },
   ];
 
-  const COLORS = ["#0ea5e9", "#e2e8f0"];
+  const COLORS = ["var(--chart-1)", "var(--secondary)"];
 
   return (
     <Card className={cn("flex h-full flex-col px-0 py-2", className)}>
@@ -48,10 +52,10 @@ export function CaloriePieChart({
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <Text size="2xl" weight="semibold" className="leading-none">
-              {consumed}
+              {formatLocalizedNumber(consumed, language)}
             </Text>
             <Text variant="muted" className="leading-none">
-              / {goal}
+              / {formatLocalizedNumber(goal, language)}
             </Text>
           </div>
         </div>

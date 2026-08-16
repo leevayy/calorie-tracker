@@ -3,11 +3,12 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../ui/utils";
 import { Text } from "./Text";
 
-const cardVariants = cva("rounded-[var(--radius)]", {
+const cardVariants = cva("text-foreground", {
   variants: {
     variant: {
-      plain: "border-0 bg-transparent p-0 shadow-none text-foreground",
-      elevated: "border-0 bg-card p-5 text-card-foreground shadow-sm sm:p-6",
+      plain: "border-0 bg-transparent p-0 shadow-none",
+      elevated:
+        "rounded-[var(--radius)] border-0 bg-card p-5 text-card-foreground shadow-sm",
     },
   },
   defaultVariants: {
@@ -41,8 +42,9 @@ const CardTitle = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement
     <Text
       ref={ref}
       as="h3"
+      size="lg"
       weight="semibold"
-      className={cn("leading-none tracking-tight", className)}
+      className={cn("tracking-tight", className)}
       {...props}
     />
   )

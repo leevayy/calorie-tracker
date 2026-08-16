@@ -1,1 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+/*
+ * Keep typography available during startup and offline. The platform UI stacks
+ * below cover both Latin and Cyrillic without a render-blocking font request.
+ */

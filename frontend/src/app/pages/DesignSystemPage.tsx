@@ -66,7 +66,7 @@ export default function DesignSystemPage() {
           <CardHeader>
             <CardTitle>Buttons</CardTitle>
             <CardDescription>
-              Multiple variants with gradient hover effects (600→700)
+              Flat semantic variants with restrained hover and press feedback
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -226,14 +226,14 @@ export default function DesignSystemPage() {
           <CardHeader>
             <CardTitle>Interactive States</CardTitle>
             <CardDescription>
-              Hover effects with subtle gradients (600→700 color values)
+              Solid tonal hover states and reduced-motion-safe press feedback
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
                 <Text variant="muted" className="mb-2">
-                  Hover over buttons to see the gradient effect
+                  Hover over buttons to see the tonal state change
                 </Text>
                 <div className="flex gap-3">
                   <Button variant="primary">Hover Me</Button>

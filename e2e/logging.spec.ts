@@ -39,7 +39,7 @@ async function submitAndCaptureParse(page: Page, text: string): Promise<ParseFoo
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
-  const caloriePattern = calories === undefined ? ".*" : `.*${calories} cal`;
+  const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
   return page.getByRole("button", {
     name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
   });
@@ -147,7 +147,7 @@ test.describe("Atomic food logging", () => {
     await expect(mealSection(page, parseBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ })).toBeVisible();
     await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
 
-    await page.getByRole("button", { name: "Return to today" }).click();
+    await page.getByRole("button", { name: "Today" }).click();
     await openMeal(page, parseBody.defaultMealType);
     await expect(mealSection(page, parseBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ })).toHaveCount(0);
     await expect(mealButton(page, parseBody.defaultMealType, 0)).toBeVisible();
@@ -165,15 +165,17 @@ test.describe("Atomic food logging", () => {
     await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Edit E2E oatmeal" }).click();
 
-    const editor = page.getByRole("dialog", { name: "Correct food" });
-    await expect(editor).toBeVisible();
+    const namedEditor = page.getByRole("dialog", { name: "Correct food" });
+    await expect(namedEditor).toBeVisible();
+    const editor = page.locator('[data-slot="dialog-content"]');
+    await expect(editor).toHaveCount(1);
     await editor.getByRole("button", { name: "Edit fields" }).click();
     await editor.getByLabel("Calories").fill("400");
     await editor.getByRole("button", { name: "Save changes" }).click();
     await expect(editor).toBeHidden();
 
     await openMeal(page, parseBody.defaultMealType);
-    await expect(page.getByRole("button", { name: /E2E oatmeal.*400 cal/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /E2E oatmeal.*400\s+kcal/ })).toBeVisible();
     await openFoodComposer(page);
     await page.getByRole("button", { name: "Undo", exact: true }).click();
     await expect(page.getByText("Added 1", { exact: true })).toBeHidden();

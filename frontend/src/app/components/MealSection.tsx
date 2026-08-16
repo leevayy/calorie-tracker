@@ -6,6 +6,7 @@ import { Card } from "./ds/Card";
 import { Text } from "./ds/Text";
 import { cn } from "./ui/utils";
 import { motion, AnimatePresence } from "motion/react";
+import { formatLocalizedEnergy, formatLocalizedGrams } from "@/utils/localeFormat";
 
 interface MealSectionProps {
   title: string;
@@ -27,8 +28,9 @@ export function MealSection({
   emptyLabel,
   pendingFoods = [],
 }: MealSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const language = i18n.resolvedLanguage ?? i18n.language;
 
   const totalCalories = foods.reduce((sum, food) => sum + food.calories, 0);
   const totalProtein = foods.reduce((sum, food) => sum + food.protein, 0);
@@ -37,42 +39,48 @@ export function MealSection({
   const totalFiber = foods.reduce((sum, food) => sum + food.fiber, 0);
 
   const macroLine = (p: number, c: number, f: number, fb: number) =>
-    `${t("macros.proteinLetter")}: ${p}g • ${t("macros.carbsLetter")}: ${c}g • ${t("macros.fatsLetter")}: ${f}g • ${t("macros.fiberLetter")}: ${fb}g`;
+    [
+      `${t("macros.proteinLetter")}: ${formatLocalizedGrams(p, language)}`,
+      `${t("macros.carbsLetter")}: ${formatLocalizedGrams(c, language)}`,
+      `${t("macros.fatsLetter")}: ${formatLocalizedGrams(f, language)}`,
+      `${t("macros.fiberLetter")}: ${formatLocalizedGrams(fb, language)}`,
+    ].join(" • ");
 
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-colors",
-        !expanded && "hover:bg-muted/55",
+        "overflow-hidden rounded-xl transition-colors",
+        !expanded && "hover:bg-muted/45",
       )}
     >
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className={cn(
-          "flex w-full items-center justify-between gap-3 px-0 py-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          "flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-2 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           expanded && "transition-colors hover:bg-muted/40",
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <div>
             <Text as="h3" align="left" weight="medium">
               {title}
             </Text>
             <Text variant="muted">
-              {totalCalories} cal • {macroLine(totalProtein, totalCarbs, totalFats, totalFiber)}
+              {formatLocalizedEnergy(totalCalories, language, t("history.calShort"))} •{" "}
+              {macroLine(totalProtein, totalCarbs, totalFats, totalFiber)}
             </Text>
           </div>
         </div>
         {expanded ? (
-          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+          <ChevronUp className="h-5 w-5 shrink-0 text-muted-foreground" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground" />
         )}
       </button>
 
       {pendingFoods.length > 0 ? (
-        <div className="space-y-1 border-t border-border/50 py-2" aria-live="polite">
+        <div className="mx-2 space-y-1 rounded-xl bg-muted/30 p-2" aria-live="polite">
           {pendingFoods.map((pending) => (
             <div
               key={pending.id}
@@ -97,9 +105,9 @@ export function MealSection({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-border/50"
+            className="mx-2 overflow-hidden rounded-xl bg-muted/25"
           >
-            <div className="space-y-2 px-0 pb-4 pt-3">
+            <div className="space-y-1 p-2">
               {foods.length === 0 && emptyLabel ? (
                 <Text variant="muted" className="py-2">
                   {emptyLabel}
@@ -109,13 +117,17 @@ export function MealSection({
                   <button
                     type="button"
                     key={food.id}
-                    className="flex w-full items-center justify-between rounded-lg p-2 text-left transition-colors hover:bg-accent/50 active:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg p-2 text-left transition-colors hover:bg-accent/50 active:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => onEdit(food)}
                   >
                     <div className="flex-1">
                       <Text>{food.name}</Text>
                       <Text variant="muted">
-                        {food.calories} cal • {macroLine(food.protein, food.carbs, food.fats, food.fiber)}
+                        {formatLocalizedEnergy(
+                          food.calories,
+                          language,
+                          t("history.calShort"),
+                        )} • {macroLine(food.protein, food.carbs, food.fats, food.fiber)}
                       </Text>
                     </div>
                   </button>

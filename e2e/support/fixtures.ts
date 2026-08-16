@@ -143,14 +143,12 @@ export function isolatedTestUser(overrides: Partial<E2ETestUser> = {}): E2ETestU
 
 export async function loginThroughVisibleUi(page: Page, user: E2ETestUser): Promise<void> {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/app$/);
-  await expect(
-    page.getByRole("button", { name: "Calorie Tracker" }),
-  ).toHaveAttribute("aria-current", "page");
+  await expect(page.locator('button[aria-current="page"]')).toHaveCount(1);
 }
 
 function isMatchingPublicSessionHandle(
@@ -206,9 +204,9 @@ export async function loginThroughSetup(
   }, storedSession);
   await page.goto("/app");
   await expect(page).toHaveURL(/\/app$/);
-  await expect(
-    page.getByRole("button", { name: "Calorie Tracker" }),
-  ).toHaveAttribute("aria-current", "page");
+  // The profile can switch i18n to a non-English language while this assertion
+  // is waiting. Identify the selected tab by state rather than translated copy.
+  await expect(page.locator('button[aria-current="page"]')).toHaveCount(1);
   return auth;
 }
 
