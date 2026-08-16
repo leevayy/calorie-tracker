@@ -15,10 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/unused
-      JWT_SECRET: prompt-investigation-dummy-jwt-secret
-      YANDEX_AI_STUDIO_API_KEY: ${{ secrets.E2E_YANDEX_AI_STUDIO_API_KEY }}
-      YANDEX_FOLDER_ID: ${{ secrets.E2E_YANDEX_FOLDER_ID }}
       PROMPT_INVESTIGATION_CONCURRENCY: "6"
 
     steps:
@@ -68,42 +64,72 @@ jobs:
           echo "PRODUCTION_MODEL_PREFERENCE=$PRODUCTION_MODEL_PREFERENCE" >> "$GITHUB_ENV"
           echo "PRODUCTION_MODEL_ID=$PRODUCTION_MODEL_ID" >> "$GITHUB_ENV"
 
-      - name: Verify paid-provider credentials are available
-        run: |
-          set -euo pipefail
-          test -n "$YANDEX_AI_STUDIO_API_KEY"
-          test -n "$YANDEX_FOLDER_ID"
-
-      - name: Install backend runtime
-        working-directory: backend
-        run: npm ci
-
-      - name: Download the frozen official USDA source dataset
-        run: |
-          set -euo pipefail
-          mkdir -p tmp/prompt-investigation/usda/foundation
-          curl --fail --location --silent --show-error \
-            https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip \
-            -o tmp/prompt-investigation/usda/foundation.zip
-          unzip -q -o tmp/prompt-investigation/usda/foundation.zip \
-            -d tmp/prompt-investigation/usda/foundation
-
-      - name: Run interleaved authentic prompt trials
-        working-directory: backend
-        run: npx tsx ../analytics/scripts/run-live-prompt-investigation.mjs
-
-      - name: Commit immutable result artifacts to the experiment branch
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add analytics/runs/2026-08-16-prompt-investigation
-          git commit -m "chore: record live prompt investigation results"
-          git push origin HEAD:codex/prompt-investigation-20260816
-
-      - uses: actions/upload-artifact@v4
+      - name: Run paid trials inside the live production API container
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          VM_DEPLOY_PATH: ${{ vars.VM_DEPLOY_PATH }}
+          GH_PUSH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          REMOTE_RUN_ID: ${{ github.run_id }}
+          PROMPT_INVESTIGATION_CONCURRENCY: ${{ env.PROMPT_INVESTIGATION_CONCURRENCY }}
         with:
-          name: prompt-investigation-results
-          path: analytics/runs/2026-08-16-prompt-investigation
-          if-no-files-found: error
-          retention-days: 30
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: VM_DEPLOY_PATH,GH_PUSH_TOKEN,GH_REPOSITORY,REMOTE_RUN_ID,PRODUCTION_MODEL_PREFERENCE,PRODUCTION_MODEL_ID,PROMPT_INVESTIGATION_CONCURRENCY
+          command_timeout: 170m
+          script: |
+            set -euo pipefail
+            case "$REMOTE_RUN_ID" in (*[!0-9]*|'') exit 1;; esac
+            LAB_DIR="/tmp/calorie-prompt-investigation-${REMOTE_RUN_ID}"
+            test "$LAB_DIR" = "/tmp/calorie-prompt-investigation-${REMOTE_RUN_ID}"
+            rm -rf "$LAB_DIR"
+            git clone --depth 1 --branch codex/prompt-investigation-20260816 \
+              "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GH_REPOSITORY}.git" \
+              "$LAB_DIR"
+            cd "$LAB_DIR"
+
+            mkdir -p tmp/prompt-investigation/usda/foundation
+            curl --fail --location --silent --show-error \
+              https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip \
+              -o tmp/prompt-investigation/usda/foundation.zip
+            unzip -q -o tmp/prompt-investigation/usda/foundation.zip \
+              -d tmp/prompt-investigation/usda/foundation
+
+            cd "${VM_DEPLOY_PATH:-/opt/calorie-tracker}"
+            API_CONTAINER="$(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q api)"
+            test -n "$API_CONTAINER"
+            EXPERIMENT_GIT_COMMIT="$(git -C "$LAB_DIR" rev-parse HEAD)"
+            docker exec "$API_CONTAINER" mkdir -p \
+              /app/analytics \
+              /app/tmp/prompt-investigation/usda/foundation
+            docker cp \
+              "$LAB_DIR/analytics/scripts/run-live-prompt-investigation.mjs" \
+              "$API_CONTAINER:/app/backend/scripts/run-live-prompt-investigation.mjs"
+            docker cp \
+              "$LAB_DIR/analytics/trainingData.json" \
+              "$API_CONTAINER:/app/analytics/trainingData.json"
+            docker cp \
+              "$LAB_DIR/tmp/prompt-investigation/usda/foundation/FoodData_Central_foundation_food_json_2026-04-30.json" \
+              "$API_CONTAINER:/app/tmp/prompt-investigation/usda/foundation/FoodData_Central_foundation_food_json_2026-04-30.json"
+
+            docker exec \
+              -e "PRODUCTION_MODEL_PREFERENCE=$PRODUCTION_MODEL_PREFERENCE" \
+              -e "PRODUCTION_MODEL_ID=$PRODUCTION_MODEL_ID" \
+              -e "EXPERIMENT_GIT_COMMIT=$EXPERIMENT_GIT_COMMIT" \
+              -e "PROMPT_INVESTIGATION_CONCURRENCY=$PROMPT_INVESTIGATION_CONCURRENCY" \
+              "$API_CONTAINER" \
+              node --experimental-strip-types \
+              /app/backend/scripts/run-live-prompt-investigation.mjs
+
+            docker cp \
+              "$API_CONTAINER:/app/analytics/runs/2026-08-16-prompt-investigation" \
+              "$LAB_DIR/analytics/runs/"
+            cd "$LAB_DIR"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add analytics/runs/2026-08-16-prompt-investigation
+            git commit -m "chore: record live prompt investigation results"
+            git push origin HEAD:codex/prompt-investigation-20260816
+            cd /tmp
+            rm -rf "$LAB_DIR"

@@ -40,6 +40,15 @@ const round = (value, digits = 3) => {
   return Math.round(value * factor) / factor;
 };
 
+function resolveGitCommit() {
+  if (process.env.EXPERIMENT_GIT_COMMIT?.trim()) return process.env.EXPERIMENT_GIT_COMMIT.trim();
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+  } catch {
+    return "unavailable";
+  }
+}
+
 function nutrient(food, id) {
   return food.foodNutrients?.find((item) => item?.nutrient?.id === id)?.amount;
 }
@@ -526,7 +535,7 @@ async function main() {
   const manifest = {
     experimentId: "2026-08-16-prompt-investigation-v1",
     createdAtIso: new Date().toISOString(),
-    gitCommit: execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim(),
+    gitCommit: resolveGitCommit(),
     endpointHost: new URL(
       process.env.YANDEX_AI_STUDIO_URL || "https://ai.api.cloud.yandex.net/v1/chat/completions",
     ).host,
