@@ -33,54 +33,34 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Resolve the deployed production model without exposing credentials
+        id: production_model
+        uses: appleboy/ssh-action@v1.2.5
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           VM_DEPLOY_PATH: ${{ vars.VM_DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: VM_DEPLOY_PATH
+          capture_stdout: true
+          script: |
+            set -euo pipefail
+            cd "${VM_DEPLOY_PATH:-/opt/calorie-tracker}"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api node -e '
+              const preference = process.env.AI_MODEL_PREFERENCE || "qwen3";
+              const names = {alicegpt:"YANDEX_AI_STUDIO_MODEL_ALICE_GPT",aliceflash:"YANDEX_AI_STUDIO_MODEL_ALICE_FLASH",qwen36:"YANDEX_AI_STUDIO_MODEL_QWEN36",qwen3:"YANDEX_AI_STUDIO_MODEL_QWEN3",gptoss120:"YANDEX_AI_STUDIO_MODEL_GPT_OSS_120B",gptoss:"YANDEX_AI_STUDIO_MODEL_GPT_OSS"};
+              const defaults = {alicegpt:"aliceai-llm",aliceflash:"aliceai-llm-flash",qwen36:"qwen3.6-35b-a3b",qwen3:"qwen3-235b-a22b-fp8",gptoss120:"gpt-oss-120b",gptoss:"gpt-oss-20b"};
+              const envName = names[preference] || "YANDEX_AI_STUDIO_MODEL";
+              const modelId = process.env[envName]?.trim() || defaults[preference] || "deepseek-v4-flash";
+              console.log(`MODEL_JSON=${JSON.stringify({preference,modelId})}`);
+            '
+
+      - name: Export the resolved production model
+        env:
+          MODEL_STDOUT: ${{ steps.production_model.outputs.stdout }}
         run: |
           set -euo pipefail
-          test -n "$SSH_HOST"
-          test -n "$SSH_USER"
-          test -n "$SSH_PRIVATE_KEY"
-          install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/prompt-investigation-key"
-          chmod 600 "$HOME/.ssh/prompt-investigation-key"
-          ssh-keyscan -H "$SSH_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null
-
-          MODEL_JSON="$({
-            ssh -i "$HOME/.ssh/prompt-investigation-key" \
-              -o BatchMode=yes \
-              "$SSH_USER@$SSH_HOST" \
-              bash -s -- "${VM_DEPLOY_PATH:-/opt/calorie-tracker}" <<'REMOTE'
-          set -euo pipefail
-          cd "$1"
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api node - <<'NODE'
-          const preference = process.env.AI_MODEL_PREFERENCE || "qwen3";
-          const names = {
-            alicegpt: "YANDEX_AI_STUDIO_MODEL_ALICE_GPT",
-            aliceflash: "YANDEX_AI_STUDIO_MODEL_ALICE_FLASH",
-            qwen36: "YANDEX_AI_STUDIO_MODEL_QWEN36",
-            qwen3: "YANDEX_AI_STUDIO_MODEL_QWEN3",
-            gptoss120: "YANDEX_AI_STUDIO_MODEL_GPT_OSS_120B",
-            gptoss: "YANDEX_AI_STUDIO_MODEL_GPT_OSS",
-          };
-          const defaults = {
-            alicegpt: "aliceai-llm",
-            aliceflash: "aliceai-llm-flash",
-            qwen36: "qwen3.6-35b-a3b",
-            qwen3: "qwen3-235b-a22b-fp8",
-            gptoss120: "gpt-oss-120b",
-            gptoss: "gpt-oss-20b",
-          };
-          const envName = names[preference] || "YANDEX_AI_STUDIO_MODEL";
-          const modelId = process.env[envName]?.trim() || defaults[preference] || "deepseek-v4-flash";
-          process.stdout.write(JSON.stringify({ preference, modelId }));
-          NODE
-          REMOTE
-          } 2>/dev/null)"
-
-          node -e 'const x=JSON.parse(process.argv[1]); if(!x.preference||!x.modelId) process.exit(1)' "$MODEL_JSON"
+          MODEL_JSON="$(node -e 'const m=process.env.MODEL_STDOUT.match(/MODEL_JSON=(\{[^\n]+\})/); if(!m) process.exit(1); process.stdout.write(m[1])')"
           PRODUCTION_MODEL_PREFERENCE="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).preference)' "$MODEL_JSON")"
           PRODUCTION_MODEL_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).modelId)' "$MODEL_JSON")"
           echo "Resolved production model preference: $PRODUCTION_MODEL_PREFERENCE"
