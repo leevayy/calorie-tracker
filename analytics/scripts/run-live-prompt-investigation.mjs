@@ -9,7 +9,10 @@ const fdcPath = resolve(
   "tmp/prompt-investigation/usda/foundation/FoodData_Central_foundation_food_json_2026-04-30.json",
 );
 const legacyPath = resolve(repoRoot, "analytics/trainingData.json");
-const outputDir = resolve(repoRoot, "analytics/runs/2026-08-16-prompt-investigation");
+const outputDir = resolve(
+  repoRoot,
+  "analytics/runs/2026-08-16-prompt-investigation",
+);
 
 const timing = {
   localDate: "2026-08-16",
@@ -30,20 +33,221 @@ const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 if (!dryRun) {
   for (const name of required) {
-    if (!process.env[name]?.trim()) throw new Error(`Missing required environment variable: ${name}`);
+    if (!process.env[name]?.trim())
+      throw new Error(`Missing required environment variable: ${name}`);
   }
 }
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const round = (value, digits = 3) => {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
 };
 
-function resolveGitCommit() {
-  if (process.env.EXPERIMENT_GIT_COMMIT?.trim()) return process.env.EXPERIMENT_GIT_COMMIT.trim();
+const nutrientNames = new Set([
+  "calories",
+  "protein",
+  "fat",
+  "carbohydrates",
+  "fiber",
+]);
+const nutrientUnits = new Set(["kcal", "g"]);
+const mealTypes = new Set(["breakfast", "lunch", "dinner", "snack"]);
+
+function requireObject(value, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be an object`);
+  }
+  return value;
+}
+
+function requireFiniteNonnegative(value, label) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new Error(`${label} must be a finite nonnegative number`);
+  }
+  return value;
+}
+
+function sanitizeMealSlug(raw) {
+  const text = raw.trim();
+  if (!text) return null;
+  const lastToken = text.split(/\s+/).pop() ?? "";
+  const cleaned = lastToken
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (
+    !cleaned ||
+    cleaned.length > 60 ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(cleaned)
+  ) {
+    return null;
+  }
+  return cleaned;
+}
+
+/**
+ * Self-contained mirror of the deployed parse-food response contract.
+ * The experiment intentionally imports the production prompt builder, but not the
+ * parser export: the running image may predate that export even while its response
+ * contract is unchanged.
+ */
+function parseNutritionProviderResponse(raw, parseTiming) {
+  if (typeof raw !== "string") throw new Error("AI response must be text");
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start < 0 || end < start) throw new Error("AI did not return JSON");
+
+  const payload = requireObject(
+    JSON.parse(raw.slice(start, end + 1)),
+    "AI payload",
+  );
+  if (!Array.isArray(payload.foods))
+    throw new Error("AI payload.foods must be an array");
+  if (payload.notes !== undefined && typeof payload.notes !== "string") {
+    throw new Error("AI payload.notes must be a string when present");
+  }
+
+  return payload.foods.map((rawFood, foodIndex) => {
+    const food = requireObject(rawFood, `foods[${foodIndex}]`);
+    if (typeof food.name !== "string" || !food.name.trim()) {
+      throw new Error(`foods[${foodIndex}].name must be a non-empty string`);
+    }
+    if (
+      food.description !== undefined &&
+      typeof food.description !== "string"
+    ) {
+      throw new Error(
+        `foods[${foodIndex}].description must be a string when present`,
+      );
+    }
+    if (
+      food.estimated_portion !== undefined &&
+      (typeof food.estimated_portion !== "string" ||
+        food.estimated_portion.length < 1)
+    ) {
+      throw new Error(
+        `foods[${foodIndex}].estimated_portion must be non-empty when present`,
+      );
+    }
+    if (
+      food.confidence !== undefined &&
+      (typeof food.confidence !== "number" ||
+        !Number.isFinite(food.confidence) ||
+        food.confidence < 0 ||
+        food.confidence > 1)
+    ) {
+      throw new Error(`foods[${foodIndex}].confidence must be between 0 and 1`);
+    }
+    if (food.meal_slug !== undefined && typeof food.meal_slug !== "string") {
+      throw new Error(
+        `foods[${foodIndex}].meal_slug must be a string when present`,
+      );
+    }
+    if (
+      food.log_day !== undefined &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(food.log_day)
+    ) {
+      throw new Error(`foods[${foodIndex}].log_day must use YYYY-MM-DD`);
+    }
+    if (food.meal_type !== undefined && !mealTypes.has(food.meal_type)) {
+      throw new Error(`foods[${foodIndex}].meal_type is invalid`);
+    }
+    if (!Array.isArray(food.nutrients)) {
+      throw new Error(`foods[${foodIndex}].nutrients must be an array`);
+    }
+
+    const nutrients = new Map();
+    for (const [nutrientIndex, rawNutrient] of food.nutrients.entries()) {
+      const item = requireObject(
+        rawNutrient,
+        `foods[${foodIndex}].nutrients[${nutrientIndex}]`,
+      );
+      if (!nutrientNames.has(item.name)) {
+        throw new Error(
+          `foods[${foodIndex}].nutrients[${nutrientIndex}].name is invalid`,
+        );
+      }
+      if (!nutrientUnits.has(item.unit)) {
+        throw new Error(
+          `foods[${foodIndex}].nutrients[${nutrientIndex}].unit is invalid`,
+        );
+      }
+      const amount = requireFiniteNonnegative(
+        item.amount,
+        `foods[${foodIndex}].nutrients[${nutrientIndex}].amount`,
+      );
+      if (!nutrients.has(item.name)) nutrients.set(item.name, amount);
+    }
+    for (const requiredName of nutrientNames) {
+      if (!nutrients.has(requiredName)) {
+        throw new Error(
+          `foods[${foodIndex}] is missing required nutrient ${requiredName}`,
+        );
+      }
+    }
+
+    const trimmedDescription = food.description?.trim();
+    const slug =
+      typeof food.meal_slug === "string"
+        ? sanitizeMealSlug(food.meal_slug)
+        : null;
+    return {
+      name: food.name.trim(),
+      ...(trimmedDescription ? { description: trimmedDescription } : {}),
+      ...(food.confidence !== undefined ? { confidence: food.confidence } : {}),
+      ...(slug ? { mealSlug: slug } : {}),
+      calories: nutrients.get("calories"),
+      protein: nutrients.get("protein"),
+      carbs: nutrients.get("carbohydrates"),
+      fats: nutrients.get("fat"),
+      fiber: nutrients.get("fiber"),
+      portion: food.estimated_portion ?? "1 serving",
+      day: food.log_day ?? parseTiming.defaultLogDay,
+      mealType: food.meal_type ?? parseTiming.defaultMealType,
+    };
+  });
+}
+
+function parserSelfTest() {
+  const fixture = `model preamble\n{\"foods\":[{\"name\":\"Fixture\",\"estimated_portion\":\"100 g\",\"nutrients\":[{\"name\":\"calories\",\"amount\":123,\"unit\":\"kcal\"},{\"name\":\"protein\",\"amount\":4.5,\"unit\":\"g\"},{\"name\":\"fat\",\"amount\":2,\"unit\":\"g\"},{\"name\":\"carbohydrates\",\"amount\":20,\"unit\":\"g\"},{\"name\":\"fiber\",\"amount\":3,\"unit\":\"g\"}],\"meal_slug\":\"fixture\",\"log_day\":\"2026-08-16\",\"meal_type\":\"lunch\"}]}\nmodel suffix`;
+  const [parsed] = parseNutritionProviderResponse(fixture, timing);
+  if (
+    parsed?.calories !== 123 ||
+    parsed?.protein !== 4.5 ||
+    parsed?.portion !== "100 g"
+  ) {
+    throw new Error(
+      "Self-contained provider parser failed its startup fixture",
+    );
+  }
+
+  let rejectedMissingFiber = false;
   try {
-    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8" }).trim();
+    parseNutritionProviderResponse(
+      fixture.replace(',{\"name\":\"fiber\",\"amount\":3,\"unit\":\"g\"}', ""),
+      timing,
+    );
+  } catch {
+    rejectedMissingFiber = true;
+  }
+  if (!rejectedMissingFiber) {
+    throw new Error(
+      "Self-contained provider parser accepted an invalid fixture",
+    );
+  }
+}
+
+function resolveGitCommit() {
+  if (process.env.EXPERIMENT_GIT_COMMIT?.trim())
+    return process.env.EXPERIMENT_GIT_COMMIT.trim();
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    }).trim();
   } catch {
     return "unavailable";
   }
@@ -64,10 +268,13 @@ function makeFdcCases(raw) {
       carbs: nutrient(food, 1005),
       fiber: nutrient(food, 1079),
     }))
-    .filter((food) => Number.isFinite(food.calories) && Number.isFinite(food.protein))
+    .filter(
+      (food) => Number.isFinite(food.calories) && Number.isFinite(food.protein),
+    )
     .sort((a, b) => a.fdcId - b.fdcId);
 
-  if (foods.length > 100) throw new Error(`FDC run has ${foods.length} cases; maximum is 100`);
+  if (foods.length > 100)
+    throw new Error(`FDC run has ${foods.length} cases; maximum is 100`);
 
   const templates = [
     (description) => `I ate exactly 100 g of ${description}.`,
@@ -173,9 +380,12 @@ function trustedReference(caseRow) {
     `calories_kcal_per_100g=${caseRow.reference.calories}`,
     `protein_g_per_100g=${caseRow.reference.protein}`,
   ];
-  if (Number.isFinite(caseRow.reference.fats)) fields.push(`fat_g_per_100g=${caseRow.reference.fats}`);
-  if (Number.isFinite(caseRow.reference.carbs)) fields.push(`carbohydrate_g_per_100g=${caseRow.reference.carbs}`);
-  if (Number.isFinite(caseRow.reference.fiber)) fields.push(`fiber_g_per_100g=${caseRow.reference.fiber}`);
+  if (Number.isFinite(caseRow.reference.fats))
+    fields.push(`fat_g_per_100g=${caseRow.reference.fats}`);
+  if (Number.isFinite(caseRow.reference.carbs))
+    fields.push(`carbohydrate_g_per_100g=${caseRow.reference.carbs}`);
+  if (Number.isFinite(caseRow.reference.fiber))
+    fields.push(`fiber_g_per_100g=${caseRow.reference.fiber}`);
   return `TRUSTED SERVER-SIDE FOOD REFERENCE (not user-authored):\nsource=USDA FoodData Central Foundation Foods, April 2026\nfdc_id=${caseRow.sourceId}\nfood=${caseRow.description}\n${fields.join("\n")}\nUse this reference as ground truth only when it matches the user's food and preparation. Scale it to the explicit consumed amount. Preserve the referenced calories and protein; infer only reference fields that are absent.`;
 }
 
@@ -213,7 +423,13 @@ function mean(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function bootstrapRatio(baseByCase, candidateByCase, metric, seed, iterations = 10_000) {
+function bootstrapRatio(
+  baseByCase,
+  candidateByCase,
+  metric,
+  seed,
+  iterations = 10_000,
+) {
   const ids = [...baseByCase.keys()].filter((id) => candidateByCase.has(id));
   if (!ids.length) return null;
   const random = seededRandom(seed);
@@ -226,7 +442,13 @@ function bootstrapRatio(baseByCase, candidateByCase, metric, seed, iterations = 
       base += baseByCase.get(id)[metric];
       candidate += candidateByCase.get(id)[metric];
     }
-    ratios.push(base === 0 ? (candidate === 0 ? 0 : Number.POSITIVE_INFINITY) : candidate / base);
+    ratios.push(
+      base === 0
+        ? candidate === 0
+          ? 0
+          : Number.POSITIVE_INFINITY
+        : candidate / base,
+    );
   }
   return {
     lower95: round(percentile(ratios, 0.025)),
@@ -234,19 +456,25 @@ function bootstrapRatio(baseByCase, candidateByCase, metric, seed, iterations = 
   };
 }
 
-async function callModel(task, parseNutritionProviderResponse) {
+async function callModel(task) {
   const apiKey = process.env.YANDEX_AI_STUDIO_API_KEY;
   const modelId = process.env.PRODUCTION_MODEL_ID;
-  const model = modelId.startsWith("gpt://") ? modelId : `gpt://${process.env.YANDEX_FOLDER_ID}/${modelId}`;
-  const authorization = apiKey.startsWith("AQVN") ? `Api-Key ${apiKey}` : `Bearer ${apiKey}`;
+  const model = modelId.startsWith("gpt://")
+    ? modelId
+    : `gpt://${process.env.YANDEX_FOLDER_ID}/${modelId}`;
+  const authorization = apiKey.startsWith("AQVN")
+    ? `Api-Key ${apiKey}`
+    : `Bearer ${apiKey}`;
   let lastError;
-  let firstAttemptOk = false;
+  const overallStarted = performance.now();
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const started = performance.now();
+    let completion;
+    let content;
     try {
       const response = await fetch(
-        process.env.YANDEX_AI_STUDIO_URL || "https://ai.api.cloud.yandex.net/v1/chat/completions",
+        process.env.YANDEX_AI_STUDIO_URL ||
+          "https://ai.api.cloud.yandex.net/v1/chat/completions",
         {
           method: "POST",
           headers: {
@@ -266,35 +494,105 @@ async function callModel(task, parseNutritionProviderResponse) {
         },
       );
       const body = await response.text();
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${body.slice(0, 300)}`);
-      const completion = JSON.parse(body);
-      const content = completion.choices?.[0]?.message?.content;
-      if (typeof content !== "string" || !content.trim()) throw new Error("Empty model content");
-      const suggestions = parseNutritionProviderResponse(content, timing);
-      firstAttemptOk = attempt === 1;
+      if (!response.ok) {
+        const message = `HTTP ${response.status}: ${body.slice(0, 300)}`;
+        const retryable =
+          response.status === 408 ||
+          response.status === 429 ||
+          response.status >= 500;
+        if (retryable && attempt < 3) {
+          lastError = new Error(message);
+          await new Promise((resolveDelay) =>
+            setTimeout(resolveDelay, 1_500 * attempt),
+          );
+          continue;
+        }
+        return {
+          status: "error",
+          errorStage: "transport-or-provider",
+          providerResponseReceived: true,
+          httpStatus: response.status,
+          attemptCount: attempt,
+          firstAttemptOk: false,
+          latencyMs: round(performance.now() - overallStarted, 1),
+          error: message,
+        };
+      }
+      try {
+        completion = JSON.parse(body);
+        content = completion.choices?.[0]?.message?.content;
+        if (typeof content !== "string" || !content.trim()) {
+          throw new Error("Empty model content");
+        }
+      } catch (error) {
+        return {
+          status: "error",
+          errorStage: "provider-envelope",
+          providerResponseReceived: true,
+          attemptCount: attempt,
+          firstAttemptOk: false,
+          latencyMs: round(performance.now() - overallStarted, 1),
+          rawProviderBody: body.slice(0, 10_000),
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+
+      // A local contract failure is deterministic for this response. Preserve the
+      // authentic model output, classify it separately, and never pay for retries.
+      let suggestions;
+      try {
+        suggestions = parseNutritionProviderResponse(content, timing);
+        if (!suggestions.length) {
+          throw new Error("AI payload contained no food suggestions");
+        }
+      } catch (error) {
+        return {
+          status: "error",
+          errorStage: "local-parser",
+          providerResponseReceived: true,
+          attemptCount: attempt,
+          firstAttemptOk: false,
+          latencyMs: round(performance.now() - overallStarted, 1),
+          providerModel: completion.model ?? null,
+          usage: completion.usage ?? null,
+          rawContent: content,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
       return {
         status: "ok",
         attemptCount: attempt,
-        firstAttemptOk,
-        latencyMs: round(performance.now() - started, 1),
+        firstAttemptOk: attempt === 1,
+        latencyMs: round(performance.now() - overallStarted, 1),
         providerModel: completion.model ?? null,
         usage: completion.usage ?? null,
         rawContent: content,
         suggestions,
         totals: {
-          calories: round(suggestions.reduce((sum, item) => sum + item.calories, 0)),
-          protein: round(suggestions.reduce((sum, item) => sum + item.protein, 0)),
+          calories: round(
+            suggestions.reduce((sum, item) => sum + item.calories, 0),
+          ),
+          protein: round(
+            suggestions.reduce((sum, item) => sum + item.protein, 0),
+          ),
         },
       };
     } catch (error) {
       lastError = error;
-      if (attempt < 3) await new Promise((resolveDelay) => setTimeout(resolveDelay, 1_500 * attempt));
+      if (attempt < 3) {
+        await new Promise((resolveDelay) =>
+          setTimeout(resolveDelay, 1_500 * attempt),
+        );
+      }
     }
   }
   return {
     status: "error",
+    errorStage: "transport-or-provider",
+    providerResponseReceived: false,
     attemptCount: 3,
-    firstAttemptOk,
+    firstAttemptOk: false,
+    latencyMs: round(performance.now() - overallStarted, 1),
     error: lastError instanceof Error ? lastError.message : String(lastError),
   };
 }
@@ -322,7 +620,9 @@ async function runPool(tasks, concurrency, worker) {
 function summarize(trials, datasets, variants) {
   const summary = { generatedAtIso: new Date().toISOString(), datasets: {} };
   for (const [datasetName, cases] of Object.entries(datasets)) {
-    const datasetTrials = trials.filter((trial) => trial.dataset === datasetName);
+    const datasetTrials = trials.filter(
+      (trial) => trial.dataset === datasetName,
+    );
     const datasetSummary = {
       caseCount: cases.length,
       repetitions: 3,
@@ -331,19 +631,35 @@ function summarize(trials, datasets, variants) {
     };
     const byVariantAndCase = new Map();
 
-    for (const variant of variants.filter((item) => item.datasets.includes(datasetName))) {
-      const rows = datasetTrials.filter((trial) => trial.variant === variant.id);
+    for (const variant of variants.filter((item) =>
+      item.datasets.includes(datasetName),
+    )) {
+      const rows = datasetTrials.filter(
+        (trial) => trial.variant === variant.id,
+      );
       const ok = rows.filter((trial) => trial.status === "ok");
-      const calorieErrors = ok.map((trial) => Math.abs(trial.totals.calories - trial.expected.calories));
-      const proteinErrors = ok.map((trial) => Math.abs(trial.totals.protein - trial.expected.protein));
+      const calorieErrors = ok.map((trial) =>
+        Math.abs(trial.totals.calories - trial.expected.calories),
+      );
+      const proteinErrors = ok.map((trial) =>
+        Math.abs(trial.totals.protein - trial.expected.protein),
+      );
       const latencies = ok.map((trial) => trial.latencyMs);
       const caseMap = new Map();
       for (const caseRow of cases) {
         const repeated = ok.filter((trial) => trial.caseId === caseRow.caseId);
         if (repeated.length !== 3) continue;
         caseMap.set(caseRow.caseId, {
-          calories: mean(repeated.map((trial) => Math.abs(trial.totals.calories - trial.expected.calories))),
-          protein: mean(repeated.map((trial) => Math.abs(trial.totals.protein - trial.expected.protein))),
+          calories: mean(
+            repeated.map((trial) =>
+              Math.abs(trial.totals.calories - trial.expected.calories),
+            ),
+          ),
+          protein: mean(
+            repeated.map((trial) =>
+              Math.abs(trial.totals.protein - trial.expected.protein),
+            ),
+          ),
         });
       }
       byVariantAndCase.set(variant.id, caseMap);
@@ -352,7 +668,10 @@ function summarize(trials, datasets, variants) {
         trialCount: rows.length,
         successfulTrials: ok.length,
         coveragePct: round((100 * ok.length) / rows.length),
-        firstAttemptSuccessPct: round((100 * rows.filter((trial) => trial.firstAttemptOk).length) / rows.length),
+        firstAttemptSuccessPct: round(
+          (100 * rows.filter((trial) => trial.firstAttemptOk).length) /
+            rows.length,
+        ),
         completeCasesAcrossRepetitions: caseMap.size,
         eligible: ok.length === rows.length && caseMap.size === cases.length,
         calorieMae: round(mean(calorieErrors)),
@@ -386,6 +705,11 @@ function summarize(trials, datasets, variants) {
         "protein",
         `${datasetName}:${variant.id}:protein`,
       );
+      const comparisonEligible = baseline.eligible && candidate.eligible;
+      const strongCalories =
+        Number.isFinite(calorieCi?.upper95) && calorieCi.upper95 <= 0.5;
+      const strongProtein =
+        Number.isFinite(proteinCi?.upper95) && proteinCi.upper95 <= 0.5;
       datasetSummary.comparisonsToBaseline[variant.id] = {
         calorieMaeRatio: round(calorieRatio),
         calorieMaeReductionPct: round(100 * (1 - calorieRatio)),
@@ -393,11 +717,12 @@ function summarize(trials, datasets, variants) {
         proteinMaeRatio: round(proteinRatio),
         proteinMaeReductionPct: round(100 * (1 - proteinRatio)),
         proteinRatioBootstrap95: proteinCi,
-        pointGoal50Calories: calorieRatio <= 0.5,
-        strongGoal50Calories: calorieCi?.upper95 <= 0.5,
-        pointGoal50Both: calorieRatio <= 0.5 && proteinRatio <= 0.5,
-        strongGoal50Both: calorieCi?.upper95 <= 0.5 && proteinCi?.upper95 <= 0.5,
-        eligible: baseline.eligible && candidate.eligible,
+        pointGoal50Calories: comparisonEligible && calorieRatio <= 0.5,
+        strongGoal50Calories: comparisonEligible && strongCalories,
+        pointGoal50Both:
+          comparisonEligible && calorieRatio <= 0.5 && proteinRatio <= 0.5,
+        strongGoal50Both: comparisonEligible && strongCalories && strongProtein,
+        eligible: comparisonEligible,
       };
     }
     summary.datasets[datasetName] = datasetSummary;
@@ -406,6 +731,7 @@ function summarize(trials, datasets, variants) {
 }
 
 async function main() {
+  parserSelfTest();
   const fdcRaw = JSON.parse(await readFile(fdcPath, "utf8"));
   const legacyRaw = JSON.parse(await readFile(legacyPath, "utf8"));
   const datasets = {
@@ -413,7 +739,9 @@ async function main() {
     "legacy-sensitivity": makeLegacyCases(legacyRaw),
   };
   if (datasets["fdc-primary"].length !== 95) {
-    throw new Error(`Expected 95 primary cases, found ${datasets["fdc-primary"].length}`);
+    throw new Error(
+      `Expected 95 primary cases, found ${datasets["fdc-primary"].length}`,
+    );
   }
 
   if (dryRun) {
@@ -422,8 +750,12 @@ async function main() {
         {
           primaryCases: datasets["fdc-primary"].length,
           legacyCases: datasets["legacy-sensitivity"].length,
-          maxCasesPerRun: Math.max(...Object.values(datasets).map((rows) => rows.length)),
-          authenticQueryExamples: datasets["fdc-primary"].slice(0, 3).map((row) => row.query),
+          maxCasesPerRun: Math.max(
+            ...Object.values(datasets).map((rows) => rows.length),
+          ),
+          authenticQueryExamples: datasets["fdc-primary"]
+            .slice(0, 3)
+            .map((row) => row.query),
         },
         null,
         2,
@@ -432,13 +764,41 @@ async function main() {
     return;
   }
 
-  const { buildNutritionParserSystem, parseNutritionProviderResponse } = await import(
-    "../../backend/src/services/ai.ts"
-  );
+  const productionAiModule = await import("../../backend/src/services/ai.ts");
+  if (typeof productionAiModule.buildNutritionParserSystem !== "function") {
+    throw new Error(
+      "Production buildNutritionParserSystem export is unavailable",
+    );
+  }
+  const { buildNutritionParserSystem } = productionAiModule;
   const baseline = buildNutritionParserSystem("en", "maintain", timing);
   const neutral = neutralPrompt(baseline);
   const density = densityFirstPrompt(neutral);
   const compact = compactPrompt();
+  if (
+    neutral === baseline ||
+    !neutral.includes("12. FACTUAL NEUTRALITY") ||
+    !neutral.includes(
+      "Do not impose a calorie floor based only on total food weight",
+    ) ||
+    neutral.includes("If mismatch >10%, FIX the numbers") ||
+    neutral.includes("Large portions (>500g) should rarely be <600 kcal")
+  ) {
+    throw new Error(
+      "Neutral prompt transformation did not fully match the deployed production prompt",
+    );
+  }
+  if (
+    density === neutral ||
+    !density.includes("DENSITY-FIRST METHOD FOR INFERRED VALUES")
+  ) {
+    throw new Error("Density-first prompt transformation was not applied");
+  }
+  if (!compact.includes("Return one JSON object only") || compact === density) {
+    throw new Error(
+      "Compact prompt construction failed its structural assertion",
+    );
+  }
   const variants = [
     {
       id: "baseline",
@@ -479,7 +839,9 @@ async function main() {
 
   const tasks = [];
   for (const [datasetName, cases] of Object.entries(datasets)) {
-    for (const variant of variants.filter((item) => item.datasets.includes(datasetName))) {
+    for (const variant of variants.filter((item) =>
+      item.datasets.includes(datasetName),
+    )) {
       for (let repetition = 1; repetition <= 3; repetition += 1) {
         for (const caseRow of cases) {
           const systemPrompt = variant.build(caseRow);
@@ -495,27 +857,84 @@ async function main() {
       }
     }
   }
-  const orderedTasks = shuffle(tasks, "calorie-tracker-prompt-investigation-v1");
+  const orderedTasks = shuffle(
+    tasks,
+    "calorie-tracker-prompt-investigation-v1",
+  );
   console.log(`starting ${orderedTasks.length} authentic model requests`);
 
-  const outcomes = await runPool(
-    orderedTasks,
+  // Gate fan-out on one retained paid canary for every dataset/variant group.
+  // This tests each prompt shape and both languages without adding model calls.
+  const canaryIndexes = [];
+  const seenCanaryGroups = new Set();
+  for (const [index, task] of orderedTasks.entries()) {
+    const group = `${task.dataset}/${task.variant}`;
+    if (!seenCanaryGroups.has(group)) {
+      seenCanaryGroups.add(group);
+      canaryIndexes.push(index);
+    }
+  }
+  if (canaryIndexes.length !== 9) {
+    throw new Error(
+      `Expected 9 dataset/variant canaries, found ${canaryIndexes.length}`,
+    );
+  }
+
+  const outcomeByIndex = new Map();
+  for (const index of canaryIndexes) {
+    const canaryTask = orderedTasks[index];
+    console.log(
+      `running paid parser canary for ${canaryTask.dataset}/${canaryTask.variant}`,
+    );
+    const canaryOutcome = await callModel(canaryTask);
+    if (canaryOutcome.status !== "ok") {
+      throw new Error(
+        `Paid parser canary failed for ${canaryTask.dataset}/${canaryTask.variant} at ${canaryOutcome.errorStage ?? "unknown"}: ${canaryOutcome.error}`,
+      );
+    }
+    outcomeByIndex.set(index, canaryOutcome);
+  }
+  console.log("all 9 paid parser canaries passed; starting paired fan-out");
+
+  const canaryIndexSet = new Set(canaryIndexes);
+  const remainingIndexedTasks = orderedTasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ index }) => !canaryIndexSet.has(index));
+  let consecutiveFailures = 0;
+  let failureCircuitOpen = false;
+  const remainingOutcomes = await runPool(
+    remainingIndexedTasks,
     Math.max(1, Number(process.env.PROMPT_INVESTIGATION_CONCURRENCY || 6)),
-    async (task) => {
-      const outcome = await callModel(task, parseNutritionProviderResponse);
-      return {
-        dataset: task.dataset,
-        variant: task.variant,
-        repetition: task.repetition,
-        caseId: task.caseRow.caseId,
-        sourceId: task.caseRow.sourceId,
-        query: task.caseRow.query,
-        expected: task.caseRow.expected,
-        systemPromptHash: task.systemPromptHash,
-        ...outcome,
-      };
+    async ({ task, index }) => {
+      if (failureCircuitOpen) {
+        throw new Error(
+          "Provider failure circuit is open; aborting before additional paid requests",
+        );
+      }
+      const outcome = await callModel(task);
+      if (outcome.status === "error") {
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= 12) failureCircuitOpen = true;
+      } else {
+        consecutiveFailures = 0;
+      }
+      return { index, outcome };
     },
   );
+  for (const { index, outcome } of remainingOutcomes) {
+    outcomeByIndex.set(index, outcome);
+  }
+  const outcomes = orderedTasks.map((task, index) => ({
+    dataset: task.dataset,
+    variant: task.variant,
+    repetition: task.repetition,
+    caseId: task.caseRow.caseId,
+    sourceId: task.caseRow.sourceId,
+    query: task.caseRow.query,
+    expected: task.caseRow.expected,
+    systemPromptHash: task.systemPromptHash,
+    ...outcomeByIndex.get(index),
+  }));
 
   await mkdir(outputDir, { recursive: true });
   const datasetSnapshot = {
@@ -537,7 +956,8 @@ async function main() {
     createdAtIso: new Date().toISOString(),
     gitCommit: resolveGitCommit(),
     endpointHost: new URL(
-      process.env.YANDEX_AI_STUDIO_URL || "https://ai.api.cloud.yandex.net/v1/chat/completions",
+      process.env.YANDEX_AI_STUDIO_URL ||
+        "https://ai.api.cloud.yandex.net/v1/chat/completions",
     ).host,
     productionModelPreference: process.env.PRODUCTION_MODEL_PREFERENCE,
     productionModelId: process.env.PRODUCTION_MODEL_ID,
@@ -545,9 +965,14 @@ async function main() {
     repetitions: 3,
     interleavingSeed: "calorie-tracker-prompt-investigation-v1",
     concurrency: Number(process.env.PROMPT_INVESTIGATION_CONCURRENCY || 6),
-    retryPolicy: "Up to three transport/provider attempts; first-attempt success reported separately.",
+    retryPolicy:
+      "Up to three attempts only for network failures, HTTP 408/429, and HTTP 5xx. Non-retryable HTTP, provider-envelope, and local contract failures cause no additional paid request. Nine measured authentic requests (one per dataset/variant group) must parse successfully before fan-out; a 12-result failure streak opens the circuit.",
     maximumCasesInAnyVariantRepetition: 95,
     totalAuthenticRequests: tasks.length,
+    totalProviderAttempts: outcomes.reduce(
+      (sum, outcome) => sum + (outcome.attemptCount ?? 0),
+      0,
+    ),
     userMessagePolicy:
       "Identical natural food-log text across variants; no evaluation instructions, expected values, or prompt policy embedded in user messages.",
     variants: variants.map((variant) => ({
@@ -561,13 +986,22 @@ async function main() {
   };
   const summary = summarize(outcomes, datasets, variants);
 
-  await writeFile(resolve(outputDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-  await writeFile(resolve(outputDir, "dataset.json"), `${JSON.stringify(datasetSnapshot, null, 2)}\n`);
+  await writeFile(
+    resolve(outputDir, "manifest.json"),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+  await writeFile(
+    resolve(outputDir, "dataset.json"),
+    `${JSON.stringify(datasetSnapshot, null, 2)}\n`,
+  );
   await writeFile(
     resolve(outputDir, "trials.ndjson"),
     `${outcomes.map((outcome) => JSON.stringify(outcome)).join("\n")}\n`,
   );
-  await writeFile(resolve(outputDir, "summary.json"), `${JSON.stringify(summary, null, 2)}\n`);
+  await writeFile(
+    resolve(outputDir, "summary.json"),
+    `${JSON.stringify(summary, null, 2)}\n`,
+  );
   console.log(JSON.stringify(summary, null, 2));
 }
 
