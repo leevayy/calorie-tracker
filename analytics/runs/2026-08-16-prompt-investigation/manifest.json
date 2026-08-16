@@ -1,7 +1,7 @@
 {
   "experimentId": "2026-08-16-prompt-investigation-v1",
-  "createdAtIso": "2026-08-16T20:29:22.163Z",
-  "gitCommit": "2b06e641aa542d798616e2ecb3a4513d837169f7",
+  "createdAtIso": "2026-08-16T21:16:09.125Z",
+  "gitCommit": "8c63fd71e1540610fc10b7cbb08c3de776fc901b",
   "endpointHost": "llm.api.cloud.yandex.net",
   "productionModelPreference": "qwen3",
   "productionModelId": "qwen3-235b-a22b-fp8",
@@ -9,9 +9,10 @@
   "repetitions": 3,
   "interleavingSeed": "calorie-tracker-prompt-investigation-v1",
   "concurrency": 6,
-  "retryPolicy": "Up to three transport/provider attempts; first-attempt success reported separately.",
+  "retryPolicy": "Up to three attempts only for network failures, HTTP 408/429, and HTTP 5xx. Non-retryable HTTP, provider-envelope, and local contract failures cause no additional paid request. Nine measured authentic requests (one per dataset/variant group) must parse successfully before fan-out; a 12-result failure streak opens the circuit.",
   "maximumCasesInAnyVariantRepetition": 95,
   "totalAuthenticRequests": 1701,
+  "totalProviderAttempts": 1701,
   "userMessagePolicy": "Identical natural food-log text across variants; no evaluation instructions, expected values, or prompt policy embedded in user messages.",
   "variants": [
     {
