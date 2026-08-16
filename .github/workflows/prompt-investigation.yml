@@ -1,0 +1,129 @@
+name: Prompt investigation
+
+on:
+  push:
+    branches: [codex/prompt-investigation-20260816]
+    paths:
+      - .github/workflows/prompt-investigation.yml
+      - analytics/scripts/run-live-prompt-investigation.mjs
+
+permissions:
+  contents: write
+
+jobs:
+  investigate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/unused
+      JWT_SECRET: prompt-investigation-dummy-jwt-secret
+      YANDEX_AI_STUDIO_API_KEY: ${{ secrets.E2E_YANDEX_AI_STUDIO_API_KEY }}
+      YANDEX_FOLDER_ID: ${{ secrets.E2E_YANDEX_FOLDER_ID }}
+      PROMPT_INVESTIGATION_CONCURRENCY: "6"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Resolve the deployed production model without exposing credentials
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VM_DEPLOY_PATH: ${{ vars.VM_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST"
+          test -n "$SSH_USER"
+          test -n "$SSH_PRIVATE_KEY"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/prompt-investigation-key"
+          chmod 600 "$HOME/.ssh/prompt-investigation-key"
+          ssh-keyscan -H "$SSH_HOST" >> "$HOME/.ssh/known_hosts" 2>/dev/null
+
+          MODEL_JSON="$({
+            ssh -i "$HOME/.ssh/prompt-investigation-key" \
+              -o BatchMode=yes \
+              "$SSH_USER@$SSH_HOST" \
+              bash -s -- "${VM_DEPLOY_PATH:-/opt/calorie-tracker}" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api node - <<'NODE'
+          const preference = process.env.AI_MODEL_PREFERENCE || "qwen3";
+          const names = {
+            alicegpt: "YANDEX_AI_STUDIO_MODEL_ALICE_GPT",
+            aliceflash: "YANDEX_AI_STUDIO_MODEL_ALICE_FLASH",
+            qwen36: "YANDEX_AI_STUDIO_MODEL_QWEN36",
+            qwen3: "YANDEX_AI_STUDIO_MODEL_QWEN3",
+            gptoss120: "YANDEX_AI_STUDIO_MODEL_GPT_OSS_120B",
+            gptoss: "YANDEX_AI_STUDIO_MODEL_GPT_OSS",
+          };
+          const defaults = {
+            alicegpt: "aliceai-llm",
+            aliceflash: "aliceai-llm-flash",
+            qwen36: "qwen3.6-35b-a3b",
+            qwen3: "qwen3-235b-a22b-fp8",
+            gptoss120: "gpt-oss-120b",
+            gptoss: "gpt-oss-20b",
+          };
+          const envName = names[preference] || "YANDEX_AI_STUDIO_MODEL";
+          const modelId = process.env[envName]?.trim() || defaults[preference] || "deepseek-v4-flash";
+          process.stdout.write(JSON.stringify({ preference, modelId }));
+          NODE
+          REMOTE
+          } 2>/dev/null)"
+
+          node -e 'const x=JSON.parse(process.argv[1]); if(!x.preference||!x.modelId) process.exit(1)' "$MODEL_JSON"
+          PRODUCTION_MODEL_PREFERENCE="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).preference)' "$MODEL_JSON")"
+          PRODUCTION_MODEL_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).modelId)' "$MODEL_JSON")"
+          echo "Resolved production model preference: $PRODUCTION_MODEL_PREFERENCE"
+          echo "Resolved production model ID: $PRODUCTION_MODEL_ID"
+          echo "PRODUCTION_MODEL_PREFERENCE=$PRODUCTION_MODEL_PREFERENCE" >> "$GITHUB_ENV"
+          echo "PRODUCTION_MODEL_ID=$PRODUCTION_MODEL_ID" >> "$GITHUB_ENV"
+
+      - name: Verify paid-provider credentials are available
+        run: |
+          set -euo pipefail
+          test -n "$YANDEX_AI_STUDIO_API_KEY"
+          test -n "$YANDEX_FOLDER_ID"
+
+      - name: Install backend runtime
+        working-directory: backend
+        run: npm ci
+
+      - name: Download the frozen official USDA source dataset
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/prompt-investigation/usda/foundation
+          curl --fail --location --silent --show-error \
+            https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip \
+            -o tmp/prompt-investigation/usda/foundation.zip
+          unzip -q -o tmp/prompt-investigation/usda/foundation.zip \
+            -d tmp/prompt-investigation/usda/foundation
+
+      - name: Run interleaved authentic prompt trials
+        working-directory: backend
+        run: npx tsx ../analytics/scripts/run-live-prompt-investigation.mjs
+
+      - name: Commit immutable result artifacts to the experiment branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add analytics/runs/2026-08-16-prompt-investigation
+          git commit -m "chore: record live prompt investigation results"
+          git push origin HEAD:codex/prompt-investigation-20260816
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prompt-investigation-results
+          path: analytics/runs/2026-08-16-prompt-investigation
+          if-no-files-found: error
+          retention-days: 30
