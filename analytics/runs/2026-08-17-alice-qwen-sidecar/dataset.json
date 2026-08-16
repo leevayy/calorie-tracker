@@ -1,0 +1,1663 @@
+{
+  "source": {
+    "title": "USDA FoodData Central Foundation Foods",
+    "release": "April 2026",
+    "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip"
+  },
+  "rule": "Exact reuse of all 95 frozen Foundation search cases, user messages, expected calories/protein, and order; no post-output exclusions.",
+  "cases": [
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-321358",
+      "sourceId": "321358",
+      "query": "I ate exactly 100 g of hummus, commercial.",
+      "description": "Hummus, commercial",
+      "expected": {
+        "calories": 229,
+        "protein": 7.35
+      },
+      "reference": {
+        "calories": 229,
+        "protein": 7.35,
+        "fats": 17.1,
+        "carbs": 14.9,
+        "fiber": 5.4
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-321360",
+      "sourceId": "321360",
+      "query": "Log 100 g of tomatoes, grape, raw.",
+      "description": "Tomatoes, grape, raw",
+      "expected": {
+        "calories": 27,
+        "protein": 0.83
+      },
+      "reference": {
+        "calories": 27,
+        "protein": 0.83,
+        "fats": 0.63,
+        "carbs": 5.51,
+        "fiber": 2.1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-321611",
+      "sourceId": "321611",
+      "query": "100 g of beans, snap, green, canned, regular pack, drained solids.",
+      "description": "Beans, snap, green, canned, regular pack, drained solids",
+      "expected": {
+        "calories": 21,
+        "protein": 1.04
+      },
+      "reference": {
+        "calories": 21,
+        "protein": 1.04,
+        "fats": 0.39,
+        "carbs": 4.11
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-323121",
+      "sourceId": "323121",
+      "query": "I ate exactly 100 g of frankfurter, beef, unheated.",
+      "description": "Frankfurter, beef, unheated",
+      "expected": {
+        "calories": 314,
+        "protein": 11.7
+      },
+      "reference": {
+        "calories": 314,
+        "protein": 11.7,
+        "fats": 28,
+        "carbs": 2.89
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-323294",
+      "sourceId": "323294",
+      "query": "Log 100 g of nuts, almonds, dry roasted, with salt added.",
+      "description": "Nuts, almonds, dry roasted, with salt added",
+      "expected": {
+        "calories": 620,
+        "protein": 20.4
+      },
+      "reference": {
+        "calories": 620,
+        "protein": 20.4,
+        "fats": 57.8,
+        "carbs": 16.2,
+        "fiber": 11
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-323505",
+      "sourceId": "323505",
+      "query": "100 g of kale, raw.",
+      "description": "Kale, raw",
+      "expected": {
+        "calories": 35,
+        "protein": 2.92
+      },
+      "reference": {
+        "calories": 35,
+        "protein": 2.92,
+        "fats": 1.49,
+        "carbs": 4.42,
+        "fiber": 4.1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-323604",
+      "sourceId": "323604",
+      "query": "I ate exactly 100 g of egg, whole, raw, frozen, pasteurized.",
+      "description": "Egg, whole, raw, frozen, pasteurized",
+      "expected": {
+        "calories": 150,
+        "protein": 12.3
+      },
+      "reference": {
+        "calories": 150,
+        "protein": 12.3,
+        "fats": 10.3,
+        "carbs": 0.91
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-323697",
+      "sourceId": "323697",
+      "query": "Log 100 g of egg, white, raw, frozen, pasteurized.",
+      "description": "Egg, white, raw, frozen, pasteurized",
+      "expected": {
+        "calories": 48,
+        "protein": 10.1
+      },
+      "reference": {
+        "calories": 48,
+        "protein": 10.1,
+        "fats": 0.16,
+        "carbs": 0.74
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-323793",
+      "sourceId": "323793",
+      "query": "100 g of egg, white, dried.",
+      "description": "Egg, white, dried",
+      "expected": {
+        "calories": 376,
+        "protein": 79.9
+      },
+      "reference": {
+        "calories": 376,
+        "protein": 79.9,
+        "fats": 0.65,
+        "carbs": 6.02
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-324317",
+      "sourceId": "324317",
+      "query": "I ate exactly 100 g of onion rings, breaded, par fried, frozen, prepared, heated in oven.",
+      "description": "Onion rings, breaded, par fried, frozen, prepared, heated in oven",
+      "expected": {
+        "calories": 288,
+        "protein": 4.52
+      },
+      "reference": {
+        "calories": 288,
+        "protein": 4.52,
+        "fats": 14.4,
+        "carbs": 36.3,
+        "fiber": 2.4
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-324653",
+      "sourceId": "324653",
+      "query": "Log 100 g of pickles, cucumber, dill or kosher dill.",
+      "description": "Pickles, cucumber, dill or kosher dill",
+      "expected": {
+        "calories": 12,
+        "protein": 0.48
+      },
+      "reference": {
+        "calories": 12,
+        "protein": 0.48,
+        "fats": 0.43,
+        "carbs": 1.99,
+        "fiber": 1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-325036",
+      "sourceId": "325036",
+      "query": "100 g of cheese, parmesan, grated.",
+      "description": "Cheese, parmesan, grated",
+      "expected": {
+        "calories": 421,
+        "protein": 29.6
+      },
+      "reference": {
+        "calories": 421,
+        "protein": 29.6,
+        "fats": 28,
+        "carbs": 12.4
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-325198",
+      "sourceId": "325198",
+      "query": "I ate exactly 100 g of cheese, pasteurized process, american, vitamin d fortified.",
+      "description": "Cheese, pasteurized process, American, vitamin D fortified",
+      "expected": {
+        "calories": 366,
+        "protein": 18
+      },
+      "reference": {
+        "calories": 366,
+        "protein": 18,
+        "fats": 30.6,
+        "carbs": 5.27
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-325287",
+      "sourceId": "325287",
+      "query": "Log 100 g of grapefruit juice, white, canned or bottled, unsweetened.",
+      "description": "Grapefruit juice, white, canned or bottled, unsweetened",
+      "expected": {
+        "calories": 37,
+        "protein": 0.55
+      },
+      "reference": {
+        "calories": 37,
+        "protein": 0.55,
+        "fats": 0.7,
+        "carbs": 7.59,
+        "fiber": 0.2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-325430",
+      "sourceId": "325430",
+      "query": "100 g of peaches, yellow, raw.",
+      "description": "Peaches, yellow, raw",
+      "expected": {
+        "calories": 42,
+        "protein": 0.91
+      },
+      "reference": {
+        "calories": 42,
+        "protein": 0.91,
+        "fats": 0.27,
+        "carbs": 10.1,
+        "fiber": 1.5
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-325524",
+      "sourceId": "325524",
+      "query": "I ate exactly 100 g of seeds, sunflower seed kernels, dry roasted, with salt added.",
+      "description": "Seeds, sunflower seed kernels, dry roasted, with salt added",
+      "expected": {
+        "calories": 612,
+        "protein": 21
+      },
+      "reference": {
+        "calories": 612,
+        "protein": 21,
+        "fats": 56.1,
+        "carbs": 17.1,
+        "fiber": 10.3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-326196",
+      "sourceId": "326196",
+      "query": "Log 100 g of kale, frozen, cooked, boiled, drained, without salt.",
+      "description": "Kale, frozen, cooked, boiled, drained, without salt",
+      "expected": {
+        "calories": 36,
+        "protein": 2.94
+      },
+      "reference": {
+        "calories": 36,
+        "protein": 2.94,
+        "fats": 1.21,
+        "carbs": 5.3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-326698",
+      "sourceId": "326698",
+      "query": "100 g of mustard, prepared, yellow.",
+      "description": "Mustard, prepared, yellow",
+      "expected": {
+        "calories": 61,
+        "protein": 4.25
+      },
+      "reference": {
+        "calories": 61,
+        "protein": 4.25,
+        "fats": 3.38,
+        "carbs": 5.3,
+        "fiber": 4.3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-327046",
+      "sourceId": "327046",
+      "query": "I ate exactly 100 g of kiwifruit, green, raw.",
+      "description": "Kiwifruit, green, raw",
+      "expected": {
+        "calories": 58,
+        "protein": 1.06
+      },
+      "reference": {
+        "calories": 58,
+        "protein": 1.06,
+        "fats": 0.44,
+        "carbs": 14,
+        "fiber": 3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-327357",
+      "sourceId": "327357",
+      "query": "Log 100 g of nectarines, raw.",
+      "description": "Nectarines, raw",
+      "expected": {
+        "calories": 39,
+        "protein": 1.06
+      },
+      "reference": {
+        "calories": 39,
+        "protein": 1.06,
+        "fats": 0.28,
+        "carbs": 9.18,
+        "fiber": 1.5
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-328637",
+      "sourceId": "328637",
+      "query": "100 g of cheese, cheddar.",
+      "description": "Cheese, cheddar",
+      "expected": {
+        "calories": 408,
+        "protein": 23.3
+      },
+      "reference": {
+        "calories": 408,
+        "protein": 23.3,
+        "fats": 34,
+        "carbs": 2.44
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-328841",
+      "sourceId": "328841",
+      "query": "I ate exactly 100 g of cheese, cottage, lowfat, 2% milkfat.",
+      "description": "Cheese, cottage, lowfat, 2% milkfat",
+      "expected": {
+        "calories": 84,
+        "protein": 11
+      },
+      "reference": {
+        "calories": 84,
+        "protein": 11,
+        "fats": 2.3,
+        "carbs": 4.31
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-329370",
+      "sourceId": "329370",
+      "query": "Log 100 g of cheese, mozzarella, low moisture, part-skim.",
+      "description": "Cheese, mozzarella, low moisture, part-skim",
+      "expected": {
+        "calories": 298,
+        "protein": 23.7
+      },
+      "reference": {
+        "calories": 298,
+        "protein": 23.7,
+        "fats": 20.4,
+        "carbs": 4.44
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-329490",
+      "sourceId": "329490",
+      "query": "100 g of egg, whole, dried.",
+      "description": "Egg, whole, dried",
+      "expected": {
+        "calories": 575,
+        "protein": 48.1
+      },
+      "reference": {
+        "calories": 575,
+        "protein": 48.1,
+        "fats": 39.8,
+        "carbs": 1.87
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-329596",
+      "sourceId": "329596",
+      "query": "I ate exactly 100 g of egg, yolk, raw, frozen, pasteurized.",
+      "description": "Egg, yolk, raw, frozen, pasteurized",
+      "expected": {
+        "calories": 296,
+        "protein": 15.6
+      },
+      "reference": {
+        "calories": 296,
+        "protein": 15.6,
+        "fats": 25.1,
+        "carbs": 0.59
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-329716",
+      "sourceId": "329716",
+      "query": "Log 100 g of egg, yolk, dried.",
+      "description": "Egg, yolk, dried",
+      "expected": {
+        "calories": 654,
+        "protein": 34.2
+      },
+      "reference": {
+        "calories": 654,
+        "protein": 34.2,
+        "fats": 55.5,
+        "carbs": 1.07
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-330137",
+      "sourceId": "330137",
+      "query": "100 g of yogurt, greek, plain, nonfat.",
+      "description": "Yogurt, Greek, plain, nonfat",
+      "expected": {
+        "calories": 61,
+        "protein": 10.3
+      },
+      "reference": {
+        "calories": 61,
+        "protein": 10.3,
+        "fats": 0.37,
+        "carbs": 3.64
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-330415",
+      "sourceId": "330415",
+      "query": "I ate exactly 100 g of yogurt, greek, strawberry, nonfat.",
+      "description": "Yogurt, Greek, strawberry, nonfat",
+      "expected": {
+        "calories": 83,
+        "protein": 8.06
+      },
+      "reference": {
+        "calories": 83,
+        "protein": 8.06,
+        "fats": 0.15,
+        "carbs": 12.2,
+        "fiber": 0.6
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-330458",
+      "sourceId": "330458",
+      "query": "Log 100 g of oil, coconut.",
+      "description": "Oil, coconut",
+      "expected": {
+        "calories": 833,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 833,
+        "protein": 0,
+        "fats": 99.1,
+        "carbs": 0.84
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-331897",
+      "sourceId": "331897",
+      "query": "100 g of chicken, broilers or fryers, drumstick, meat only, cooked, braised.",
+      "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
+      "expected": {
+        "calories": 156,
+        "protein": 23.9
+      },
+      "reference": {
+        "calories": 156,
+        "protein": 23.9,
+        "fats": 5.95,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-331960",
+      "sourceId": "331960",
+      "query": "I ate exactly 100 g of chicken, broiler or fryers, breast, skinless, boneless, meat only, cooked, braised.",
+      "description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, cooked, braised",
+      "expected": {
+        "calories": 166,
+        "protein": 32.1
+      },
+      "reference": {
+        "calories": 166,
+        "protein": 32.1,
+        "fats": 3.24,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-332282",
+      "sourceId": "332282",
+      "query": "Log 100 g of sauce, pasta, spaghetti/marinara, ready-to-serve.",
+      "description": "Sauce, pasta, spaghetti/marinara, ready-to-serve",
+      "expected": {
+        "calories": 45,
+        "protein": 1.41
+      },
+      "reference": {
+        "calories": 45,
+        "protein": 1.41,
+        "fats": 1.48,
+        "carbs": 8.05,
+        "fiber": 1.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-332397",
+      "sourceId": "332397",
+      "query": "100 g of ham, sliced, pre-packaged, deli meat (96%fat free, water added).",
+      "description": "Ham, sliced, pre-packaged, deli meat (96%fat free, water added)",
+      "expected": {
+        "calories": 106,
+        "protein": 16.7
+      },
+      "reference": {
+        "calories": 106,
+        "protein": 16.7,
+        "fats": 3.73,
+        "carbs": 0.27
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-332791",
+      "sourceId": "332791",
+      "query": "I ate exactly 100 g of olives, green, manzanilla, stuffed with pimiento.",
+      "description": "Olives, green, Manzanilla, stuffed with pimiento",
+      "expected": {
+        "calories": 130,
+        "protein": 1.15
+      },
+      "reference": {
+        "calories": 130,
+        "protein": 1.15,
+        "fats": 12.9,
+        "carbs": 4.96,
+        "fiber": 4
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-333008",
+      "sourceId": "333008",
+      "query": "Log 100 g of cookies, oatmeal, soft, with raisins.",
+      "description": "Cookies, oatmeal, soft, with raisins",
+      "expected": {
+        "calories": 430,
+        "protein": 5.79
+      },
+      "reference": {
+        "calories": 430,
+        "protein": 5.79,
+        "fats": 14.3,
+        "carbs": 69.6,
+        "fiber": 3.3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-333281",
+      "sourceId": "333281",
+      "query": "100 g of tomatoes, canned, red, ripe, diced.",
+      "description": "Tomatoes, canned, red, ripe, diced",
+      "expected": {
+        "calories": 18,
+        "protein": 0.84
+      },
+      "reference": {
+        "calories": 18,
+        "protein": 0.84,
+        "fats": 0.5,
+        "carbs": 3.32
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-333374",
+      "sourceId": "333374",
+      "query": "I ate exactly 100 g of fish, haddock, raw.",
+      "description": "Fish, haddock, raw",
+      "expected": {
+        "calories": 74,
+        "protein": 16.3
+      },
+      "reference": {
+        "calories": 74,
+        "protein": 16.3,
+        "fats": 0.45,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-333476",
+      "sourceId": "333476",
+      "query": "Log 100 g of fish, pollock, raw.",
+      "description": "Fish, pollock, raw",
+      "expected": {
+        "calories": 56,
+        "protein": 12.3
+      },
+      "reference": {
+        "calories": 56,
+        "protein": 12.3,
+        "fats": 0.41,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-334194",
+      "sourceId": "334194",
+      "query": "100 g of fish, tuna, light, canned in water, drained solids.",
+      "description": "Fish, tuna, light, canned in water, drained solids",
+      "expected": {
+        "calories": 90,
+        "protein": 19
+      },
+      "reference": {
+        "calories": 90,
+        "protein": 19,
+        "fats": 0.94,
+        "carbs": 0.08
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-334536",
+      "sourceId": "334536",
+      "query": "I ate exactly 100 g of restaurant, chinese, fried rice, without meat.",
+      "description": "Restaurant, Chinese, fried rice, without meat",
+      "expected": {
+        "calories": 174,
+        "protein": 3.84
+      },
+      "reference": {
+        "calories": 174,
+        "protein": 3.84,
+        "fats": 3.19,
+        "carbs": 32.5
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-334628",
+      "sourceId": "334628",
+      "query": "Log 100 g of restaurant, latino, tamale, pork.",
+      "description": "Restaurant, Latino, tamale, pork",
+      "expected": {
+        "calories": 174,
+        "protein": 7.38
+      },
+      "reference": {
+        "calories": 174,
+        "protein": 7.38,
+        "fats": 9.04,
+        "carbs": 15.8,
+        "fiber": 2.4
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-334720",
+      "sourceId": "334720",
+      "query": "100 g of restaurant, latino, pupusas con frijoles (pupusas, bean).",
+      "description": "Restaurant, Latino, pupusas con frijoles (pupusas, bean)",
+      "expected": {
+        "calories": 229,
+        "protein": 5.59
+      },
+      "reference": {
+        "calories": 229,
+        "protein": 5.59,
+        "fats": 9.01,
+        "carbs": 31.5,
+        "fiber": 5.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746758",
+      "sourceId": "746758",
+      "query": "I ate exactly 100 g of beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted.",
+      "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+      "expected": {
+        "calories": 176,
+        "protein": 27.7
+      },
+      "reference": {
+        "calories": 176,
+        "protein": 27.7,
+        "fats": 6.36,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746759",
+      "sourceId": "746759",
+      "query": "Log 100 g of beef, loin, top loin steak, boneless, lip-on, separable lean only, trimmed to 1/8\" fat, choice, raw.",
+      "description": "Beef, loin, top loin steak, boneless, lip-on, separable lean only, trimmed to 1/8\" fat, choice, raw",
+      "expected": {
+        "calories": 155,
+        "protein": 22.8
+      },
+      "reference": {
+        "calories": 155,
+        "protein": 22.8,
+        "fats": 6.39,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746760",
+      "sourceId": "746760",
+      "query": "100 g of beef, round, eye of round roast, boneless, separable lean only, trimmed to 0\" fat, select, raw.",
+      "description": "Beef, round, eye of round roast, boneless, separable lean only, trimmed to 0\" fat, select, raw",
+      "expected": {
+        "calories": 122,
+        "protein": 23.4
+      },
+      "reference": {
+        "calories": 122,
+        "protein": 23.4,
+        "fats": 2.48,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746761",
+      "sourceId": "746761",
+      "query": "I ate exactly 100 g of beef, round, top round roast, boneless, separable lean only, trimmed to 0\" fat, select, raw.",
+      "description": "Beef, round, top round roast, boneless, separable lean only, trimmed to 0\" fat, select, raw",
+      "expected": {
+        "calories": 123,
+        "protein": 23.7
+      },
+      "reference": {
+        "calories": 123,
+        "protein": 23.7,
+        "fats": 2.41,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746762",
+      "sourceId": "746762",
+      "query": "Log 100 g of beef, short loin, porterhouse steak, separable lean only, trimmed to 1/8\" fat, select, raw.",
+      "description": "Beef, short loin, porterhouse steak, separable lean only, trimmed to 1/8\" fat, select, raw",
+      "expected": {
+        "calories": 145,
+        "protein": 22.7
+      },
+      "reference": {
+        "calories": 145,
+        "protein": 22.7,
+        "fats": 5.32,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746763",
+      "sourceId": "746763",
+      "query": "100 g of beef, short loin, t-bone steak, bone-in, separable lean only, trimmed to 1/8\" fat, choice, cooked, grilled.",
+      "description": "Beef, short loin, t-bone steak, bone-in, separable lean only, trimmed to 1/8\" fat, choice, cooked, grilled",
+      "expected": {
+        "calories": 219,
+        "protein": 27.3
+      },
+      "reference": {
+        "calories": 219,
+        "protein": 27.3,
+        "fats": 11.4,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746764",
+      "sourceId": "746764",
+      "query": "I ate exactly 100 g of carrots, frozen, unprepared.",
+      "description": "Carrots, frozen, unprepared",
+      "expected": {
+        "calories": 37,
+        "protein": 0.81
+      },
+      "reference": {
+        "calories": 37,
+        "protein": 0.81,
+        "fats": 0.47,
+        "carbs": 7.92,
+        "fiber": 3.2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746765",
+      "sourceId": "746765",
+      "query": "Log 100 g of cheese, dry white, queso seco.",
+      "description": "Cheese, dry white, queso seco",
+      "expected": {
+        "calories": 326,
+        "protein": 24.5
+      },
+      "reference": {
+        "calories": 326,
+        "protein": 24.5,
+        "fats": 24.3,
+        "carbs": 2.07
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746766",
+      "sourceId": "746766",
+      "query": "100 g of cheese, ricotta, whole milk.",
+      "description": "Cheese, ricotta, whole milk",
+      "expected": {
+        "calories": 157,
+        "protein": 7.81
+      },
+      "reference": {
+        "calories": 157,
+        "protein": 7.81,
+        "fats": 11,
+        "carbs": 6.86
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746767",
+      "sourceId": "746767",
+      "query": "I ate exactly 100 g of cheese, swiss.",
+      "description": "Cheese, swiss",
+      "expected": {
+        "calories": 393,
+        "protein": 27
+      },
+      "reference": {
+        "calories": 393,
+        "protein": 27,
+        "fats": 31,
+        "carbs": 1.44
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746768",
+      "sourceId": "746768",
+      "query": "Log 100 g of figs, dried, uncooked.",
+      "description": "Figs, dried, uncooked",
+      "expected": {
+        "calories": 249,
+        "protein": 3.3
+      },
+      "reference": {
+        "calories": 249,
+        "protein": 3.3,
+        "fats": 0.92,
+        "carbs": 63.9,
+        "fiber": 9.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746769",
+      "sourceId": "746769",
+      "query": "100 g of lettuce, cos or romaine, raw.",
+      "description": "Lettuce, cos or romaine, raw",
+      "expected": {
+        "calories": 17,
+        "protein": 1.24
+      },
+      "reference": {
+        "calories": 17,
+        "protein": 1.24,
+        "fats": 0.26,
+        "carbs": 3.24,
+        "fiber": 1.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746770",
+      "sourceId": "746770",
+      "query": "I ate exactly 100 g of melons, cantaloupe, raw.",
+      "description": "Melons, cantaloupe, raw",
+      "expected": {
+        "calories": 34,
+        "protein": 0.82
+      },
+      "reference": {
+        "calories": 34,
+        "protein": 0.82,
+        "fats": 0.18,
+        "carbs": 8.16,
+        "fiber": 0.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746771",
+      "sourceId": "746771",
+      "query": "Log 100 g of oranges, raw, navels.",
+      "description": "Oranges, raw, navels",
+      "expected": {
+        "calories": 47,
+        "protein": 0.91
+      },
+      "reference": {
+        "calories": 47,
+        "protein": 0.91,
+        "fats": 0.15,
+        "carbs": 11.8,
+        "fiber": 2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746772",
+      "sourceId": "746772",
+      "query": "100 g of milk, lowfat, fluid, 1% milkfat, with added vitamin a and vitamin d.",
+      "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+      "expected": {
+        "calories": 43,
+        "protein": 3.38
+      },
+      "reference": {
+        "calories": 43,
+        "protein": 3.38,
+        "fats": 0.95,
+        "carbs": 5.18
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746773",
+      "sourceId": "746773",
+      "query": "I ate exactly 100 g of pears, raw, bartlett.",
+      "description": "Pears, raw, bartlett",
+      "expected": {
+        "calories": 57,
+        "protein": 0.38
+      },
+      "reference": {
+        "calories": 57,
+        "protein": 0.38,
+        "fats": 0.16,
+        "carbs": 15.1,
+        "fiber": 3.1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746774",
+      "sourceId": "746774",
+      "query": "Log 100 g of restaurant, chinese, sweet and sour pork.",
+      "description": "Restaurant, Chinese, sweet and sour pork",
+      "expected": {
+        "calories": 260,
+        "protein": 8.88
+      },
+      "reference": {
+        "calories": 260,
+        "protein": 8.88,
+        "fats": 13.6,
+        "carbs": 25.5,
+        "fiber": 1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746776",
+      "sourceId": "746776",
+      "query": "100 g of milk, nonfat, fluid, with added vitamin a and vitamin d (fat free or skim).",
+      "description": "Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)",
+      "expected": {
+        "calories": 34,
+        "protein": 3.43
+      },
+      "reference": {
+        "calories": 34,
+        "protein": 3.43,
+        "fats": 0.08,
+        "carbs": 4.92
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746777",
+      "sourceId": "746777",
+      "query": "I ate exactly 100 g of sauce, salsa, ready-to-serve.",
+      "description": "Sauce, salsa, ready-to-serve",
+      "expected": {
+        "calories": 29,
+        "protein": 1.44
+      },
+      "reference": {
+        "calories": 29,
+        "protein": 1.44,
+        "fats": 0.19,
+        "carbs": 6.74,
+        "fiber": 1.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746778",
+      "sourceId": "746778",
+      "query": "Log 100 g of milk, reduced fat, fluid, 2% milkfat, with added vitamin a and vitamin d.",
+      "description": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",
+      "expected": {
+        "calories": 50,
+        "protein": 3.36
+      },
+      "reference": {
+        "calories": 50,
+        "protein": 3.36,
+        "fats": 1.9,
+        "carbs": 4.9
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746779",
+      "sourceId": "746779",
+      "query": "100 g of sausage, breakfast sausage, beef, pre-cooked, unprepared.",
+      "description": "Sausage, breakfast sausage, beef, pre-cooked, unprepared",
+      "expected": {
+        "calories": 328,
+        "protein": 13.3
+      },
+      "reference": {
+        "calories": 328,
+        "protein": 13.3,
+        "fats": 28.7,
+        "carbs": 3.37
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746780",
+      "sourceId": "746780",
+      "query": "I ate exactly 100 g of sausage, italian, pork, mild, cooked, pan-fried.",
+      "description": "Sausage, Italian, pork, mild, cooked, pan-fried",
+      "expected": {
+        "calories": 322,
+        "protein": 18.2
+      },
+      "reference": {
+        "calories": 322,
+        "protein": 18.2,
+        "fats": 26.2,
+        "carbs": 2.15
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746781",
+      "sourceId": "746781",
+      "query": "Log 100 g of sausage, pork, chorizo, link or ground, cooked, pan-fried.",
+      "description": "Sausage, pork, chorizo, link or ground, cooked, pan-fried",
+      "expected": {
+        "calories": 346,
+        "protein": 19.3
+      },
+      "reference": {
+        "calories": 346,
+        "protein": 19.3,
+        "fats": 28.1,
+        "carbs": 2.63
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746782",
+      "sourceId": "746782",
+      "query": "100 g of milk, whole, 3.25% milkfat, with added vitamin d.",
+      "description": "Milk, whole, 3.25% milkfat, with added vitamin D",
+      "expected": {
+        "calories": 60,
+        "protein": 3.27
+      },
+      "reference": {
+        "calories": 60,
+        "protein": 3.27,
+        "fats": 3.2,
+        "carbs": 4.63
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746783",
+      "sourceId": "746783",
+      "query": "I ate exactly 100 g of sausage, turkey, breakfast links, mild, raw.",
+      "description": "Sausage, turkey, breakfast links, mild, raw",
+      "expected": {
+        "calories": 169,
+        "protein": 16.7
+      },
+      "reference": {
+        "calories": 169,
+        "protein": 16.7,
+        "fats": 10.4,
+        "carbs": 0.93
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746784",
+      "sourceId": "746784",
+      "query": "Log 100 g of sugars, granulated.",
+      "description": "Sugars, granulated",
+      "expected": {
+        "calories": 385,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 385,
+        "protein": 0,
+        "fats": 0.32,
+        "carbs": 99.6
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746785",
+      "sourceId": "746785",
+      "query": "100 g of turkey, ground, 93% lean, 7% fat, pan-broiled crumbles.",
+      "description": "Turkey, ground, 93% lean, 7% fat, pan-broiled crumbles",
+      "expected": {
+        "calories": 220,
+        "protein": 27.1
+      },
+      "reference": {
+        "calories": 220,
+        "protein": 27.1,
+        "fats": 11.6,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-746952",
+      "sourceId": "746952",
+      "query": "I ate exactly 100 g of ham, sliced, restaurant.",
+      "description": "Ham, sliced, restaurant",
+      "expected": {
+        "calories": 121,
+        "protein": 19.6
+      },
+      "reference": {
+        "calories": 121,
+        "protein": 19.6,
+        "fats": 3.68,
+        "carbs": 2.36
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-747429",
+      "sourceId": "747429",
+      "query": "Log 100 g of cheese, american, restaurant.",
+      "description": "Cheese, American, restaurant",
+      "expected": {
+        "calories": 375,
+        "protein": 17.5
+      },
+      "reference": {
+        "calories": 375,
+        "protein": 17.5,
+        "fats": 31.1,
+        "carbs": 6.35
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-747447",
+      "sourceId": "747447",
+      "query": "100 g of broccoli, raw.",
+      "description": "Broccoli, raw",
+      "expected": {
+        "calories": 31,
+        "protein": 2.57
+      },
+      "reference": {
+        "calories": 31,
+        "protein": 2.57,
+        "fats": 0.34,
+        "carbs": 6.27,
+        "fiber": 2.4
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-747693",
+      "sourceId": "747693",
+      "query": "I ate exactly 100 g of ketchup, restaurant.",
+      "description": "Ketchup, restaurant",
+      "expected": {
+        "calories": 117,
+        "protein": 1.11
+      },
+      "reference": {
+        "calories": 117,
+        "protein": 1.11,
+        "fats": 0.55,
+        "carbs": 26.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-747997",
+      "sourceId": "747997",
+      "query": "Log 100 g of eggs, grade a, large, egg white.",
+      "description": "Eggs, Grade A, Large, egg white",
+      "expected": {
+        "calories": 55,
+        "protein": 10.7
+      },
+      "reference": {
+        "calories": 55,
+        "protein": 10.7,
+        "fats": 0,
+        "carbs": 2.36
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-748236",
+      "sourceId": "748236",
+      "query": "100 g of eggs, grade a, large, egg yolk.",
+      "description": "Eggs, Grade A, Large, egg yolk",
+      "expected": {
+        "calories": 334,
+        "protein": 16.2
+      },
+      "reference": {
+        "calories": 334,
+        "protein": 16.2,
+        "fats": 28.8,
+        "carbs": 1.02
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-748967",
+      "sourceId": "748967",
+      "query": "I ate exactly 100 g of eggs, grade a, large, egg whole.",
+      "description": "Eggs, Grade A, Large, egg whole",
+      "expected": {
+        "calories": 148,
+        "protein": 12.4
+      },
+      "reference": {
+        "calories": 148,
+        "protein": 12.4,
+        "fats": 9.96,
+        "carbs": 0.96,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-749420",
+      "sourceId": "749420",
+      "query": "Log 100 g of pork, cured, bacon, cooked, restaurant.",
+      "description": "Pork, cured, bacon, cooked, restaurant",
+      "expected": {
+        "calories": 500,
+        "protein": 40.9
+      },
+      "reference": {
+        "calories": 500,
+        "protein": 40.9,
+        "fats": 36.5,
+        "carbs": 2.1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-789890",
+      "sourceId": "789890",
+      "query": "100 g of flour, wheat, all-purpose, enriched, bleached.",
+      "description": "Flour, wheat, all-purpose, enriched, bleached",
+      "expected": {
+        "calories": 366,
+        "protein": 10.9
+      },
+      "reference": {
+        "calories": 366,
+        "protein": 10.9,
+        "fats": 1.48,
+        "carbs": 77.3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-789951",
+      "sourceId": "789951",
+      "query": "I ate exactly 100 g of flour, wheat, all-purpose, enriched, unbleached.",
+      "description": "Flour, wheat, all-purpose, enriched, unbleached",
+      "expected": {
+        "calories": 358,
+        "protein": 13.1
+      },
+      "reference": {
+        "calories": 358,
+        "protein": 13.1,
+        "fats": 1.48,
+        "carbs": 73.2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790018",
+      "sourceId": "790018",
+      "query": "Log 100 g of flour, wheat, all-purpose, unenriched, unbleached.",
+      "description": "Flour, wheat, all-purpose, unenriched, unbleached",
+      "expected": {
+        "calories": 362,
+        "protein": 12
+      },
+      "reference": {
+        "calories": 362,
+        "protein": 12,
+        "fats": 1.7,
+        "carbs": 74.6,
+        "fiber": 3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790085",
+      "sourceId": "790085",
+      "query": "100 g of flour, whole wheat, unenriched.",
+      "description": "Flour, whole wheat, unenriched",
+      "expected": {
+        "calories": 370,
+        "protein": 15.1
+      },
+      "reference": {
+        "calories": 370,
+        "protein": 15.1,
+        "fats": 2.73,
+        "carbs": 71.2,
+        "fiber": 10.6
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790146",
+      "sourceId": "790146",
+      "query": "I ate exactly 100 g of flour, bread, white, enriched, unbleached.",
+      "description": "Flour, bread, white, enriched, unbleached",
+      "expected": {
+        "calories": 363,
+        "protein": 14.3
+      },
+      "reference": {
+        "calories": 363,
+        "protein": 14.3,
+        "fats": 1.65,
+        "carbs": 72.8
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790214",
+      "sourceId": "790214",
+      "query": "Log 100 g of flour, rice, white, unenriched.",
+      "description": "Flour, rice, white, unenriched",
+      "expected": {
+        "calories": 359,
+        "protein": 6.94
+      },
+      "reference": {
+        "calories": 359,
+        "protein": 6.94,
+        "fats": 1.3,
+        "carbs": 79.8,
+        "fiber": 0.5
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790276",
+      "sourceId": "790276",
+      "query": "100 g of flour, corn, yellow, fine meal, enriched.",
+      "description": "Flour, corn, yellow, fine meal, enriched",
+      "expected": {
+        "calories": 364,
+        "protein": 6.2
+      },
+      "reference": {
+        "calories": 364,
+        "protein": 6.2,
+        "fats": 1.74,
+        "carbs": 80.8,
+        "fiber": 4.3
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790577",
+      "sourceId": "790577",
+      "query": "I ate exactly 100 g of onions, red, raw.",
+      "description": "Onions, red, raw",
+      "expected": {
+        "calories": 44,
+        "protein": 0.94
+      },
+      "reference": {
+        "calories": 44,
+        "protein": 0.94,
+        "fats": 0.1,
+        "carbs": 9.93,
+        "fiber": 2.2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-790646",
+      "sourceId": "790646",
+      "query": "Log 100 g of onions, yellow, raw.",
+      "description": "Onions, yellow, raw",
+      "expected": {
+        "calories": 38,
+        "protein": 0.83
+      },
+      "reference": {
+        "calories": 38,
+        "protein": 0.83,
+        "fats": 0.05,
+        "carbs": 8.61,
+        "fiber": 1.9
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104647",
+      "sourceId": "1104647",
+      "query": "100 g of garlic, raw.",
+      "description": "Garlic, raw",
+      "expected": {
+        "calories": 143,
+        "protein": 6.62
+      },
+      "reference": {
+        "calories": 143,
+        "protein": 6.62,
+        "fats": 0.38,
+        "carbs": 28.2,
+        "fiber": 2.7
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104705",
+      "sourceId": "1104705",
+      "query": "I ate exactly 100 g of flour, soy, defatted.",
+      "description": "Flour, soy, defatted",
+      "expected": {
+        "calories": 366,
+        "protein": 51.1
+      },
+      "reference": {
+        "calories": 366,
+        "protein": 51.1,
+        "fats": 3.33,
+        "carbs": 32.9
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104766",
+      "sourceId": "1104766",
+      "query": "Log 100 g of flour, soy, full-fat.",
+      "description": "Flour, soy, full-fat",
+      "expected": {
+        "calories": 452,
+        "protein": 38.6
+      },
+      "reference": {
+        "calories": 452,
+        "protein": 38.6,
+        "fats": 20.7,
+        "carbs": 27.9
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104812",
+      "sourceId": "1104812",
+      "query": "100 g of flour, rice, brown.",
+      "description": "Flour, rice, brown",
+      "expected": {
+        "calories": 365,
+        "protein": 7.19
+      },
+      "reference": {
+        "calories": 365,
+        "protein": 7.19,
+        "fats": 3.85,
+        "carbs": 75.5
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104867",
+      "sourceId": "1104867",
+      "query": "I ate exactly 100 g of flour, rice, glutinous.",
+      "description": "Flour, rice, glutinous",
+      "expected": {
+        "calories": 358,
+        "protein": 6.69
+      },
+      "reference": {
+        "calories": 358,
+        "protein": 6.69,
+        "fats": 1.16,
+        "carbs": 80.1
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104913",
+      "sourceId": "1104913",
+      "query": "Log 100 g of flour, pastry, unenriched, unbleached.",
+      "description": "Flour, pastry, unenriched, unbleached",
+      "expected": {
+        "calories": 358,
+        "protein": 8.75
+      },
+      "reference": {
+        "calories": 358,
+        "protein": 8.75,
+        "fats": 1.64,
+        "carbs": 77.2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1104962",
+      "sourceId": "1104962",
+      "query": "100 g of onions, white, raw.",
+      "description": "Onions, white, raw",
+      "expected": {
+        "calories": 35,
+        "protein": 0.89
+      },
+      "reference": {
+        "calories": 35,
+        "protein": 0.89,
+        "fats": 0.13,
+        "carbs": 7.68,
+        "fiber": 1.2
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1105073",
+      "sourceId": "1105073",
+      "query": "I ate exactly 100 g of bananas, overripe, raw.",
+      "description": "Bananas, overripe, raw",
+      "expected": {
+        "calories": 85,
+        "protein": 0.73
+      },
+      "reference": {
+        "calories": 85,
+        "protein": 0.73,
+        "fats": 0.22,
+        "carbs": 20.1,
+        "fiber": 1.7
+      }
+    },
+    {
+      "dataset": "fdc-primary",
+      "caseId": "fdc-1105314",
+      "sourceId": "1105314",
+      "query": "Log 100 g of bananas, ripe and slightly ripe, raw.",
+      "description": "Bananas, ripe and slightly ripe, raw",
+      "expected": {
+        "calories": 97,
+        "protein": 0.74
+      },
+      "reference": {
+        "calories": 97,
+        "protein": 0.74,
+        "fats": 0.29,
+        "carbs": 23,
+        "fiber": 1.7
+      }
+    }
+  ]
+}
