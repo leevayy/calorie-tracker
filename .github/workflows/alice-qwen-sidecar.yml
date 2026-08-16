@@ -1,0 +1,156 @@
+name: Alice vs Qwen routing sidecar
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/prompt-alice-sidecar-20260816]
+    paths:
+      - .github/workflows/alice-qwen-sidecar.yml
+      - analytics/scripts/run-live-alice-qwen-sidecar.mjs
+
+permissions:
+  contents: write
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PROMPT_MODEL_SIDECAR_CONCURRENCY: "6"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Resolve the live Alice route through the production selector
+        id: alice_route
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          VM_DEPLOY_PATH: ${{ vars.VM_DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: VM_DEPLOY_PATH
+          capture_stdout: true
+          script: |
+            set -euo pipefail
+            cd "${VM_DEPLOY_PATH:-/opt/calorie-tracker}"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api \
+              node --experimental-strip-types --input-type=module -e '
+                const { configuredAiModelId } = await import("./src/services/aiModel.ts");
+                const endpointUrl = process.env.YANDEX_AI_STUDIO_URL || "https://ai.api.cloud.yandex.net/v1/chat/completions";
+                const route = {
+                  preference: "alicegpt",
+                  modelId: configuredAiModelId("alicegpt"),
+                  endpointHost: new URL(endpointUrl).host,
+                };
+                console.log("MODEL_JSON=" + JSON.stringify(route));
+              '
+
+      - name: Export the resolved Alice route
+        env:
+          MODEL_STDOUT: ${{ steps.alice_route.outputs.stdout }}
+        run: |
+          set -euo pipefail
+          MODEL_JSON="$(node -e 'const match=process.env.MODEL_STDOUT.match(/MODEL_JSON=(\{[^\n]+\})/); if(!match) process.exit(1); process.stdout.write(match[1])')"
+          SIDECAR_EXPECTED_ALICE_MODEL_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).modelId)' "$MODEL_JSON")"
+          SIDECAR_EXPECTED_ENDPOINT_HOST="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).endpointHost)' "$MODEL_JSON")"
+          test -n "$SIDECAR_EXPECTED_ALICE_MODEL_ID"
+          test -n "$SIDECAR_EXPECTED_ENDPOINT_HOST"
+          echo "Resolved Alice selector: alicegpt"
+          echo "Resolved Alice model ID: $SIDECAR_EXPECTED_ALICE_MODEL_ID"
+          echo "Resolved endpoint host: $SIDECAR_EXPECTED_ENDPOINT_HOST"
+          echo "SIDECAR_EXPECTED_ALICE_MODEL_ID=$SIDECAR_EXPECTED_ALICE_MODEL_ID" >> "$GITHUB_ENV"
+          echo "SIDECAR_EXPECTED_ENDPOINT_HOST=$SIDECAR_EXPECTED_ENDPOINT_HOST" >> "$GITHUB_ENV"
+
+      - name: Run paid matched Alice arm inside the live production API container
+        uses: appleboy/ssh-action@v1.2.5
+        env:
+          VM_DEPLOY_PATH: ${{ vars.VM_DEPLOY_PATH }}
+          GH_PUSH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          REMOTE_RUN_ID: ${{ github.run_id }}
+          PROMPT_MODEL_SIDECAR_CONCURRENCY: ${{ env.PROMPT_MODEL_SIDECAR_CONCURRENCY }}
+          SIDECAR_EXPECTED_ALICE_MODEL_ID: ${{ env.SIDECAR_EXPECTED_ALICE_MODEL_ID }}
+          SIDECAR_EXPECTED_ENDPOINT_HOST: ${{ env.SIDECAR_EXPECTED_ENDPOINT_HOST }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: VM_DEPLOY_PATH,GH_PUSH_TOKEN,GH_REPOSITORY,REMOTE_RUN_ID,PROMPT_MODEL_SIDECAR_CONCURRENCY,SIDECAR_EXPECTED_ALICE_MODEL_ID,SIDECAR_EXPECTED_ENDPOINT_HOST
+          command_timeout: 110m
+          script: |
+            set -euo pipefail
+            case "$REMOTE_RUN_ID" in (*[!0-9]*|'') exit 1;; esac
+            LAB_DIR="/tmp/calorie-prompt-model-sidecar-${REMOTE_RUN_ID}"
+            test "$LAB_DIR" = "/tmp/calorie-prompt-model-sidecar-${REMOTE_RUN_ID}"
+            trap 'cd /tmp && rm -rf "$LAB_DIR"' EXIT
+            rm -rf "$LAB_DIR"
+            git clone --depth 1 --branch codex/prompt-alice-sidecar-20260816 \
+              "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GH_REPOSITORY}.git" \
+              "$LAB_DIR"
+            cd "$LAB_DIR"
+
+            test -f analytics/runs/2026-08-16-prompt-investigation/manifest.json
+            test -f analytics/runs/2026-08-16-prompt-investigation/summary.json
+            test -f analytics/runs/2026-08-16-prompt-investigation/dataset.json
+            test -f analytics/runs/2026-08-16-prompt-investigation/trials.ndjson
+            mkdir -p tmp/prompt-investigation/usda/foundation
+            curl --fail --location --silent --show-error \
+              https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip \
+              -o tmp/prompt-investigation/usda/foundation.zip
+            unzip -q -o tmp/prompt-investigation/usda/foundation.zip \
+              -d tmp/prompt-investigation/usda/foundation
+
+            cd "${VM_DEPLOY_PATH:-/opt/calorie-tracker}"
+            API_CONTAINER="$(docker compose -f docker-compose.yml -f docker-compose.prod.yml ps -q api)"
+            test -n "$API_CONTAINER"
+            EXPERIMENT_GIT_COMMIT="$(git -C "$LAB_DIR" rev-parse HEAD)"
+            docker exec "$API_CONTAINER" mkdir -p \
+              /app/analytics/runs/2026-08-16-prompt-investigation \
+              /app/tmp/prompt-investigation/usda/foundation
+            docker cp \
+              "$LAB_DIR/analytics/scripts/run-live-alice-qwen-sidecar.mjs" \
+              "$API_CONTAINER:/app/backend/scripts/run-live-alice-qwen-sidecar.mjs"
+            docker cp \
+              "$LAB_DIR/analytics/runs/2026-08-16-prompt-investigation/manifest.json" \
+              "$API_CONTAINER:/app/analytics/runs/2026-08-16-prompt-investigation/manifest.json"
+            docker cp \
+              "$LAB_DIR/analytics/runs/2026-08-16-prompt-investigation/summary.json" \
+              "$API_CONTAINER:/app/analytics/runs/2026-08-16-prompt-investigation/summary.json"
+            docker cp \
+              "$LAB_DIR/analytics/runs/2026-08-16-prompt-investigation/dataset.json" \
+              "$API_CONTAINER:/app/analytics/runs/2026-08-16-prompt-investigation/dataset.json"
+            docker cp \
+              "$LAB_DIR/analytics/runs/2026-08-16-prompt-investigation/trials.ndjson" \
+              "$API_CONTAINER:/app/analytics/runs/2026-08-16-prompt-investigation/trials.ndjson"
+            docker cp \
+              "$LAB_DIR/tmp/prompt-investigation/usda/foundation/FoodData_Central_foundation_food_json_2026-04-30.json" \
+              "$API_CONTAINER:/app/tmp/prompt-investigation/usda/foundation/FoodData_Central_foundation_food_json_2026-04-30.json"
+
+            docker exec \
+              -e "SIDECAR_EXPECTED_ALICE_MODEL_ID=$SIDECAR_EXPECTED_ALICE_MODEL_ID" \
+              -e "SIDECAR_EXPECTED_ENDPOINT_HOST=$SIDECAR_EXPECTED_ENDPOINT_HOST" \
+              -e "EXPERIMENT_GIT_COMMIT=$EXPERIMENT_GIT_COMMIT" \
+              -e "PROMPT_MODEL_SIDECAR_CONCURRENCY=$PROMPT_MODEL_SIDECAR_CONCURRENCY" \
+              "$API_CONTAINER" \
+              node --experimental-strip-types \
+              /app/backend/scripts/run-live-alice-qwen-sidecar.mjs
+
+            docker cp \
+              "$API_CONTAINER:/app/analytics/runs/2026-08-17-alice-qwen-sidecar" \
+              "$LAB_DIR/analytics/runs/"
+            cd "$LAB_DIR"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add analytics/runs/2026-08-17-alice-qwen-sidecar
+            git commit -m "chore: record Alice vs Qwen routing sidecar"
+            git push origin HEAD:codex/prompt-alice-sidecar-20260816
