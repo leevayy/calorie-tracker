@@ -1,0 +1,2008 @@
+{
+  "source": {
+    "title": "USDA FoodData Central SR Legacy Foods",
+    "release": "April 2018",
+    "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_json_2018-04.zip"
+  },
+  "independenceSource": {
+    "title": "USDA FoodData Central Foundation Foods",
+    "release": "April 2026",
+    "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip",
+    "reproducedSearchCaseCount": 95
+  },
+  "rule": "Select exactly 100 SR Legacy foods with finite nonnegative USDA nutrient 1008 (kcal/100g) and 1003 (protein g/100g), excluding normalized case-insensitive exact description matches to the 95 Foundation search cases. Rank before any model call by SHA-256 of the newline-delimited seed, fdcId, and normalized description; take the first 100. Exact 100 g natural-language request; no post-output exclusions.",
+  "selectionSeed": "calorie-tracker-confirmation-sr-legacy-v1",
+  "sourceFoodCount": 7793,
+  "eligibleCountBeforeFixedSelection": 7737,
+  "cases": [
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174363",
+      "sourceId": "174363",
+      "selectionRank": 1,
+      "selectionHash": "000203bf4fd3f7eb1995c9280f6715be9ab6c6115556c74c5e545b73e8be5d11",
+      "query": "I ate exactly 100 g of veal, variety meats and by-products, pancreas, cooked, braised.",
+      "description": "Veal, variety meats and by-products, pancreas, cooked, braised",
+      "expected": {
+        "calories": 256,
+        "protein": 29.1
+      },
+      "reference": {
+        "calories": 256,
+        "protein": 29.1,
+        "fats": 14.6,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173285",
+      "sourceId": "173285",
+      "selectionRank": 2,
+      "selectionHash": "000282b404e05ff09b63748377684ec432ea9a222965cfe946aa63b25ec1a9ea",
+      "query": "Log 100 g of papa john's 14\" pepperoni pizza, original crust.",
+      "description": "PAPA JOHN'S 14\" Pepperoni Pizza, Original Crust",
+      "expected": {
+        "calories": 275,
+        "protein": 12
+      },
+      "reference": {
+        "calories": 275,
+        "protein": 12,
+        "fats": 11.9,
+        "carbs": 30,
+        "fiber": 1.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170509",
+      "sourceId": "170509",
+      "selectionRank": 3,
+      "selectionHash": "000eeb5e75df86859b4fa3c2922156cedd260bb56a3d9b22b14da8dd1049a759",
+      "query": "100 g of peas, edible-podded, cooked, boiled, drained, with salt.",
+      "description": "Peas, edible-podded, cooked, boiled, drained, with salt",
+      "expected": {
+        "calories": 40,
+        "protein": 3.27
+      },
+      "reference": {
+        "calories": 40,
+        "protein": 3.27,
+        "fats": 0.23,
+        "carbs": 6.46,
+        "fiber": 2.8
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168139",
+      "sourceId": "168139",
+      "selectionRank": 4,
+      "selectionHash": "003ce8dc40bdfa863eb645133ce68cee0d7cadfbcf31a437503446c2877d5c5d",
+      "query": "I ate exactly 100 g of popcorn, microwave, low fat and sodium.",
+      "description": "Popcorn, microwave, low fat and sodium",
+      "expected": {
+        "calories": 429,
+        "protein": 12.6
+      },
+      "reference": {
+        "calories": 429,
+        "protein": 12.6,
+        "fats": 9.5,
+        "carbs": 73.4,
+        "fiber": 14.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170427",
+      "sourceId": "170427",
+      "selectionRank": 5,
+      "selectionHash": "0050a8b3aa2d2d0fb74c8ab2ce2d4478583190f4f9d376cfef0b23f370fbef70",
+      "query": "Log 100 g of peppers, sweet, green, raw.",
+      "description": "Peppers, sweet, green, raw",
+      "expected": {
+        "calories": 20,
+        "protein": 0.86
+      },
+      "reference": {
+        "calories": 20,
+        "protein": 0.86,
+        "fats": 0.17,
+        "carbs": 4.64,
+        "fiber": 1.7
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168317",
+      "sourceId": "168317",
+      "selectionRank": 6,
+      "selectionHash": "00549a89de470f64f2b27b07bd74c285d5e0ccd9f71f2bb7f9bc5c75b92812f7",
+      "query": "100 g of hormel always tender, pork tenderloin, peppercorn-flavored.",
+      "description": "HORMEL ALWAYS TENDER, Pork Tenderloin, Peppercorn-Flavored",
+      "expected": {
+        "calories": 110,
+        "protein": 17.2
+      },
+      "reference": {
+        "calories": 110,
+        "protein": 17.2,
+        "fats": 3.8,
+        "carbs": 1.82
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170736",
+      "sourceId": "170736",
+      "selectionRank": 7,
+      "selectionHash": "005c9ceffdd264c1b98264bcb44c789bcf744c3e0c281b47892e30becdd885ad",
+      "query": "I ate exactly 100 g of taco bell, taco salad.",
+      "description": "TACO BELL, Taco Salad",
+      "expected": {
+        "calories": 170,
+        "protein": 6.69
+      },
+      "reference": {
+        "calories": 170,
+        "protein": 6.69,
+        "fats": 9.17,
+        "carbs": 15.1,
+        "fiber": 3
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170534",
+      "sourceId": "170534",
+      "selectionRank": 8,
+      "selectionHash": "0068b39fb59466eb272dcbb8e36e7f11ed0172b113fca693a42df06e52096fb9",
+      "query": "Log 100 g of squash, summer, zucchini, includes skin, cooked, boiled, drained, with salt.",
+      "description": "Squash, summer, zucchini, includes skin, cooked, boiled, drained, with salt",
+      "expected": {
+        "calories": 15,
+        "protein": 1.14
+      },
+      "reference": {
+        "calories": 15,
+        "protein": 1.14,
+        "fats": 0.36,
+        "carbs": 2.69,
+        "fiber": 1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168338",
+      "sourceId": "168338",
+      "selectionRank": 9,
+      "selectionHash": "006b2fb52d30e1e4ef60c68a3e94508169c51847c3c5248f6002bb9d562687b9",
+      "query": "100 g of pork, cured, ham with natural juices, shank, bone-in, separable lean only, unheated.",
+      "description": "Pork, cured, ham with natural juices, shank, bone-in, separable lean only, unheated",
+      "expected": {
+        "calories": 130,
+        "protein": 25.1
+      },
+      "reference": {
+        "calories": 130,
+        "protein": 25.1,
+        "fats": 3.33,
+        "carbs": 0.3,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168248",
+      "sourceId": "168248",
+      "selectionRank": 10,
+      "selectionHash": "00829265caedfc8c7073855bf47120d1c250e7afa3977a06c246ffeb9592a64c",
+      "query": "I ate exactly 100 g of pork, fresh, loin, sirloin (roasts), bone-in, separable lean only, cooked, roasted.",
+      "description": "Pork, fresh, loin, sirloin (roasts), bone-in, separable lean only, cooked, roasted",
+      "expected": {
+        "calories": 204,
+        "protein": 27.8
+      },
+      "reference": {
+        "calories": 204,
+        "protein": 27.8,
+        "fats": 9.44,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174431",
+      "sourceId": "174431",
+      "selectionRank": 11,
+      "selectionHash": "009384e1a7ab16aad89280c4f7ec5ec2794879a6ab9653cdaa3c02286ac9ece5",
+      "query": "Log 100 g of game meat, deer, top round, separable lean only, 1\" steak, cooked, broiled.",
+      "description": "Game meat, deer, top round, separable lean only, 1\" steak, cooked, broiled",
+      "expected": {
+        "calories": 152,
+        "protein": 31.5
+      },
+      "reference": {
+        "calories": 152,
+        "protein": 31.5,
+        "fats": 1.92,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169257",
+      "sourceId": "169257",
+      "selectionRank": 12,
+      "selectionHash": "00ad132df4201a9c3f8242cdd5424c5db291dec02e0324587ccd5d39156c1bf6",
+      "query": "100 g of mustard greens, cooked, boiled, drained, without salt.",
+      "description": "Mustard greens, cooked, boiled, drained, without salt",
+      "expected": {
+        "calories": 26,
+        "protein": 2.56
+      },
+      "reference": {
+        "calories": 26,
+        "protein": 2.56,
+        "fats": 0.47,
+        "carbs": 4.51,
+        "fiber": 2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170733",
+      "sourceId": "170733",
+      "selectionRank": 13,
+      "selectionHash": "00add753d365f9e26cfb603a236e44248185210c176c087e03b50c9197e9c528",
+      "query": "I ate exactly 100 g of taco bell, soft taco with steak.",
+      "description": "TACO BELL, Soft Taco with steak",
+      "expected": {
+        "calories": 225,
+        "protein": 11.8
+      },
+      "reference": {
+        "calories": 225,
+        "protein": 11.8,
+        "fats": 12.1,
+        "carbs": 17.2,
+        "fiber": 1.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168326",
+      "sourceId": "168326",
+      "selectionRank": 14,
+      "selectionHash": "00b3268fde468328ca45eeb754ffd040803f07aa22d870034b5360c6e824af37",
+      "query": "Log 100 g of pork, cured, ham and water product, slice, boneless, separable lean only, heated, pan-broil.",
+      "description": "Pork, cured, ham and water product, slice, boneless, separable lean only, heated, pan-broil",
+      "expected": {
+        "calories": 123,
+        "protein": 15.1
+      },
+      "reference": {
+        "calories": 123,
+        "protein": 15.1,
+        "fats": 5.06,
+        "carbs": 4.69,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172419",
+      "sourceId": "172419",
+      "selectionRank": 15,
+      "selectionHash": "00c45b13689fe03484187275bc719e39213955a98bb6c8c9de5867fe36afba93",
+      "query": "100 g of quail, meat only, raw.",
+      "description": "Quail, meat only, raw",
+      "expected": {
+        "calories": 134,
+        "protein": 21.8
+      },
+      "reference": {
+        "calories": 134,
+        "protein": 21.8,
+        "fats": 4.53,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169084",
+      "sourceId": "169084",
+      "selectionRank": 16,
+      "selectionHash": "00d22f72ab8606cb693485ef7f97ceb2cdd7bb42c518c48152bfcebc0ce1106d",
+      "query": "I ate exactly 100 g of potatoes, canned, drained solids, no salt added.",
+      "description": "Potatoes, canned, drained solids, no salt added",
+      "expected": {
+        "calories": 60,
+        "protein": 1.4
+      },
+      "reference": {
+        "calories": 60,
+        "protein": 1.4,
+        "fats": 0.2,
+        "carbs": 13.6,
+        "fiber": 2.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171091",
+      "sourceId": "171091",
+      "selectionRank": 17,
+      "selectionHash": "00d410554d54d3474200da75ff3ba11cefe4752099a594d97bae5de498ec0a17",
+      "query": "Log 100 g of turkey, whole, dark meat, cooked, roasted.",
+      "description": "Turkey, whole, dark meat, cooked, roasted",
+      "expected": {
+        "calories": 173,
+        "protein": 27.7
+      },
+      "reference": {
+        "calories": 173,
+        "protein": 27.7,
+        "fats": 6.04,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169440",
+      "sourceId": "169440",
+      "selectionRank": 18,
+      "selectionHash": "00dd1fd42363b9992140b3bc7320f8edf56f5b2742ed294fcf90200a5d4e26a6",
+      "query": "100 g of beef, brisket, flat half, separable lean and fat, trimmed to 0\" fat, choice, cooked, braised.",
+      "description": "Beef, brisket, flat half, separable lean and fat, trimmed to 0\" fat, choice, cooked, braised",
+      "expected": {
+        "calories": 221,
+        "protein": 32.2
+      },
+      "reference": {
+        "calories": 221,
+        "protein": 32.2,
+        "fats": 9.24,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172007",
+      "sourceId": "172007",
+      "selectionRank": 19,
+      "selectionHash": "00df30e422e600af3db08291dccacaf5beacd356b48a3b6b1997e3a78f1c7d63",
+      "query": "I ate exactly 100 g of crustaceans, crab, dungeness, cooked, moist heat.",
+      "description": "Crustaceans, crab, dungeness, cooked, moist heat",
+      "expected": {
+        "calories": 110,
+        "protein": 22.3
+      },
+      "reference": {
+        "calories": 110,
+        "protein": 22.3,
+        "fats": 1.24,
+        "carbs": 0.95,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169707",
+      "sourceId": "169707",
+      "selectionRank": 20,
+      "selectionHash": "00eb7ceb7b83adbbc917df22a94057a999e11bc87c7792f1e605415c88b54800",
+      "query": "Log 100 g of rice, white, long-grain, parboiled, enriched, dry.",
+      "description": "Rice, white, long-grain, parboiled, enriched, dry",
+      "expected": {
+        "calories": 374,
+        "protein": 7.51
+      },
+      "reference": {
+        "calories": 374,
+        "protein": 7.51,
+        "fats": 1.03,
+        "carbs": 80.9,
+        "fiber": 1.8
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171147",
+      "sourceId": "171147",
+      "selectionRank": 21,
+      "selectionHash": "00ecf076b0fbcc4099e9138babe07899d5fee03f24a87497372e87ef3a1f5592",
+      "query": "100 g of soup, chicken gumbo, canned, condensed.",
+      "description": "Soup, chicken gumbo, canned, condensed",
+      "expected": {
+        "calories": 45,
+        "protein": 2.1
+      },
+      "reference": {
+        "calories": 45,
+        "protein": 2.1,
+        "fats": 1.14,
+        "carbs": 6.67,
+        "fiber": 1.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168404",
+      "sourceId": "168404",
+      "selectionRank": 22,
+      "selectionHash": "00f8991723cf168f6987991b2fb30da359c3a23298d1de0d9d93570a63bbf6e4",
+      "query": "I ate exactly 100 g of cowpeas (blackeyes), immature seeds, frozen, cooked, boiled, drained, without salt.",
+      "description": "Cowpeas (blackeyes), immature seeds, frozen, cooked, boiled, drained, without salt",
+      "expected": {
+        "calories": 132,
+        "protein": 8.49
+      },
+      "reference": {
+        "calories": 132,
+        "protein": 8.49,
+        "fats": 0.66,
+        "carbs": 23.8,
+        "fiber": 6.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172595",
+      "sourceId": "172595",
+      "selectionRank": 23,
+      "selectionHash": "00ff966e912f9a6405ca6bc0d975ebd89ab7b5a85c7413cdf4a3ffe2964e657a",
+      "query": "Log 100 g of lamb, australian, imported, fresh, shoulder, blade, separable lean and fat, trimmed to 1/8\" fat, cooked, broiled.",
+      "description": "Lamb, Australian, imported, fresh, shoulder, blade, separable lean and fat, trimmed to 1/8\" fat, cooked, broiled",
+      "expected": {
+        "calories": 291,
+        "protein": 21.7
+      },
+      "reference": {
+        "calories": 291,
+        "protein": 21.7,
+        "fats": 22,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169718",
+      "sourceId": "169718",
+      "selectionRank": 24,
+      "selectionHash": "0101bf67408ec7e7d929cba637f8b94357df97add6bdb511e3c055b01d7f4e8e",
+      "query": "100 g of triticale.",
+      "description": "Triticale",
+      "expected": {
+        "calories": 336,
+        "protein": 13
+      },
+      "reference": {
+        "calories": 336,
+        "protein": 13,
+        "fats": 2.09,
+        "carbs": 72.1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168466",
+      "sourceId": "168466",
+      "selectionRank": 25,
+      "selectionHash": "01033714919284cd7da1b211abdf7e3be4191a01a7e2e32068f0f31ca3062a79",
+      "query": "I ate exactly 100 g of squash, summer, crookneck and straightneck, canned, drained, solid, without salt.",
+      "description": "Squash, summer, crookneck and straightneck, canned, drained, solid, without salt",
+      "expected": {
+        "calories": 13,
+        "protein": 0.61
+      },
+      "reference": {
+        "calories": 13,
+        "protein": 0.61,
+        "fats": 0.07,
+        "carbs": 2.96,
+        "fiber": 1.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169387",
+      "sourceId": "169387",
+      "selectionRank": 26,
+      "selectionHash": "0103e9ed11e0aa15eccf6a242566ac4916c649f86edda3ba0d3ef127727f372f",
+      "query": "Log 100 g of arugula, raw.",
+      "description": "Arugula, raw",
+      "expected": {
+        "calories": 25,
+        "protein": 2.58
+      },
+      "reference": {
+        "calories": 25,
+        "protein": 2.58,
+        "fats": 0.66,
+        "carbs": 3.65,
+        "fiber": 1.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172336",
+      "sourceId": "172336",
+      "selectionRank": 27,
+      "selectionHash": "0107e252acd857518d3cae1cf3912524c467aa331cc088990aae737998090685",
+      "query": "100 g of oil, canola.",
+      "description": "Oil, canola",
+      "expected": {
+        "calories": 884,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 884,
+        "protein": 0,
+        "fats": 100,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168208",
+      "sourceId": "168208",
+      "selectionRank": 28,
+      "selectionHash": "012348d18b4f6335e9ef11695a2d9f36fa4be77484a39055ba2325445c18f556",
+      "query": "I ate exactly 100 g of fruit juice smoothie, odwalla, original superfood.",
+      "description": "Fruit juice smoothie, ODWALLA, ORIGINAL SUPERFOOD",
+      "expected": {
+        "calories": 50,
+        "protein": 0.63
+      },
+      "reference": {
+        "calories": 50,
+        "protein": 0.63,
+        "fats": 0.36,
+        "carbs": 11.5,
+        "fiber": 0.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172978",
+      "sourceId": "172978",
+      "selectionRank": 29,
+      "selectionHash": "0126d54464d2da4392e5d9b364f87964fc05e8bb93d432d8da9a6624de5c3e45",
+      "query": "Log 100 g of cereals, oat bran, quaker, quaker/mother's oat bran, prepared with water, salt.",
+      "description": "Cereals, Oat Bran, QUAKER, QUAKER/MOTHER'S Oat Bran, prepared with water, salt",
+      "expected": {
+        "calories": 43,
+        "protein": 2.03
+      },
+      "reference": {
+        "calories": 43,
+        "protein": 2.03,
+        "fats": 0.95,
+        "carbs": 7.49,
+        "fiber": 1.7
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168025",
+      "sourceId": "168025",
+      "selectionRank": 30,
+      "selectionHash": "012b4a6c2d66aaa414f5e748f3beb3cdd17d1be3c94342eec85384e2cc770d7a",
+      "query": "100 g of seal, ringed, meat (alaska native).",
+      "description": "Seal, ringed, meat (Alaska Native)",
+      "expected": {
+        "calories": 142,
+        "protein": 28.4
+      },
+      "reference": {
+        "calories": 142,
+        "protein": 28.4,
+        "fats": 3.2,
+        "carbs": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168240",
+      "sourceId": "168240",
+      "selectionRank": 31,
+      "selectionHash": "012cca49b3ace41305b6d4f0c31a703d5859c112b446361fac3c6f13ea83d6b2",
+      "query": "I ate exactly 100 g of pork, fresh, loin, center loin (chops), bone-in, separable lean only, cooked, broiled.",
+      "description": "Pork, fresh, loin, center loin (chops), bone-in, separable lean only, cooked, broiled",
+      "expected": {
+        "calories": 180,
+        "protein": 26.8
+      },
+      "reference": {
+        "calories": 180,
+        "protein": 26.8,
+        "fats": 7.29,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172373",
+      "sourceId": "172373",
+      "selectionRank": 32,
+      "selectionHash": "012d1f1eab42fbaa7875febc00db37b3501833889afcafa6d3941236bd24c087",
+      "query": "Log 100 g of chicken, broilers or fryers, drumstick, meat and skin, raw.",
+      "description": "Chicken, broilers or fryers, drumstick, meat and skin, raw",
+      "expected": {
+        "calories": 161,
+        "protein": 18.1
+      },
+      "reference": {
+        "calories": 161,
+        "protein": 18.1,
+        "fats": 9.2,
+        "carbs": 0.11,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173899",
+      "sourceId": "173899",
+      "selectionRank": 33,
+      "selectionHash": "013581263acf7965cccc2d00abf5222c9a27bf840bc61240630b98727cd6c456",
+      "query": "100 g of cereals, quaker, instant grits, country bacon flavor, dry.",
+      "description": "Cereals, QUAKER, Instant Grits, Country Bacon flavor, dry",
+      "expected": {
+        "calories": 340,
+        "protein": 9.93
+      },
+      "reference": {
+        "calories": 340,
+        "protein": 9.93,
+        "fats": 1.73,
+        "carbs": 75.4,
+        "fiber": 5.1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172300",
+      "sourceId": "172300",
+      "selectionRank": 34,
+      "selectionHash": "013a490fb4de56ed44afe08a9fc5f521e0ab4a380e82c2eafcc7424e7e520a69",
+      "query": "I ate exactly 100 g of babyfood, cereal, rice, with honey, prepared with whole milk.",
+      "description": "Babyfood, cereal, rice, with honey, prepared with whole milk",
+      "expected": {
+        "calories": 115,
+        "protein": 3.9
+      },
+      "reference": {
+        "calories": 115,
+        "protein": 3.9,
+        "fats": 3.3,
+        "carbs": 17.1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174143",
+      "sourceId": "174143",
+      "selectionRank": 35,
+      "selectionHash": "013b754a65dbdd02cd4c0a17848a923a4286400e5c24d25bc0312575b7a852d6",
+      "query": "Log 100 g of beverages, tea, green, instant, decaffeinated, lemon, unsweetened, fortified with vitamin c.",
+      "description": "Beverages, tea, green, instant, decaffeinated, lemon, unsweetened, fortified with vitamin C",
+      "expected": {
+        "calories": 378,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 378,
+        "protein": 0,
+        "fats": 0,
+        "carbs": 94.4,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170277",
+      "sourceId": "170277",
+      "selectionRank": 36,
+      "selectionHash": "0144b40105ccd1481b765ca2dc5b7984a2581d2cb92614b07657950082f02362",
+      "query": "100 g of sweetener, syrup, agave.",
+      "description": "Sweetener, syrup, agave",
+      "expected": {
+        "calories": 310,
+        "protein": 0.09
+      },
+      "reference": {
+        "calories": 310,
+        "protein": 0.09,
+        "fats": 0.45,
+        "carbs": 76.4,
+        "fiber": 0.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173111",
+      "sourceId": "173111",
+      "selectionRank": 37,
+      "selectionHash": "0150498c45fe76fcee5f502469ce9f9a7c216812e5834674f48fcd9c6a9daaa4",
+      "query": "I ate exactly 100 g of beef, ground, 97% lean meat / 3% fat, raw.",
+      "description": "Beef, ground, 97% lean meat / 3% fat, raw",
+      "expected": {
+        "calories": 121,
+        "protein": 22
+      },
+      "reference": {
+        "calories": 121,
+        "protein": 22,
+        "fats": 3,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170157",
+      "sourceId": "170157",
+      "selectionRank": 38,
+      "selectionHash": "01576c4cd9854ced2cec6958ccb564a7dbf31ccbc78272d6c9e690668ad568b3",
+      "query": "Log 100 g of nuts, acorns, raw.",
+      "description": "Nuts, acorns, raw",
+      "expected": {
+        "calories": 387,
+        "protein": 6.15
+      },
+      "reference": {
+        "calories": 387,
+        "protein": 6.15,
+        "fats": 23.9,
+        "carbs": 40.8
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168496",
+      "sourceId": "168496",
+      "selectionRank": 39,
+      "selectionHash": "016627fab783822b8f37c259c1ea1da4b7b5b8d97343bbcd31404ba5c1681a53",
+      "query": "100 g of balsam-pear (bitter gourd), pods, cooked, boiled, drained, with salt.",
+      "description": "Balsam-pear (bitter gourd), pods, cooked, boiled, drained, with salt",
+      "expected": {
+        "calories": 19,
+        "protein": 0.84
+      },
+      "reference": {
+        "calories": 19,
+        "protein": 0.84,
+        "fats": 0.18,
+        "carbs": 4.32,
+        "fiber": 2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174212",
+      "sourceId": "174212",
+      "selectionRank": 40,
+      "selectionHash": "016adb4b1354123d6345620f3fefc99ef4738c73762e8b799c80a3ff240dec4f",
+      "query": "I ate exactly 100 g of mollusks, abalone, mixed species, raw.",
+      "description": "Mollusks, abalone, mixed species, raw",
+      "expected": {
+        "calories": 105,
+        "protein": 17.1
+      },
+      "reference": {
+        "calories": 105,
+        "protein": 17.1,
+        "fats": 0.76,
+        "carbs": 6.01,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173202",
+      "sourceId": "173202",
+      "selectionRank": 41,
+      "selectionHash": "017dd59ddb7e3289a6d4f099723d6cf6b9b65bfe1463dc3dfcac5eb062fb18b7",
+      "query": "Log 100 g of alcoholic beverage, wine, table, white, late harvest.",
+      "description": "Alcoholic beverage, wine, table, white, late harvest",
+      "expected": {
+        "calories": 112,
+        "protein": 0.07
+      },
+      "reference": {
+        "calories": 112,
+        "protein": 0.07,
+        "fats": 0,
+        "carbs": 13.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172949",
+      "sourceId": "172949",
+      "selectionRank": 42,
+      "selectionHash": "0190bfb1d3ed76a05909bcce5a0b5a508fb3fd8a9ee4febc75e953f600e58937",
+      "query": "100 g of frankfurter, beef, pork, and turkey, fat free.",
+      "description": "Frankfurter, beef, pork, and turkey, fat free",
+      "expected": {
+        "calories": 109,
+        "protein": 12.5
+      },
+      "reference": {
+        "calories": 109,
+        "protein": 12.5,
+        "fats": 1.59,
+        "carbs": 11.2,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168603",
+      "sourceId": "168603",
+      "selectionRank": 43,
+      "selectionHash": "0191cd28f6429fd12ff8c20c255b039c1c7fb77c224ec3a3cf15096e3fcb9d26",
+      "query": "I ate exactly 100 g of nuts, almond butter, plain, with salt added.",
+      "description": "Nuts, almond butter, plain, with salt added",
+      "expected": {
+        "calories": 614,
+        "protein": 21
+      },
+      "reference": {
+        "calories": 614,
+        "protein": 21,
+        "fats": 55.5,
+        "carbs": 18.8,
+        "fiber": 10.3
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170140",
+      "sourceId": "170140",
+      "selectionRank": 44,
+      "selectionHash": "019667522919922be369d1b409fd40e37ac146c1f586be783c789083a18c9b5d",
+      "query": "Log 100 g of turnip greens, frozen, cooked, boiled, drained, with salt.",
+      "description": "Turnip greens, frozen, cooked, boiled, drained, with salt",
+      "expected": {
+        "calories": 29,
+        "protein": 3.35
+      },
+      "reference": {
+        "calories": 29,
+        "protein": 3.35,
+        "fats": 0.42,
+        "carbs": 4.98,
+        "fiber": 3.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168560",
+      "sourceId": "168560",
+      "selectionRank": 45,
+      "selectionHash": "01b76370f4451757a0640197eb513c69ba40b643f9fcd39c4bc918aea0548918",
+      "query": "100 g of pickle relish, hot dog.",
+      "description": "Pickle relish, hot dog",
+      "expected": {
+        "calories": 91,
+        "protein": 1.5
+      },
+      "reference": {
+        "calories": 91,
+        "protein": 1.5,
+        "fats": 0.46,
+        "carbs": 23.4,
+        "fiber": 1.5
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172649",
+      "sourceId": "172649",
+      "selectionRank": 46,
+      "selectionHash": "01b9afec4fbd7fc61d79c30cf23063882d3bc0bcf5bfc8eede07392d54ff8f0b",
+      "query": "I ate exactly 100 g of veal, foreshank, osso buco, separable lean and fat, cooked, braised.",
+      "description": "Veal, foreshank, osso buco, separable lean and fat, cooked, braised",
+      "expected": {
+        "calories": 182,
+        "protein": 27.9
+      },
+      "reference": {
+        "calories": 182,
+        "protein": 27.9,
+        "fats": 7.77,
+        "carbs": 0.11,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-175024",
+      "sourceId": "175024",
+      "selectionRank": 47,
+      "selectionHash": "01bf7a7b5d541f18ea0064216b022d86e2a86924866e49e4907e11cb0cfcc258",
+      "query": "Log 100 g of pie crust, standard-type, frozen, ready-to-bake, enriched.",
+      "description": "Pie crust, standard-type, frozen, ready-to-bake, enriched",
+      "expected": {
+        "calories": 457,
+        "protein": 6.16
+      },
+      "reference": {
+        "calories": 457,
+        "protein": 6.16,
+        "fats": 26.1,
+        "carbs": 48.6,
+        "fiber": 2.5
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169998",
+      "sourceId": "169998",
+      "selectionRank": 48,
+      "selectionHash": "01cbcbe4fe593e8f6b3bb9abe2c70547ca2ff6ec7a78e6e7dd0ad1363a0fa22e",
+      "query": "100 g of corn, sweet, yellow, raw.",
+      "description": "Corn, sweet, yellow, raw",
+      "expected": {
+        "calories": 86,
+        "protein": 3.27
+      },
+      "reference": {
+        "calories": 86,
+        "protein": 3.27,
+        "fats": 1.35,
+        "carbs": 18.7,
+        "fiber": 2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173683",
+      "sourceId": "173683",
+      "selectionRank": 49,
+      "selectionHash": "01cde295ea95eb08cc30f3690e3cc4ed1b3e3a78949654788dbd353097bd2a75",
+      "query": "I ate exactly 100 g of fish, pompano, florida, cooked, dry heat.",
+      "description": "Fish, pompano, florida, cooked, dry heat",
+      "expected": {
+        "calories": 211,
+        "protein": 23.7
+      },
+      "reference": {
+        "calories": 211,
+        "protein": 23.7,
+        "fats": 12.1,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174730",
+      "sourceId": "174730",
+      "selectionRank": 50,
+      "selectionHash": "01cf50c68e99c81e2d8e7f33866becadd5f9329632811418928e14e1b12a94c6",
+      "query": "Log 100 g of beef, new zealand, imported, manufacturing beef, cooked, boiled.",
+      "description": "Beef, New Zealand, imported, manufacturing beef, cooked, boiled",
+      "expected": {
+        "calories": 126,
+        "protein": 24.2
+      },
+      "reference": {
+        "calories": 126,
+        "protein": 24.2,
+        "fats": 3.26,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171594",
+      "sourceId": "171594",
+      "selectionRank": 51,
+      "selectionHash": "01d4538bdd05058f9db8af4c4779ae39779d17bf449522b48b72c86d2e866faf",
+      "query": "100 g of soup, vegetable soup, condensed, low sodium, prepared with equal volume water.",
+      "description": "Soup, vegetable soup, condensed, low sodium, prepared with equal volume water",
+      "expected": {
+        "calories": 33,
+        "protein": 1.1
+      },
+      "reference": {
+        "calories": 33,
+        "protein": 1.1,
+        "fats": 0.45,
+        "carbs": 6.06,
+        "fiber": 1.1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174556",
+      "sourceId": "174556",
+      "selectionRank": 52,
+      "selectionHash": "01d705a9cbd7d21c7be0f2475f1fadd3de19a2a3a53e3374f38e8e9c863d4f68",
+      "query": "I ate exactly 100 g of campbell's chunky, new england clam chowder.",
+      "description": "CAMPBELL'S CHUNKY, New England Clam Chowder",
+      "expected": {
+        "calories": 81,
+        "protein": 2.46
+      },
+      "reference": {
+        "calories": 81,
+        "protein": 2.46,
+        "fats": 3.85,
+        "carbs": 9.01,
+        "fiber": 1.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168924",
+      "sourceId": "168924",
+      "selectionRank": 53,
+      "selectionHash": "01df2b764d38cbb9a39dd6c7f8454c9fd410cad491959ccc32014ac8909f06d9",
+      "query": "Log 100 g of cornmeal, white, self-rising, bolted, with wheat flour added, enriched.",
+      "description": "Cornmeal, white, self-rising, bolted, with wheat flour added, enriched",
+      "expected": {
+        "calories": 348,
+        "protein": 8.41
+      },
+      "reference": {
+        "calories": 348,
+        "protein": 8.41,
+        "fats": 2.85,
+        "carbs": 73.4,
+        "fiber": 6.3
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168552",
+      "sourceId": "168552",
+      "selectionRank": 54,
+      "selectionHash": "01e50b16acab415778e1f462a72b380d2a63e9ffc067f771c030f63ed2ba22f8",
+      "query": "100 g of mountain yam, hawaii, cooked, steamed, with salt.",
+      "description": "Mountain yam, hawaii, cooked, steamed, with salt",
+      "expected": {
+        "calories": 82,
+        "protein": 1.73
+      },
+      "reference": {
+        "calories": 82,
+        "protein": 1.73,
+        "fats": 0.08,
+        "carbs": 20
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173682",
+      "sourceId": "173682",
+      "selectionRank": 55,
+      "selectionHash": "01e672d673acc22a04df06ce84ac63a1fe08e4d6f46de68958dfc4b9622d7bd0",
+      "query": "I ate exactly 100 g of fish, pompano, florida, raw.",
+      "description": "Fish, pompano, florida, raw",
+      "expected": {
+        "calories": 164,
+        "protein": 18.5
+      },
+      "reference": {
+        "calories": 164,
+        "protein": 18.5,
+        "fats": 9.47,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170338",
+      "sourceId": "170338",
+      "selectionRank": 56,
+      "selectionHash": "01eac22e8eb5e34eccc90e7c5391d288ac60c082027967160239d52bf96fde65",
+      "query": "Log 100 g of popeyes, spicy chicken strips, analyzed 2006.",
+      "description": "POPEYES, Spicy Chicken Strips, analyzed 2006",
+      "expected": {
+        "calories": 253,
+        "protein": 19.6
+      },
+      "reference": {
+        "calories": 253,
+        "protein": 19.6,
+        "fats": 11.2,
+        "carbs": 18.5,
+        "fiber": 1.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171920",
+      "sourceId": "171920",
+      "selectionRank": 57,
+      "selectionHash": "020d3615f2aa110873587a2f0181e73af8b35a0c8767a5f09c3cedc64f97ae8e",
+      "query": "100 g of alcoholic beverage, distilled, all (gin, rum, vodka, whiskey) 90 proof.",
+      "description": "Alcoholic beverage, distilled, all (gin, rum, vodka, whiskey) 90 proof",
+      "expected": {
+        "calories": 263,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 263,
+        "protein": 0,
+        "fats": 0,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174617",
+      "sourceId": "174617",
+      "selectionRank": 58,
+      "selectionHash": "0213ecaa29a3367954a0b9db21471aa928c32271d2097f6dbdcd64adad7e9b90",
+      "query": "I ate exactly 100 g of sausage, turkey, fresh, raw.",
+      "description": "Sausage, turkey, fresh, raw",
+      "expected": {
+        "calories": 155,
+        "protein": 18.8
+      },
+      "reference": {
+        "calories": 155,
+        "protein": 18.8,
+        "fats": 8.08,
+        "carbs": 0.47,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173855",
+      "sourceId": "173855",
+      "selectionRank": 59,
+      "selectionHash": "021950e491406ff2ef6121546398ce18906c66e9788ce64304797d5532e8a72e",
+      "query": "Log 100 g of game meat, deer, raw.",
+      "description": "Game meat, deer, raw",
+      "expected": {
+        "calories": 120,
+        "protein": 23
+      },
+      "reference": {
+        "calories": 120,
+        "protein": 23,
+        "fats": 2.42,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173910",
+      "sourceId": "173910",
+      "selectionRank": 60,
+      "selectionHash": "0237d8d700daa5aa9105e41141e5b57f7f26cc9130cc64d680856e2cc9bb8c36",
+      "query": "100 g of cereals ready-to-eat, post, shredded wheat, original big biscuit.",
+      "description": "Cereals ready-to-eat, POST, Shredded Wheat, original big biscuit",
+      "expected": {
+        "calories": 337,
+        "protein": 11.4
+      },
+      "reference": {
+        "calories": 337,
+        "protein": 11.4,
+        "fats": 2.01,
+        "carbs": 79,
+        "fiber": 12.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168841",
+      "sourceId": "168841",
+      "selectionRank": 61,
+      "selectionHash": "023ab8a671c62f53900c41d1eeee27f00d6095f9a4c40affbba81ef888f39da5",
+      "query": "I ate exactly 100 g of toppings, butterscotch or caramel.",
+      "description": "Toppings, butterscotch or caramel",
+      "expected": {
+        "calories": 216,
+        "protein": 1.21
+      },
+      "reference": {
+        "calories": 216,
+        "protein": 1.21,
+        "fats": 0,
+        "carbs": 57,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173525",
+      "sourceId": "173525",
+      "selectionRank": 62,
+      "selectionHash": "0242cf1434938aafe9910b42f92698a0a7b45d09bf4297e56bfdfaa2a6a72c80",
+      "query": "Log 100 g of infant formula, mead johnson, gentlease, ready to feed, with ara and dha.",
+      "description": "Infant formula, MEAD JOHNSON, Gentlease, ready to feed, with ARA and DHA",
+      "expected": {
+        "calories": 68,
+        "protein": 1.5
+      },
+      "reference": {
+        "calories": 68,
+        "protein": 1.5,
+        "fats": 3.5,
+        "carbs": 7.61
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172702",
+      "sourceId": "172702",
+      "selectionRank": 63,
+      "selectionHash": "0249eb191026cd2efec16308a75286453c5ff38ffea5e967d008a3f447be40fd",
+      "query": "100 g of cake, gingerbread, prepared from recipe.",
+      "description": "Cake, gingerbread, prepared from recipe",
+      "expected": {
+        "calories": 356,
+        "protein": 3.9
+      },
+      "reference": {
+        "calories": 356,
+        "protein": 3.9,
+        "fats": 16.4,
+        "carbs": 49.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173743",
+      "sourceId": "173743",
+      "selectionRank": 64,
+      "selectionHash": "024b01890c8101dec3bb8705473234955e64692c868da420ef82094a418f7d0b",
+      "query": "I ate exactly 100 g of beans, kidney, california red, mature seeds, cooked, boiled, without salt.",
+      "description": "Beans, kidney, california red, mature seeds, cooked, boiled, without salt",
+      "expected": {
+        "calories": 124,
+        "protein": 9.13
+      },
+      "reference": {
+        "calories": 124,
+        "protein": 9.13,
+        "fats": 0.09,
+        "carbs": 22.4,
+        "fiber": 9.3
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169229",
+      "sourceId": "169229",
+      "selectionRank": 65,
+      "selectionHash": "0253c77e554dd09ddfd40075117bf22340838e11c3265a577eb1612254e230c5",
+      "query": "Log 100 g of eggplant, cooked, boiled, drained, without salt.",
+      "description": "Eggplant, cooked, boiled, drained, without salt",
+      "expected": {
+        "calories": 35,
+        "protein": 0.83
+      },
+      "reference": {
+        "calories": 35,
+        "protein": 0.83,
+        "fats": 0.23,
+        "carbs": 8.73,
+        "fiber": 2.5
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172866",
+      "sourceId": "172866",
+      "selectionRank": 66,
+      "selectionHash": "025b2c5092dbc30b2994044dbba5fd79cf8e1add5144457655b8c8ea0daba4af",
+      "query": "100 g of turkey, skin from whole (light and dark), with added solution, raw.",
+      "description": "Turkey, skin from whole (light and dark), with added solution, raw",
+      "expected": {
+        "calories": 381,
+        "protein": 12.3
+      },
+      "reference": {
+        "calories": 381,
+        "protein": 12.3,
+        "fats": 36.8,
+        "carbs": 0.21,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170670",
+      "sourceId": "170670",
+      "selectionRank": 67,
+      "selectionHash": "027bec5858fc9c2edcf5d4d38e8226f0f2fcf08f8ba9691c622ea44a97bf884c",
+      "query": "I ate exactly 100 g of candies, mars snackfood us, cocoavia chocolate covered almonds.",
+      "description": "Candies, MARS SNACKFOOD US, COCOAVIA Chocolate Covered Almonds",
+      "expected": {
+        "calories": 573,
+        "protein": 9.51
+      },
+      "reference": {
+        "calories": 573,
+        "protein": 9.51,
+        "fats": 37.1,
+        "carbs": 50.2,
+        "fiber": 10.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174576",
+      "sourceId": "174576",
+      "selectionRank": 68,
+      "selectionHash": "027e8ec434235ae5092bb56825ed8e3e0fac2bc1a00969c72ee84d96bfc892d6",
+      "query": "Log 100 g of pickle and pimiento loaf, pork.",
+      "description": "Pickle and pimiento loaf, pork",
+      "expected": {
+        "calories": 225,
+        "protein": 11.2
+      },
+      "reference": {
+        "calories": 225,
+        "protein": 11.2,
+        "fats": 16,
+        "carbs": 8.46,
+        "fiber": 1.5
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171772",
+      "sourceId": "171772",
+      "selectionRank": 69,
+      "selectionHash": "028ad433f72f509edd99d727c27dabd40ad644c6a87c5f53286f51c6464986cd",
+      "query": "100 g of beef, round, eye of round steak, boneless, separable lean only, trimmed to 0\" fat, all grades, cooked, grilled.",
+      "description": "Beef, round, eye of round steak, boneless, separable lean only, trimmed to 0\" fat, all grades, cooked, grilled",
+      "expected": {
+        "calories": 155,
+        "protein": 29.8
+      },
+      "reference": {
+        "calories": 155,
+        "protein": 29.8,
+        "fats": 3.9,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173481",
+      "sourceId": "173481",
+      "selectionRank": 70,
+      "selectionHash": "028f211c970ea411c4d46f4d4be00502379872d73630477d7dedf8379e0e9cc3",
+      "query": "I ate exactly 100 g of babyfood, meat, lamb, strained.",
+      "description": "Babyfood, meat, lamb, strained",
+      "expected": {
+        "calories": 94,
+        "protein": 14.1
+      },
+      "reference": {
+        "calories": 94,
+        "protein": 14.1,
+        "fats": 3.41,
+        "carbs": 0.85,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170587",
+      "sourceId": "170587",
+      "selectionRank": 71,
+      "selectionHash": "0291686207aeb165333bece4c4db9640cf469633b1313d035f822817d15d52fe",
+      "query": "Log 100 g of nuts, mixed nuts, oil roasted, with peanuts, without salt added.",
+      "description": "Nuts, mixed nuts, oil roasted, with peanuts, without salt added",
+      "expected": {
+        "calories": 607,
+        "protein": 20
+      },
+      "reference": {
+        "calories": 607,
+        "protein": 20,
+        "fats": 54,
+        "carbs": 21,
+        "fiber": 7
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-175214",
+      "sourceId": "175214",
+      "selectionRank": 72,
+      "selectionHash": "0292a0864c5ed5ed3898b94fea0f148e266f6fa9c2a9faf32a1cd288a8ca2efd",
+      "query": "100 g of vitasoy usa, vitasoy light vanilla soymilk.",
+      "description": "Vitasoy USA, Vitasoy Light Vanilla Soymilk",
+      "expected": {
+        "calories": 30,
+        "protein": 1.6
+      },
+      "reference": {
+        "calories": 30,
+        "protein": 1.6,
+        "fats": 0.82,
+        "carbs": 4.1,
+        "fiber": 0.1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171585",
+      "sourceId": "171585",
+      "selectionRank": 73,
+      "selectionHash": "02984c0520011ba4682ae9d1a869e8319c0e7ecfb3c6c9c2ff6c706f514e949c",
+      "query": "I ate exactly 100 g of soup, chicken corn chowder, chunky, ready-to-serve, single brand.",
+      "description": "Soup, chicken corn chowder, chunky, ready-to-serve, single brand",
+      "expected": {
+        "calories": 99,
+        "protein": 3.1
+      },
+      "reference": {
+        "calories": 99,
+        "protein": 3.1,
+        "fats": 6.3,
+        "carbs": 7.5,
+        "fiber": 0.9
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173767",
+      "sourceId": "173767",
+      "selectionRank": 74,
+      "selectionHash": "029fa0f3a01fea9dc4469839ddd1278d91c3e084dbba2de5eb6c7492914ee66e",
+      "query": "Log 100 g of soymilk, chocolate and other flavors, light, with added calcium, vitamins a and d.",
+      "description": "Soymilk, chocolate and other flavors, light, with added calcium, vitamins A and D",
+      "expected": {
+        "calories": 47,
+        "protein": 2.1
+      },
+      "reference": {
+        "calories": 47,
+        "protein": 2.1,
+        "fats": 0.64,
+        "carbs": 8.24,
+        "fiber": 0.7
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170891",
+      "sourceId": "170891",
+      "selectionRank": 75,
+      "selectionHash": "02a9a95ba64575413fd3c7aea5f4b01d3868ca2b3ce9d0802c3fdf461c8926d5",
+      "query": "100 g of yogurt, greek, 2% fat,mixed berry blend, chobani.",
+      "description": "Yogurt, Greek, 2% fat,mixed berry blend, CHOBANI",
+      "expected": {
+        "calories": 93,
+        "protein": 8.26
+      },
+      "reference": {
+        "calories": 93,
+        "protein": 8.26,
+        "fats": 1.83,
+        "carbs": 10.9,
+        "fiber": 0.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172625",
+      "sourceId": "172625",
+      "selectionRank": 76,
+      "selectionHash": "02a9c9deed74f3d3099463eebe287cefb3ab1b4973ffe3d2e122a5e5f4edb8b2",
+      "query": "I ate exactly 100 g of lamb, new zealand, imported, loin saddle, separable lean only, raw.",
+      "description": "Lamb, New Zealand, imported, loin saddle, separable lean only, raw",
+      "expected": {
+        "calories": 131,
+        "protein": 20.9
+      },
+      "reference": {
+        "calories": 131,
+        "protein": 20.9,
+        "fats": 5.32,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170997",
+      "sourceId": "170997",
+      "selectionRank": 77,
+      "selectionHash": "02b5face88d9854f3c25b54dc5c6477dccec0fff8ef2b8da6eb88bb64365843c",
+      "query": "Log 100 g of infant formula, gerber good start 2, gentle plus, ready-to-feed.",
+      "description": "Infant Formula, GERBER GOOD START 2, GENTLE PLUS, ready-to-feed",
+      "expected": {
+        "calories": 66,
+        "protein": 1.44
+      },
+      "reference": {
+        "calories": 66,
+        "protein": 1.44,
+        "fats": 3.34,
+        "carbs": 7.61,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170224",
+      "sourceId": "170224",
+      "selectionRank": 78,
+      "selectionHash": "02ba5d16ba513c20b339c9e85d2f388fc557981eb49dd16b3eadf1842823835f",
+      "query": "100 g of beef, round, bottom round, roast, separable lean and fat, trimmed to 0\" fat, choice, cooked, roasted.",
+      "description": "Beef, round, bottom round, roast, separable lean and fat, trimmed to 0\" fat, choice, cooked, roasted",
+      "expected": {
+        "calories": 199,
+        "protein": 26.8
+      },
+      "reference": {
+        "calories": 199,
+        "protein": 26.8,
+        "fats": 9.37,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168147",
+      "sourceId": "168147",
+      "selectionRank": 79,
+      "selectionHash": "02bc2ffd0f48f7019016343fd1cf21e870765a4efacbf88024da0c20b6122ccd",
+      "query": "I ate exactly 100 g of vital wheat gluten.",
+      "description": "Vital wheat gluten",
+      "expected": {
+        "calories": 370,
+        "protein": 75.2
+      },
+      "reference": {
+        "calories": 370,
+        "protein": 75.2,
+        "fats": 1.85,
+        "carbs": 13.8,
+        "fiber": 0.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173868",
+      "sourceId": "173868",
+      "selectionRank": 80,
+      "selectionHash": "02c4f879ff7b35e07e91d07d32fec880c9ffb3a3ff351aead8fc3362eac3b56f",
+      "query": "Log 100 g of lebanon bologna, beef.",
+      "description": "Lebanon bologna, beef",
+      "expected": {
+        "calories": 172,
+        "protein": 19
+      },
+      "reference": {
+        "calories": 172,
+        "protein": 19,
+        "fats": 10.4,
+        "carbs": 0.44,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171335",
+      "sourceId": "171335",
+      "selectionRank": 81,
+      "selectionHash": "02ce3039851ce0ccbe374d9337c3bcfceb88ff550198f86920ed68d4c5081ed8",
+      "query": "100 g of babyfood, fruit, bananas with tapioca, strained.",
+      "description": "Babyfood, fruit, bananas with tapioca, strained",
+      "expected": {
+        "calories": 56,
+        "protein": 0.4
+      },
+      "reference": {
+        "calories": 56,
+        "protein": 0.4,
+        "fats": 0.1,
+        "carbs": 15.3,
+        "fiber": 1.6
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168498",
+      "sourceId": "168498",
+      "selectionRank": 82,
+      "selectionHash": "02d13edd968cb8a96f73d817c99247dcc1d356fd24888060c8692bcdf9971c9a",
+      "query": "I ate exactly 100 g of lima beans, immature seeds, frozen, fordhook, cooked, boiled, drained, with salt.",
+      "description": "Lima beans, immature seeds, frozen, fordhook, cooked, boiled, drained, with salt",
+      "expected": {
+        "calories": 103,
+        "protein": 6.07
+      },
+      "reference": {
+        "calories": 103,
+        "protein": 6.07,
+        "fats": 0.34,
+        "carbs": 19.3,
+        "fiber": 5.3
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174712",
+      "sourceId": "174712",
+      "selectionRank": 83,
+      "selectionHash": "030d2e9770fae3ee214f9eb01303de5fd474efbe4ce4b6cb133297a7f7f077b5",
+      "query": "Log 100 g of beef, loin, top loin steak, boneless, lip-on, separable lean and fat, trimmed to 1/8\" fat, choice, cooked, grilled.",
+      "description": "Beef, loin, top loin steak, boneless, lip-on, separable lean and fat, trimmed to 1/8\" fat, choice, cooked, grilled",
+      "expected": {
+        "calories": 275,
+        "protein": 25.7
+      },
+      "reference": {
+        "calories": 275,
+        "protein": 25.7,
+        "fats": 19.2,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169835",
+      "sourceId": "169835",
+      "selectionRank": 84,
+      "selectionHash": "031070cd178fafdba6c87db3f3acff117e5537a8b54d36769408a6ed6538d3ae",
+      "query": "100 g of t.g.i. friday's, macaroni & cheese, from kid's menu.",
+      "description": "T.G.I. FRIDAY'S, macaroni & cheese, from kid's menu",
+      "expected": {
+        "calories": 121,
+        "protein": 5.03
+      },
+      "reference": {
+        "calories": 121,
+        "protein": 5.03,
+        "fats": 3.45,
+        "carbs": 17.4,
+        "fiber": 1
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174718",
+      "sourceId": "174718",
+      "selectionRank": 85,
+      "selectionHash": "031d005ed2892116747491227ef9b4e3f673e759ab8abeb055812d68dcd73b47",
+      "query": "I ate exactly 100 g of beef, new zealand, imported, brisket navel end, separable lean only, raw.",
+      "description": "Beef, New Zealand, imported, brisket navel end, separable lean only, raw",
+      "expected": {
+        "calories": 194,
+        "protein": 19.7
+      },
+      "reference": {
+        "calories": 194,
+        "protein": 19.7,
+        "fats": 12.8,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168649",
+      "sourceId": "168649",
+      "selectionRank": 86,
+      "selectionHash": "031d33d08da222b3d399a0c247ecbe674db7d2f5875542673ab864b78eeb251d",
+      "query": "Log 100 g of beef, round, top round steak, boneless, separable lean only, trimmed to 0\" fat, all grades, cooked, grilled.",
+      "description": "Beef, round, top round steak, boneless, separable lean only, trimmed to 0\" fat, all grades, cooked, grilled",
+      "expected": {
+        "calories": 162,
+        "protein": 30.1
+      },
+      "reference": {
+        "calories": 162,
+        "protein": 30.1,
+        "fats": 3.77,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168500",
+      "sourceId": "168500",
+      "selectionRank": 87,
+      "selectionHash": "032d19b37118eb01c32e5e2168008652dad289b2d6a8088285ceb5f124104f02",
+      "query": "100 g of beans, navy, mature seeds, sprouted, cooked, boiled, drained, with salt.",
+      "description": "Beans, navy, mature seeds, sprouted, cooked, boiled, drained, with salt",
+      "expected": {
+        "calories": 78,
+        "protein": 7.07
+      },
+      "reference": {
+        "calories": 78,
+        "protein": 7.07,
+        "fats": 0.81,
+        "carbs": 15
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172624",
+      "sourceId": "172624",
+      "selectionRank": 88,
+      "selectionHash": "032d904ce0168417f251cc049dc231b5012867909795acc0d14faaee5e8a847f",
+      "query": "I ate exactly 100 g of lamb, new zealand, imported, loin saddle, separable lean only, cooked, fast roasted.",
+      "description": "Lamb, New Zealand, imported, loin saddle, separable lean only, cooked, fast roasted",
+      "expected": {
+        "calories": 162,
+        "protein": 25.5
+      },
+      "reference": {
+        "calories": 162,
+        "protein": 25.5,
+        "fats": 6.7,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170244",
+      "sourceId": "170244",
+      "selectionRank": 89,
+      "selectionHash": "0338c908b69500d05b002ff1d1fc04a9f5a1e24c155215ccdba99348b29e88e6",
+      "query": "Log 100 g of snacks, corn-based, extruded, puffs or twists, cheese-flavor, unenriched.",
+      "description": "Snacks, corn-based, extruded, puffs or twists, cheese-flavor, unenriched",
+      "expected": {
+        "calories": 558,
+        "protein": 5.76
+      },
+      "reference": {
+        "calories": 558,
+        "protein": 5.76,
+        "fats": 35.8,
+        "carbs": 54.1,
+        "fiber": 2.2
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-172330",
+      "sourceId": "172330",
+      "selectionRank": 90,
+      "selectionHash": "033d465e1ec1a5c00b83de49c26786d0f07ceca2b6b311203e98fe09dc8d3796",
+      "query": "100 g of shortening cake mix, soybean (hydrogenated) and cottonseed (hydrogenated).",
+      "description": "Shortening cake mix, soybean (hydrogenated) and cottonseed (hydrogenated)",
+      "expected": {
+        "calories": 884,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 884,
+        "protein": 0,
+        "fats": 100,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-168165",
+      "sourceId": "168165",
+      "selectionRank": 91,
+      "selectionHash": "03428a57e870d2eb5ce55f4c57566c7e9a1877f6112d8dfb6896f4ffc8e15eea",
+      "query": "I ate exactly 100 g of raisins, dark, seedless (includes foods for usda's food distribution program).",
+      "description": "Raisins, dark, seedless (Includes foods for USDA's Food Distribution Program)",
+      "expected": {
+        "calories": 299,
+        "protein": 3.3
+      },
+      "reference": {
+        "calories": 299,
+        "protein": 3.3,
+        "fats": 0.25,
+        "carbs": 79.3,
+        "fiber": 4.5
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173507",
+      "sourceId": "173507",
+      "selectionRank": 92,
+      "selectionHash": "0343a47a30a98596578e05687048ca217f3a828fc861adffb3bd925687a2bc45",
+      "query": "Log 100 g of babyfood, vegetables, carrots, junior.",
+      "description": "Babyfood, vegetables, carrots, junior",
+      "expected": {
+        "calories": 32,
+        "protein": 0.8
+      },
+      "reference": {
+        "calories": 32,
+        "protein": 0.8,
+        "fats": 0.2,
+        "carbs": 7.2,
+        "fiber": 1.7
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-173227",
+      "sourceId": "173227",
+      "selectionRank": 93,
+      "selectionHash": "035a348c74900b4bfe325301bd1bd384cdeff160a1b457f2ead40d32a16a7273",
+      "query": "100 g of beverages, tea, black, brewed, prepared with tap water.",
+      "description": "Beverages, tea, black, brewed, prepared with tap water",
+      "expected": {
+        "calories": 1,
+        "protein": 0
+      },
+      "reference": {
+        "calories": 1,
+        "protein": 0,
+        "fats": 0,
+        "carbs": 0.3,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-174329",
+      "sourceId": "174329",
+      "selectionRank": 94,
+      "selectionHash": "036a29d35f37cafe8f2e3b9e48bc11886292af49da98a7284f77fffd3de5b5d5",
+      "query": "I ate exactly 100 g of lamb, shoulder, arm, separable lean and fat, trimmed to 1/4\" fat, choice, cooked, roasted.",
+      "description": "Lamb, shoulder, arm, separable lean and fat, trimmed to 1/4\" fat, choice, cooked, roasted",
+      "expected": {
+        "calories": 279,
+        "protein": 22.5
+      },
+      "reference": {
+        "calories": 279,
+        "protein": 22.5,
+        "fats": 20.2,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-171158",
+      "sourceId": "171158",
+      "selectionRank": 95,
+      "selectionHash": "037191ed4e551cd07b409984d5406dfac595896d56ecc5f1d5b2dec341822076",
+      "query": "Log 100 g of soup, cream of potato, canned, condensed.",
+      "description": "Soup, cream of potato, canned, condensed",
+      "expected": {
+        "calories": 74,
+        "protein": 1.51
+      },
+      "reference": {
+        "calories": 74,
+        "protein": 1.51,
+        "fats": 1.88,
+        "carbs": 12.8,
+        "fiber": 1.3
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-169320",
+      "sourceId": "169320",
+      "selectionRank": 96,
+      "selectionHash": "0379bba4102dec35ab25f0a3c56ce7fb27ec3ee9acbb05c5bb291dbbe747d5ea",
+      "query": "100 g of beans, snap, yellow, raw.",
+      "description": "Beans, snap, yellow, raw",
+      "expected": {
+        "calories": 31,
+        "protein": 1.82
+      },
+      "reference": {
+        "calories": 31,
+        "protein": 1.82,
+        "fats": 0.12,
+        "carbs": 7.13,
+        "fiber": 3.4
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-167894",
+      "sourceId": "167894",
+      "selectionRank": 97,
+      "selectionHash": "037f6ee161080edc3a2ccebd33985b820db56bb65d9115eba14bef0186e849d8",
+      "query": "I ate exactly 100 g of pork, fresh, loin, center rib (roasts), boneless, separable lean only, cooked, roasted.",
+      "description": "Pork, fresh, loin, center rib (roasts), boneless, separable lean only, cooked, roasted",
+      "expected": {
+        "calories": 214,
+        "protein": 28.8
+      },
+      "reference": {
+        "calories": 214,
+        "protein": 28.8,
+        "fats": 10.1,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-175147",
+      "sourceId": "175147",
+      "selectionRank": 98,
+      "selectionHash": "03852179a7462079d0f32c2f6ca014f3bb269a6a56cac85c7a69b5859e10f929",
+      "query": "Log 100 g of fish, smelt, rainbow, cooked, dry heat.",
+      "description": "Fish, smelt, rainbow, cooked, dry heat",
+      "expected": {
+        "calories": 124,
+        "protein": 22.6
+      },
+      "reference": {
+        "calories": 124,
+        "protein": 22.6,
+        "fats": 3.1,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170800",
+      "sourceId": "170800",
+      "selectionRank": 99,
+      "selectionHash": "0388becd9f87b54601b5f13ebd50ba7dd63e6c8ff8ba1fe1ddcc891c66f10053",
+      "query": "100 g of beef, chuck eye country-style ribs, boneless, separable lean only, trimmed to 0\" fat, choice, raw.",
+      "description": "Beef, chuck eye Country-Style ribs, boneless, separable lean only, trimmed to 0\" fat, choice, raw",
+      "expected": {
+        "calories": 152,
+        "protein": 20.9
+      },
+      "reference": {
+        "calories": 152,
+        "protein": 20.9,
+        "fats": 7.67,
+        "carbs": 0,
+        "fiber": 0
+      }
+    },
+    {
+      "dataset": "sr-legacy-confirmation",
+      "caseId": "sr-170849",
+      "sourceId": "170849",
+      "selectionRank": 100,
+      "selectionHash": "039912b1fa59fb49b2c18c48df9e0bb713cc9e9932706de0925ab9790c7609d4",
+      "query": "I ate exactly 100 g of cheese, port de salut.",
+      "description": "Cheese, port de salut",
+      "expected": {
+        "calories": 352,
+        "protein": 23.8
+      },
+      "reference": {
+        "calories": 352,
+        "protein": 23.8,
+        "fats": 28.2,
+        "carbs": 0.57,
+        "fiber": 0
+      }
+    }
+  ]
+}

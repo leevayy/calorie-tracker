@@ -1,0 +1,119 @@
+{
+  "generatedAtIso": "2026-08-16T21:39:07.179Z",
+  "datasets": {
+    "sr-legacy-confirmation": {
+      "caseCount": 100,
+      "repetitions": 3,
+      "selectedPromptOnlyFinalist": {
+        "id": "density-first",
+        "calorieMae": 15.796,
+        "proteinMae": 1.434
+      },
+      "eligibleSearchCandidates": [
+        {
+          "id": "density-first",
+          "calorieMae": 15.796,
+          "proteinMae": 1.434
+        },
+        {
+          "id": "compact",
+          "calorieMae": 18.253,
+          "proteinMae": 1.461
+        }
+      ],
+      "variants": {
+        "baseline": {
+          "kind": "production-prompt",
+          "trialCount": 300,
+          "successfulTrials": 299,
+          "coveragePct": 99.667,
+          "firstAttemptSuccessPct": 99.667,
+          "completeCasesAcrossRepetitions": 99,
+          "eligible": false,
+          "calorieMae": 38.375,
+          "proteinMae": 1.981,
+          "calorieMedianAbsoluteError": 16,
+          "calorieP90AbsoluteError": 84,
+          "proteinMedianAbsoluteError": 1.1,
+          "proteinP90AbsoluteError": 5.5,
+          "latencyP50Ms": 7195.9,
+          "latencyP95Ms": 8394.6
+        },
+        "density-first": {
+          "kind": "prompt-only",
+          "trialCount": 300,
+          "successfulTrials": 298,
+          "coveragePct": 99.333,
+          "firstAttemptSuccessPct": 99.333,
+          "completeCasesAcrossRepetitions": 99,
+          "eligible": false,
+          "calorieMae": 34.916,
+          "proteinMae": 1.824,
+          "calorieMedianAbsoluteError": 14.5,
+          "calorieP90AbsoluteError": 75.8,
+          "proteinMedianAbsoluteError": 0.99,
+          "proteinP90AbsoluteError": 4.63,
+          "latencyP50Ms": 7256.5,
+          "latencyP95Ms": 8349.8
+        },
+        "grounded-reference": {
+          "kind": "retrieval-assisted",
+          "trialCount": 300,
+          "successfulTrials": 296,
+          "coveragePct": 98.667,
+          "firstAttemptSuccessPct": 98.667,
+          "completeCasesAcrossRepetitions": 96,
+          "eligible": false,
+          "calorieMae": 0,
+          "proteinMae": 0,
+          "calorieMedianAbsoluteError": 0,
+          "calorieP90AbsoluteError": 0,
+          "proteinMedianAbsoluteError": 0,
+          "proteinP90AbsoluteError": 0,
+          "latencyP50Ms": 7232,
+          "latencyP95Ms": 8058.5
+        }
+      },
+      "comparisonsToBaseline": {
+        "density-first": {
+          "calorieMaeRatio": 0.91,
+          "calorieMaeReductionPct": 9.014,
+          "calorieRatioBootstrap95": {
+            "lower95": 0.795,
+            "upper95": 1.007
+          },
+          "proteinMaeRatio": 0.921,
+          "proteinMaeReductionPct": 7.925,
+          "proteinRatioBootstrap95": {
+            "lower95": 0.812,
+            "upper95": 1.085
+          },
+          "pointGoal50Calories": false,
+          "strongGoal50Calories": false,
+          "pointGoal50Both": false,
+          "strongGoal50Both": false,
+          "eligible": false
+        },
+        "grounded-reference": {
+          "calorieMaeRatio": 0,
+          "calorieMaeReductionPct": 100,
+          "calorieRatioBootstrap95": {
+            "lower95": 0,
+            "upper95": 0
+          },
+          "proteinMaeRatio": 0,
+          "proteinMaeReductionPct": 100,
+          "proteinRatioBootstrap95": {
+            "lower95": 0,
+            "upper95": 0
+          },
+          "pointGoal50Calories": false,
+          "strongGoal50Calories": false,
+          "pointGoal50Both": false,
+          "strongGoal50Both": false,
+          "eligible": false
+        }
+      }
+    }
+  }
+}
