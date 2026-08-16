@@ -105,6 +105,39 @@ describe("E2E control routes", () => {
     expect(response.json()).toEqual(await resetAndSeed.mock.results[0]?.value);
   });
 
+  test("accepts a 1,001-entry performance fixture while keeping seed payloads bounded", async () => {
+    const resetAndSeed = vi.fn(async () => ({ users: [] }));
+    const { app } = await buildTestApp({ resetAndSeed });
+    const entry = {
+      day: "2026-08-14",
+      mealType: "breakfast",
+      calories: 300,
+      protein: 10,
+      carbs: 50,
+      fats: 7,
+      fiber: 6,
+    } as const;
+    const request = (entryCount: number) => app.inject({
+      method: "POST",
+      url: "/__e2e/reset",
+      headers: { "x-e2e-control-secret": SECRET },
+      payload: {
+        users: [{
+          email: "large-history@example.test",
+          password: "test-password-large-history",
+          entries: Array.from({ length: entryCount }, (_, index) => ({
+            ...entry,
+            name: `Historical entry ${index}`,
+          })),
+        }],
+      },
+    });
+
+    expect((await request(1_001)).statusCode).toBe(200);
+    expect((await request(2_001)).statusCode).toBe(400);
+    expect(resetAndSeed).toHaveBeenCalledOnce();
+  });
+
   test("accepts the deterministic explicit-nutrition provider mode", async () => {
     const { app } = await buildTestApp({ resetAndSeed: vi.fn() });
 

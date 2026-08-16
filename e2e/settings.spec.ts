@@ -67,7 +67,7 @@ test.describe("Supported profile settings", () => {
     authenticatedPage: page,
   }) => {
     await page.getByRole("button", { name: "Log food" }).click();
-    const composer = page.getByRole("textbox", { name: "Log food" });
+    const composer = page.getByRole("combobox", { name: "Log food" });
     await composer.fill("A deterministic oatmeal bowl");
     await composer.press("Enter");
     await expect(page.getByText("Added 1", { exact: true })).toBeVisible();

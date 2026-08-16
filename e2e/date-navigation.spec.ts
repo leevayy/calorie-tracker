@@ -17,6 +17,27 @@ const MEAL_LABELS = {
 
 type MealType = keyof typeof MEAL_LABELS;
 
+const LOCALIZED_DATE_NAVIGATION = [
+  {
+    code: "ru" as const,
+    navigation: "Дата записи",
+    dateInput: "Дата",
+    selectedDate: "Суббота, 31 декабря 2039 г.",
+  },
+  {
+    code: "pl" as const,
+    navigation: "Data dziennika",
+    dateInput: "Data",
+    selectedDate: "Sobota, 31 grudnia 2039",
+  },
+  {
+    code: "tt" as const,
+    navigation: "Көндәлек датасы",
+    dateInput: "Дата",
+    selectedDate: "31 декабрь, 2039 ел, шимбә",
+  },
+] as const;
+
 function addDays(day: string, amount: number): string {
   const date = new Date(`${day}T12:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + amount);
@@ -64,7 +85,7 @@ async function seedAndLogin(
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("textbox", { name: "Log food" });
+  const input = page.getByRole("combobox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -97,8 +118,29 @@ function mealButton(page: Page, mealType: MealType, calories?: number) {
   });
 }
 
+function dateNavigation(page: Page, accessibleName = "Log date") {
+  return page.getByRole("group", { name: accessibleName, exact: true });
+}
+
+function selectedDateControl(page: Page, navigationName = "Log date") {
+  return dateNavigation(page, navigationName).getByRole("button").nth(1);
+}
+
 async function selectedDateLabel(page: Page): Promise<string> {
-  return page.getByLabel("Log date").locator("p").first().innerText();
+  return selectedDateControl(page).innerText();
+}
+
+async function selectDirectDay(
+  page: Page,
+  day: string,
+  navigationName = "Log date",
+  dateInputName = "Date",
+): Promise<void> {
+  await selectedDateControl(page, navigationName).click();
+  const dateInput = page.getByLabel(dateInputName, { exact: true });
+  await expect(dateInput).toBeVisible();
+  await dateInput.fill(day);
+  await expect(dateInput).toBeHidden();
 }
 
 test.describe("Dashboard date navigation", () => {
@@ -114,7 +156,7 @@ test.describe("Dashboard date navigation", () => {
     expect(tomorrowLabel).not.toBe(todayLabel);
     const returnToToday = page.getByRole("button", { name: "Today" });
     await expect(returnToToday).toBeVisible();
-    const selectedDateBox = await page.getByLabel("Log date").locator("p").first().boundingBox();
+    const selectedDateBox = await selectedDateControl(page).boundingBox();
     const returnToTodayBox = await returnToToday.boundingBox();
     expect(selectedDateBox).not.toBeNull();
     expect(returnToTodayBox).not.toBeNull();
@@ -125,7 +167,7 @@ test.describe("Dashboard date navigation", () => {
     }
 
     await page.getByRole("button", { name: "Previous day" }).click();
-    await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(todayLabel);
+    await expect(selectedDateControl(page)).toHaveText(todayLabel);
     await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
 
     await page.getByRole("button", { name: "Previous day" }).click();
@@ -154,10 +196,10 @@ test.describe("Dashboard date navigation", () => {
     await expect(mealButton(page, "dinner", 250)).toBeVisible();
     await mealButton(page, "dinner").click();
     await expect(page.getByText("Previous dinner", { exact: true })).toBeVisible();
-    await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(previousLabel);
+    await expect(selectedDateControl(page)).toHaveText(previousLabel);
 
     await page.getByRole("button", { name: "Next day" }).click();
-    await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(todayLabel);
+    await expect(selectedDateControl(page)).toHaveText(todayLabel);
     await expect(mealButton(page, "breakfast", 100)).toBeVisible();
     await expect(mealButton(page, "dinner", 0)).toBeVisible();
   });
@@ -210,6 +252,12 @@ test.describe("Dashboard date navigation", () => {
     const historicalBatchPromise = nextBatchRequest(page);
     await historicalOption.click();
     const historicalBatch = await historicalBatchPromise;
+    const activity = page.getByRole("button", {
+      name: "Logging activity · 2 groups logged · 2 foods",
+      exact: true,
+    });
+    await expect(activity).toHaveAttribute("aria-expanded", "false");
+    await activity.click();
     await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
     const historicalBody = historicalBatch.postDataJSON() as {
       entries: Array<{ day: string; mealType: MealType; name: string; calories: number }>;
@@ -245,7 +293,7 @@ test.describe("Dashboard date navigation", () => {
     expect(await selectedDateLabel(page)).not.toBe(todayLabel);
 
     await page.getByRole("button", { name: "Today" }).click();
-    await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(todayLabel);
+    await expect(selectedDateControl(page)).toHaveText(todayLabel);
     await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
   });
 
@@ -286,5 +334,131 @@ test.describe("Dashboard date navigation", () => {
     await mealButton(page, parseBody.defaultMealType).click();
     await expect(page.getByText("E2E oatmeal", { exact: true })).toBeVisible();
     await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
+  });
+
+  test("directly selects a date across a month and year boundary with destination labels", async ({
+    page,
+    e2eControls,
+  }) => {
+    await seedAndLogin(page, e2eControls, []);
+    await selectDirectDay(page, "2039-12-31");
+
+    await expect(selectedDateControl(page)).toHaveText("Saturday, December 31, 2039");
+    await expect(
+      dateNavigation(page).getByRole("button", {
+        name: "Previous day, Friday, December 30, 2039",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const next = dateNavigation(page).getByRole("button", {
+      name: "Next day, Sunday, January 1, 2040",
+      exact: true,
+    });
+    await expect(next).toBeVisible();
+
+    await next.click();
+
+    await expect(selectedDateControl(page)).toHaveText("Sunday, January 1, 2040");
+  });
+
+  test("keeps keyboard focus, announces one selected day, and returns to Today without shifting", async ({
+    page,
+    e2eControls,
+  }) => {
+    await seedAndLogin(page, e2eControls, []);
+    const todayLabel = await selectedDateLabel(page);
+    const navigator = dateNavigation(page).locator("..");
+    const todaySlot = navigator.locator('[data-slot="date-navigator-today"]');
+    const initialSlotBox = await todaySlot.boundingBox();
+    await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveCount(0);
+
+    await selectDirectDay(page, "2039-12-31");
+    const statuses = navigator.getByRole("status");
+    await expect(statuses).toHaveCount(1);
+    await expect(statuses).toHaveAttribute("aria-live", "polite");
+    await expect(statuses).toHaveText("Selected date: Saturday, December 31, 2039");
+    const offTodaySlotBox = await todaySlot.boundingBox();
+    expect(initialSlotBox).not.toBeNull();
+    expect(offTodaySlotBox).not.toBeNull();
+    if (initialSlotBox && offTodaySlotBox) {
+      expect(offTodaySlotBox.height).toBe(initialSlotBox.height);
+    }
+
+    const next = dateNavigation(page).getByRole("button").last();
+    await next.focus();
+    await expect(next).toBeFocused();
+    await next.press("Enter");
+    await expect(next).toBeFocused();
+    await expect(statuses).toHaveCount(1);
+    await expect(statuses).toHaveText("Selected date: Sunday, January 1, 2040");
+
+    await page.getByRole("button", { name: "Today", exact: true }).click();
+    await expect(selectedDateControl(page)).toHaveText(todayLabel);
+    await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveCount(0);
+    const returnedSlotBox = await todaySlot.boundingBox();
+    expect(returnedSlotBox).not.toBeNull();
+    if (initialSlotBox && returnedSlotBox) {
+      expect(returnedSlotBox.height).toBe(initialSlotBox.height);
+    }
+  });
+
+  test("contains long Russian Polish and Tatar dates at 320 390 and 430 pixels", async ({
+    page,
+    e2eControls,
+  }) => {
+    for (const locale of LOCALIZED_DATE_NAVIGATION) {
+      await test.step(locale.code, async () => {
+        const user = isolatedTestUser({
+          profile: {
+            dailyCalorieGoal: 2_000,
+            weightKg: 70,
+            heightCm: 175,
+            preferredLanguage: locale.code,
+            nutritionGoal: "maintain",
+          },
+        });
+        await e2eControls.reset([user]);
+        await page.setViewportSize({ width: 320, height: 844 });
+        await loginThroughSetup(page, user);
+        await selectDirectDay(
+          page,
+          "2039-12-31",
+          locale.navigation,
+          locale.dateInput,
+        );
+
+        for (const width of [320, 390, 430]) {
+          await test.step(`${width}px`, async () => {
+            await page.setViewportSize({ width, height: 844 });
+            const navigation = dateNavigation(page, locale.navigation);
+            const selected = selectedDateControl(page, locale.navigation);
+            await expect(selected).toHaveText(locale.selectedDate);
+            const geometry = await selected.evaluate((element) => {
+              const root = document.documentElement;
+              const style = getComputedStyle(element);
+              const box = element.getBoundingClientRect();
+              return {
+                documentWidth: Math.max(root.scrollWidth, document.body.scrollWidth),
+                viewportWidth: root.clientWidth,
+                left: box.left,
+                right: box.right,
+                whiteSpace: style.whiteSpace,
+                selectedScrollWidth: element.scrollWidth,
+                selectedClientWidth: element.clientWidth,
+              };
+            });
+            const navigationBox = await navigation.boundingBox();
+            expect(navigationBox).not.toBeNull();
+            expect(geometry.left).toBeGreaterThanOrEqual(0);
+            expect(geometry.right).toBeLessThanOrEqual(width);
+            expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+            expect(geometry.whiteSpace).toBe("normal");
+            expect(geometry.selectedScrollWidth).toBeLessThanOrEqual(
+              geometry.selectedClientWidth + 1,
+            );
+          });
+        }
+      });
+    }
   });
 });

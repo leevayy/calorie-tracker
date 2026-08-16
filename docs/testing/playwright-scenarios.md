@@ -1,7 +1,7 @@
 # Playwright user-scenario inventory
 
 This is the canonical browser-coverage map for the maintained web application.
-Each acceptance criterion from local issues 01–10 and 13 has its own row. Test
+Each acceptance criterion from the maintained local issues has its own row. Test
 titles are contracts: when a scenario is renamed or split, update this inventory
 in the same change.
 
@@ -79,18 +79,18 @@ controls.
 | 05.1 | The empty composer rotates concise localized examples without changing its stable accessible label; Enter submits and leaves it ready for another entry. | `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; `submits consecutive entries with Enter and restores composer focus` | Yes | Yes | — |
 | 05.2 | A pending row appears in the target meal during parse/save. | `e2e/composer.spec.ts` — `shows parsing and saving rows in the target meal` | Yes | Yes | — |
 | 05.3 | Parse/save failure preserves exact text and offers direct retry. | `e2e/composer.spec.ts` — `preserves the exact failed submission and retries from the failed stage` | Yes | Yes | — |
-| 05.4 | Explicit portion/calorie/nutrient values override inference. | `e2e/composer.spec.ts` — `honors explicit portion and nutrition values over inference` derives the submitted literals over deliberately conflicting deterministic inference | Yes | Yes | — |
-| 05.5 | Consecutive submission, recovery, and focus behavior are covered. | `e2e/composer.spec.ts` — `submits consecutive entries with Enter and restores composer focus`; `preserves the exact failed submission and retries from the failed stage` | Yes | Yes | — |
+| 05.4 | Explicit portion/calorie/nutrient values override inference without post-provider normalization. | `backend/src/services/aiExplicitNutrition.test.ts` — `preserves every explicit nutrition literal returned by the provider`; `e2e/composer.spec.ts` — `honors explicit portion and nutrition values over inference` sends its deterministic provider payload through the production response mapper | Yes | Yes | — |
+| 05.5 | Consecutive submission, recovery, focus, and production-path explicit nutrition behavior are covered. | `e2e/composer.spec.ts` — `submits consecutive entries with Enter and restores composer focus`; `preserves the exact failed submission and retries from the failed stage`; `honors explicit portion and nutrition values over inference`; production adapter test above | Yes | Yes | — |
 
 ## Issue 06 — Suggest previously logged foods
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
 | 06.1 | Typing shows historical matches with name, portion, calories, and usage context. | `e2e/suggestions.spec.ts` — `suggests historical foods with nutrition and usage context` | Yes | Yes | — |
-| 06.2 | Same-name foods with materially different configurations remain distinct. | `e2e/suggestions.spec.ts` — `keeps same-name historical configurations distinct` | Yes | Yes | — |
+| 06.2 | Same-name foods with materially different configurations remain visibly distinct, including macro-only differences. | `e2e/suggestions.spec.ts` — `keeps same-name historical configurations distinct` | Yes | Yes | — |
 | 06.3 | Ranking reflects relevance, frequency, and recency. | `e2e/suggestions.spec.ts` — `ranks historical suggestions by relevance frequency and recency` | Yes | Yes | — |
 | 06.4 | Selecting a result logs stored values to selected meal/day without AI. | `e2e/suggestions.spec.ts` — `reuses a stored suggestion on the selected day without an AI request` | Yes | Yes | — |
-| 06.5 | Search stays responsive as history grows and matching/ranking are covered. | `e2e/suggestions.spec.ts` — `debounces a large history and ignores stale suggestion responses` forces the older response to arrive after the newer response through a one-shot backend delay | Yes | Yes | — |
+| 06.5 | Search stays responsive as history grows and matching/ranking are covered. | `e2e/suggestions.spec.ts` — `shows a matching large-history result within the user-visible latency budget`; `debounces a large history and ignores stale suggestion responses` forces the older response to arrive after the newer response through a one-shot backend delay | Yes | Yes | — |
 
 ## Issue 07 — Navigate and log another day
 
@@ -132,6 +132,24 @@ controls.
 | 10.4 | Coaching removal does not affect auth, logging, totals, or history. | `e2e/settings.spec.ts` — `keeps auth logging totals and history working without coaching` | Yes | Yes | — |
 | 10.5 | User copy and tests no longer describe retired controls as available. | `e2e/settings.spec.ts` — `contains no retired coaching copy or controls` | Yes | Yes | — |
 
+## Issue 12 — Playwright end-to-end coverage and agent rules
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 12.1 | The production-shaped frontend, real backend, disposable PostgreSQL database, and supported desktop/mobile projects run without browser API mocks. | `playwright.config.ts`; `scripts/e2e.mjs`; all deterministic `e2e/*.spec.ts` journeys | Yes | Yes | — |
+| 12.2 | Setup resets an isolated synthetic user and never relies on personal data, ordering, or previous-run state. | `e2e/support/fixtures.ts`; backend E2E controls; every deterministic test fixture reset | Yes | Yes | — |
+| 12.3 | The scenario inventory maps maintained features and issue acceptance criteria to exact test titles. | This inventory and its issue tables | Yes | Yes | Yes |
+| 12.4 | Core success, validation, empty, loading, retry, and recoverable-failure states are deterministic and use test-only controls. | The Required state-shape coverage table below and its mapped specs | Yes | Yes | — |
+| 12.5 | Separately tagged live-provider journeys remain opt-in and do not make the deterministic suite paid or flaky. | `e2e/live-ai.live.spec.ts` — both `@live-ai` journeys; the `live-ai-chromium` project gate | — | — | Yes |
+| 12.6 | Assertions prove persistence by reload/revisit rather than immediate DOM state alone. | Persistence scenarios mapped throughout issues 01–09, 13, and 18 | Yes | Yes | Yes |
+| 12.7 | Reproducible commands install browsers, prepare the stack, run deterministic/live suites, and retain one video per result plus failure diagnostics. | `package.json`; `playwright.config.ts`; `scripts/e2e.mjs` | Yes | Yes | Yes |
+| 12.8 | Ignored credentials and retained artifacts are demonstrably safe before upload. | `scripts/e2e-artifacts.test.mjs` — `quarantines plain and compressed artifacts containing a credential`; `quarantines derived and opaque tokens while preserving public E2E handles`; `scans and removes unsafe managed output despite test and cleanup failures`; `.github/workflows/e2e.yml` standalone gated verification | Yes | Yes | Yes |
+| 12.9 | Agent rules require inventory and deterministic coverage for user-visible behavior and honest run reporting. | `AGENTS.md` Playwright system-test rules | Yes | Yes | — |
+| 12.10 | CI starts clean deterministic projects, retains verified failure artifacts, and gates live AI explicitly. | `.github/workflows/e2e.yml` deterministic and live-AI jobs | Yes | Yes | Yes |
+| 12.11 | Setup and troubleshooting documentation is reproducible for contributors and agents. | `docs/testing/playwright.md` | Yes | Yes | Yes |
+| 12.12 | Complete deterministic projects retain exactly one independently reportable video per result. | `playwright.config.ts` (`video: "on"`); `scripts/e2e-artifacts.test.mjs` — `resets every managed result target without deleting artifact-root siblings` | Yes | Yes | — |
+| 12.13 | Only the active tab/dialog state is exposed, modal background dashboard/navigation controls leave the accessibility tree, and composer status is not exposed twice. | `frontend/src/app/layout/AppTabShell.test.ts` — `exposes only the route's active tab panel`; `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; `shows parsing and saving rows in the target meal`; `edits and resubmits a failed description as a new parse attempt`; `e2e/logging.spec.ts` — `shows the grouped receipt and repairs an addition with Edit and Undo` | Yes | Yes | — |
+
 ## Issue 13 — AI correction is the primary entry editor
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
@@ -147,6 +165,84 @@ controls.
 | 13.9 | Invalid/ambiguous/failed AI leaves persistence unchanged, preserves instruction, and offers fallback. | `e2e/ai-correction.spec.ts` — `preserves the instruction and persisted entry after a failed AI correction` | Yes | Yes | — |
 | 13.10 | Either mode updates row, source/destination totals, and history exactly once through owned update. | `e2e/ai-correction.spec.ts` — `saves either correction mode exactly once and reconciles every aggregate`; `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |
 | 13.11 | Default state, scaling, selectors, switching, recovery, persistence, aggregates, and authorization are automated. | All `e2e/ai-correction.spec.ts` scenarios above; `e2e/authorization.spec.ts` ownership scenario; live correction smoke | Yes | Yes | Yes |
+
+## Issue 14 — Keep logging receipts compact without hiding prior results
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 14.1 | Every receipt in the current burst remains reachable instead of being reduced to the latest result. | `e2e/composer.spec.ts` — `keeps a long logging burst compact while suggestions and every receipt remain reachable` | Yes | Yes | — |
+| 14.2 | Matching historical suggestions stay directly below the input and visible without vertical scrolling after at least ten successes. | `e2e/composer.spec.ts` — `keeps a long logging burst compact while suggestions and every receipt remain reachable` | Yes | Yes | — |
+| 14.3 | The receipt activity has bounded height and communicates logged group and food counts without overwhelming the composer. | `e2e/composer.spec.ts` — `keeps a long logging burst compact while suggestions and every receipt remain reachable` | Yes | Yes | — |
+| 14.4 | The appropriate Edit and Undo actions remain available, and receipt dates stay explicit after dashboard date navigation. | `e2e/composer.spec.ts` — `operates compact receipt Edit and Undo after a selected-day change` | Yes | Yes | — |
+| 14.5 | The chosen vertical collapsible design introduces no horizontal gesture conflict, and receipts remain operable by keyboard and assistive technology. | `e2e/composer.spec.ts` — `operates compact receipt Edit and Undo after a selected-day change` | Yes | Yes | — |
+| 14.6 | Long-burst compaction, suggestion visibility, receipt navigation, Edit, Undo, and date changes have deterministic coverage. | Both Issue 14 `e2e/composer.spec.ts` scenarios above | Yes | Yes | — |
+
+## Issue 15 — Historical suggestions are keyboard-first
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 15.1 | Arrow Down/Up moves the visible active option while focus remains in the composer input. | `e2e/suggestions.spec.ts` — `selects an active historical suggestion with arrows and Enter without AI` | Yes | Yes | — |
+| 15.2 | Enter logs the active stored configuration without AI; with no active option it retains natural-language submission. | `e2e/suggestions.spec.ts` — `selects an active historical suggestion with arrows and Enter without AI`; `e2e/composer.spec.ts` — `submits consecutive entries with Enter and restores composer focus` | Yes | Yes | — |
+| 15.3 | Escape dismisses suggestions without clearing input or moving focus. | `e2e/suggestions.spec.ts` — `dismisses suggestions without losing text and keeps accessibility state current` | Yes | Yes | — |
+| 15.4 | The listbox, active descendant, option selection, pointer movement, and pointer leave expose current accessibility state. | Both new keyboard/accessibility `e2e/suggestions.spec.ts` scenarios above | Yes | Yes | — |
+| 15.5 | Send controls have stable accessible names and suggestion actions show keyboard focus. | `e2e/suggestions.spec.ts` — `dismisses suggestions without losing text and keeps accessibility state current` | Yes | Yes | — |
+| 15.6 | Desktop/mobile cover keyboard selection and AI bypass, pointer selection, dismissal, focus restoration, and stale responses. | The two new scenarios above; `reuses a stored suggestion on the selected day without an AI request`; `debounces a large history and ignores stale suggestion responses` | Yes | Yes | — |
+
+## Issue 16 — Use shared date and meal inputs across editing and duplication
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 16.1 | Individual-entry editing and whole-meal duplication render the same shared Date and Meal inputs. | `frontend/src/app/components/ScheduleInputs.test.ts` — `exposes one controlled date-and-meal interface with the shared labels`; `e2e/shared-schedule-inputs.spec.ts` — `keeps Date and Meal behavior consistent across editing and duplication in every locale` | Yes | Yes | — |
+| 16.2 | Labels, order, dimensions, options, disabled states, validation, and errors are consistent in both journeys. | `e2e/shared-schedule-inputs.spec.ts` — `keeps Date and Meal behavior consistent across editing and duplication in every locale`; `e2e/meal-duplication.spec.ts` — `rejects an invalid shared destination date and preserves the meal selection` | Yes | Yes | — |
+| 16.3 | Shared inputs expose one typed value/change contract without mutation-specific save logic. | `frontend/src/app/components/ScheduleInputs.test.ts` — `exposes one controlled date-and-meal interface with the shared labels`; `lets a meal-only caller control a translated selection without clipping it` | Yes | Yes | — |
+| 16.4 | Keyboard behavior, 44-pixel targets, focus treatment, and accessible labels are consistent on desktop and mobile. | `e2e/shared-schedule-inputs.spec.ts` — `keeps Date and Meal behavior consistent across editing and duplication in every locale`; both `e2e/ui-consistency.spec.ts` localized scenarios | Yes | Yes | — |
+| 16.5 | Every supported locale contains translated dates, selected meals, and all meal options without clipping or document overflow. | `e2e/shared-schedule-inputs.spec.ts` — `keeps Date and Meal behavior consistent across editing and duplication in every locale` | Yes | Yes | — |
+| 16.6 | Valid changes, invalid dates, locale rendering, entry moves, and whole-meal duplication are covered. | `e2e/ai-correction.spec.ts` — `moves the AI correction draft with explicit date and meal selectors`; `e2e/meal-duplication.spec.ts` — `chooses an explicit destination for a historical meal`; `rejects an invalid shared destination date and preserves the meal selection`; shared-locale scenario above | Yes | Yes | — |
+
+## Issue 17 — Add an explicit composer meal target
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 17.1 | The composer visibly identifies its target meal before submission and uses the selected dashboard day. | `e2e/composer.spec.ts` — `uses the clock-derived meal target and selected dashboard day` | Yes | Yes | — |
+| 17.2 | The shared meal control changes the target in one action while local time provides the zero-action default. | `e2e/composer.spec.ts` — `uses the clock-derived meal target and selected dashboard day`; `changes the composer meal target for AI and historical logging` | Yes | Yes | — |
+| 17.3 | AI descriptions and historical suggestion reuse both save to the selected day and target meal. | `e2e/composer.spec.ts` — `changes the composer meal target for AI and historical logging` | Yes | Yes | — |
+| 17.4 | Explicit meal intent returned by AI overrides the selected fallback target under the documented precedence rule. | `e2e/composer.spec.ts` — `lets explicit natural-language meal intent override the selected default` | Yes | Yes | — |
+| 17.5 | Selecting a target introduces no confirmation or clarification step before logging. | `e2e/composer.spec.ts` — `changes the composer meal target for AI and historical logging`; `retains the selected meal target across consecutive submissions` | Yes | Yes | — |
+| 17.6 | Default and changed meals, another selected day, historical AI bypass, explicit intent, and consecutive submissions have deterministic coverage. | All four Issue 17 `e2e/composer.spec.ts` scenarios above | Yes | Yes | — |
+
+## Issue 18 — Edit and resubmit a failed description
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 18.1 | A failed submission exposes direct Retry and a clearly labeled edit action that restores exact text and focus. | `e2e/composer.spec.ts` — `preserves the exact failed submission and retries from the failed stage`; `edits and resubmits a failed description as a new parse attempt` | Yes | Yes | — |
+| 18.2 | Editing preserves retained retry state until replacement submission or explicit cancellation. | `e2e/composer.spec.ts` — `edits and resubmits a failed description as a new parse attempt`; `cancels a failed-description edit without blocking unrelated submissions` | Yes | Yes | — |
+| 18.3 | Save-stage Retry reuses recognized foods without another parse request. | `e2e/composer.spec.ts` — `preserves the exact failed submission and retries from the failed stage` | Yes | Yes | — |
+| 18.4 | Edited text starts a new parse, supersedes the repaired failure, and does not duplicate status. | `e2e/composer.spec.ts` — `edits and resubmits a failed description as a new parse attempt` | Yes | Yes | — |
+| 18.5 | Keyboard/touch/assistive interactions remain focused and do not block unrelated submissions. | Both new issue-18 `e2e/composer.spec.ts` scenarios above | Yes | Yes | — |
+| 18.6 | Desktop/mobile cover parse/save retry, edit success, cancellation, exact text, focus, and reload persistence. | The existing retry scenario and both new issue-18 scenarios above | Yes | Yes | — |
+
+## Issue 21 — Redesign dashboard date navigation
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 21.1 | Previous, selected date, and Next form one compact composed control with the selected date primary. | `e2e/date-navigation.spec.ts` — `navigates previous and next dates and labels the selected day`; `frontend/src/app/components/DateNavigator.test.ts` — `exposes a composed controlled previous, selected, and next-day interface` | Yes | Yes | — |
+| 21.2 | Previous and Next retain at least 44 by 44 CSS-pixel targets without dominating the selected date. | Both `e2e/ui-consistency.spec.ts` localized scenarios; `frontend/src/app/components/DateNavigator.test.ts` — `exposes a composed controlled previous, selected, and next-day interface` | Yes | Yes | — |
+| 21.3 | Today is exposed only off today, returns in one action, and its reserved slot prevents layout shift. | `e2e/date-navigation.spec.ts` — `keeps keyboard focus, announces one selected day, and returns to Today without shifting`; `returns directly to today from another date` | Yes | Yes | — |
+| 21.4 | Activating the selected date opens the shared Date input for direct navigation. | `e2e/date-navigation.spec.ts` — `directly selects a date across a month and year boundary with destination labels`; `frontend/src/app/components/DateNavigator.test.ts` — `opens the shared date input from the selected date for direct navigation`; `keeps direct navigation open and reports an invalid cleared date` | Yes | Yes | — |
+| 21.5 | Previous and Next names include destination dates, and one polite live region announces the selected day. | `e2e/date-navigation.spec.ts` — `directly selects a date across a month and year boundary with destination labels`; `keeps keyboard focus, announces one selected day, and returns to Today without shifting` | Yes | Yes | — |
+| 21.6 | Long Russian, Polish, and Tatar dates remain contained at 320, 390, and 430 CSS pixels. | `e2e/date-navigation.spec.ts` — `contains long Russian Polish and Tatar dates at 320 390 and 430 pixels` | Yes | Yes | — |
+| 21.7 | Today, adjacent navigation, direct selection, month/year boundaries, locale widths, keyboard focus, announcements, and one-action return are deterministic on desktop and mobile. | All Issue 21 `e2e/date-navigation.spec.ts` scenarios above | Yes | Yes | — |
+
+## Issue 22 — Slow the typewriter suggestion cadence
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 22.1 | Typing and deleting continue to rotate the localized food examples. | `frontend/src/app/hooks/useTypewriterPlaceholder.test.ts` — `types, holds, deletes, and rotates through the hardcoded suggestions`; `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label` | Yes | Yes | — |
+| 22.2 | A completed example stays visible for at least four seconds and a different example does not begin within seven seconds. | `frontend/src/app/hooks/useTypewriterPlaceholder.test.ts` — `keeps a completed suggestion fully visible for at least four seconds`; `does not start a different suggestion within seven seconds` | Yes | Yes | — |
+| 22.3 | Cadence bounds use named timing constants and deterministic fake timers, not browser timing assertions. | The two cadence tests in `frontend/src/app/hooks/useTypewriterPlaceholder.test.ts` | Yes | Yes | — |
+| 22.4 | User text wins immediately, and opening, closing, and submitting do not reveal stale characters. | `e2e/composer.spec.ts` — `keeps the label stable and the placeholder coherent with reduced motion` | Yes | Yes | — |
+| 22.5 | Reduced motion renders one complete stable example while the accessible input label stays fixed. | `frontend/src/app/hooks/useTypewriterPlaceholder.test.ts` — `shows one complete suggestion without animation when motion is reduced`; `e2e/composer.spec.ts` — `keeps the label stable and the placeholder coherent with reduced motion` | Yes | Yes | — |
+| 22.6 | Desktop and mobile cover the stable label and reduced-motion behavior. | `e2e/composer.spec.ts` — `keeps the label stable and the placeholder coherent with reduced motion` | Yes | Yes | — |
 
 ## Required state-shape coverage
 

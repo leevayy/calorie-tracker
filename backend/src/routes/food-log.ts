@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   CreateFoodEntriesBodySchema,
   CreateFoodEntriesResponseSchema,
-  CreateFoodEntryBodySchema,
   DayLogResponseSchema,
   DeleteFoodEntriesBodySchema,
   DeleteFoodEntriesResponseSchema,
@@ -273,43 +272,6 @@ export async function registerFoodLogRoutes(
         meals,
       });
       return reply.status(200).send(response);
-    },
-  );
-
-  app.post(
-    "/days/:day/entries",
-    {
-      schema: {
-        tags: ["food-log"],
-        security: [{ bearerAuth: [] }],
-        params: toJsonSchema(DayParamSchema),
-        body: toJsonSchema(CreateFoodEntryBodySchema),
-        response: {
-          201: toJsonSchema(FoodEntryResponseSchema),
-          400: ErrorResponseJsonSchema,
-          401: ErrorResponseJsonSchema,
-        },
-      },
-      preHandler: app.authenticate,
-    },
-    async (request, reply) => {
-      const userId = userIdFromRequest(request);
-      if (!userId) return sendUnauthorized(reply);
-
-      const dayParsed = DayParamSchema.safeParse(request.params);
-      if (!dayParsed.success) return sendValidationError(reply);
-      const bodyParsed = CreateFoodEntryBodySchema.safeParse(request.body);
-      if (!bodyParsed.success) return sendValidationError(reply);
-
-      const user = await repository.findUser(userId);
-      if (!user) return sendUnauthorized(reply);
-
-      const input: CreateFoodEntryRequest = { ...bodyParsed.data, day: dayParsed.data.day };
-      const mealSlug = await resolveSlug(input, dependencies.resolveMealSlug);
-      const record = createRecord(input, userId, mealSlug, dependencies);
-      const [created] = await repository.createEntriesAtomic([record]);
-      if (!created) throw new Error("Food entry insert returned no entry");
-      return reply.status(201).send(toFoodEntryResponse(created));
     },
   );
 

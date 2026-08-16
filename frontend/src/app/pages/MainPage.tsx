@@ -7,29 +7,41 @@ import type {
   HistoricalFoodSuggestion,
   UpdateFoodEntryBody,
 } from "@contracts/food-log";
-import type { FormEvent } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, Send } from "lucide-react";
+import { Check, ChevronDown, Pencil, RotateCcw, Send } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
+import { DateNavigator } from "../components/DateNavigator";
 import { FoodEntryEditor } from "../components/FoodEntryEditor";
 import { MealSection } from "../components/MealSection";
+import { MealInput } from "../components/ScheduleInputs";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useTypewriterPlaceholder } from "../hooks/useTypewriterPlaceholder";
 import { useAppTabChat } from "../context/AppTabChatContext";
 import { useBehavioralToday } from "./main/mainPageHooks";
+import {
+  loadFailedLoggingSubmissions,
+  saveFailedLoggingSubmissions,
+  type PersistedFailedLoggingSubmission,
+} from "./main/failedLoggingSubmissionsStorage";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import { Input, inputVariants } from "../components/ds/Input";
 import { Text } from "../components/ds/Text";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../components/ui/collapsible";
 import { cn } from "../components/ui/utils";
 import { useRootStore } from "@/stores/StoreContext";
 import {
   buildParseFoodTiming,
-  addDaysLocal,
+  defaultMealTypeForLocalTime,
   formatLogDayLabel,
   localIsoDate,
   weekRangeEndingOn,
@@ -38,10 +50,12 @@ import { sumDayMacros } from "@/utils/macroTotals";
 import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 import {
   formatLocalizedEnergy,
+  formatLocalizedGrams,
   formatStandaloneCalendarDate,
 } from "@/utils/localeFormat";
 
 const CHAT_SUGGESTION_LIMIT = 3;
+const HISTORICAL_SUGGESTION_LIST_ID = "historical-food-suggestions";
 const FOOD_PLACEHOLDER_KEYS = [
   "chickenMushrooms",
   "hamSandwich",
@@ -59,6 +73,8 @@ type LoggingSubmission = {
   errorKey?: string;
   foods: CreateFoodEntryRequest[];
   timing: ReturnType<typeof buildParseFoodTiming>;
+  /** Keep the last recoverable failure until an in-flight retry actually succeeds. */
+  durableFailure?: PersistedFailedLoggingSubmission;
 };
 
 type LoggingReceipt = {
@@ -66,10 +82,42 @@ type LoggingReceipt = {
   entries: FoodEntryResponse[];
 };
 
+type FailedSubmissionEdit = {
+  submissionId: string;
+  previousInput: string;
+};
+
+function historicalSuggestionIdentity(item: HistoricalFoodSuggestion): string {
+  return [
+    item.name,
+    item.portion ?? "",
+    item.calories,
+    item.protein,
+    item.carbs,
+    item.fats,
+    item.fiber,
+    item.mealSlug ?? "",
+  ].join("|");
+}
+
+function persistedFailureFromSubmission(
+  submission: LoggingSubmission,
+): PersistedFailedLoggingSubmission | null {
+  if (!submission.retryFrom || !submission.errorKey) return null;
+  return {
+    id: submission.id,
+    text: submission.text,
+    retryFrom: submission.retryFrom,
+    errorKey: submission.errorKey,
+    foods: submission.foods,
+    timing: submission.timing,
+  };
+}
+
 const MainPage = observer(function MainPage() {
   useRequireAuth();
   const { t, i18n } = useTranslation();
-  const { profile, foodLog, aiParse } = useRootStore();
+  const { session, profile, foodLog, aiParse } = useRootStore();
   const language = i18n.resolvedLanguage ?? i18n.language;
   const foodPlaceholderSuggestions = useMemo(
     () => FOOD_PLACEHOLDER_KEYS.map((key) => t(`main.logFoodSuggestions.${key}`)),
@@ -89,9 +137,32 @@ const MainPage = observer(function MainPage() {
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
   const [chatInput, setChatInput] = useState("");
-  const [loggingSubmissions, setLoggingSubmissions] = useState<LoggingSubmission[]>([]);
+  const [composerMealTarget, setComposerMealTarget] = useState<MealType>(() =>
+    defaultMealTypeForLocalTime(),
+  );
+  const composerMealTargetOverriddenRef = useRef(false);
+  const [failedSubmissionEdit, setFailedSubmissionEdit] = useState<FailedSubmissionEdit | null>(null);
+  const [activeHistoricalSuggestionIndex, setActiveHistoricalSuggestionIndex] = useState(-1);
+  const [dismissedHistoricalSuggestionQuery, setDismissedHistoricalSuggestionQuery] = useState("");
+  const historicalSuggestionSetIdentity = foodLog.historicalSuggestions.items
+    .map(historicalSuggestionIdentity)
+    .join("\u001e");
+  const failedSubmissionStorageUserId = session?.user?.id;
+  const [loggingSubmissions, setLoggingSubmissions] = useState<LoggingSubmission[]>(() =>
+    loadFailedLoggingSubmissions(failedSubmissionStorageUserId).map((submission) => ({
+      ...submission,
+      phase: "failed",
+    })),
+  );
   const [loggingReceipts, setLoggingReceipts] = useState<LoggingReceipt[]>([]);
-  const submissionIdRef = useRef(0);
+  const [receiptActivityOpen, setReceiptActivityOpen] = useState(true);
+  const previousReceiptCountRef = useRef(0);
+  const submissionIdRef = useRef(
+    loggingSubmissions.reduce((highestId, submission) => {
+      const match = /^logging-submission-(\d+)$/.exec(submission.id);
+      return match ? Math.max(highestId, Number(match[1])) : highestId;
+    }, 0),
+  );
   const nextSubmissionId = () => {
     submissionIdRef.current += 1;
     return `logging-submission-${submissionIdRef.current}`;
@@ -207,6 +278,8 @@ const MainPage = observer(function MainPage() {
         ...food,
         // The explicitly selected dashboard day is authoritative for this composer.
         day: submission.timing.defaultLogDay,
+        // `defaultMealType` is only the fallback sent to parsing. A meal named
+        // in the description is returned on the food and intentionally wins.
       })),
     );
   };
@@ -219,17 +292,32 @@ const MainPage = observer(function MainPage() {
       text: chatInput,
       phase: "parsing",
       foods: [],
-      timing: { ...buildParseFoodTiming(), defaultLogDay: selectedDay },
+      timing: {
+        ...buildParseFoodTiming(),
+        defaultLogDay: selectedDay,
+        defaultMealType: composerMealTarget,
+      },
     };
+    const supersededSubmissionId = failedSubmissionEdit?.submissionId;
     setChatInput("");
-    setLoggingSubmissions((current) => [submission, ...current]);
+    setActiveHistoricalSuggestionIndex(-1);
+    setDismissedHistoricalSuggestionQuery("");
+    setFailedSubmissionEdit(null);
+    setLoggingSubmissions((current) => [
+      submission,
+      ...current.filter((candidate) => candidate.id !== supersededSubmissionId),
+    ]);
     setChatExpanded(true);
     void parseAndSaveSubmission(submission);
     focusChatInput();
   };
 
   const handleHistoricalSuggestion = (suggestion: HistoricalFoodSuggestion) => {
-    const timing = { ...buildParseFoodTiming(), defaultLogDay: selectedDay };
+    const timing = {
+      ...buildParseFoodTiming(),
+      defaultLogDay: selectedDay,
+      defaultMealType: composerMealTarget,
+    };
     const food: CreateFoodEntryRequest = {
       day: selectedDay,
       mealType: timing.defaultMealType,
@@ -249,18 +337,104 @@ const MainPage = observer(function MainPage() {
       foods: [food],
       timing,
     };
+    const supersededSubmissionId = failedSubmissionEdit?.submissionId;
     setChatInput("");
-    setLoggingSubmissions((current) => [submission, ...current]);
+    setActiveHistoricalSuggestionIndex(-1);
+    setDismissedHistoricalSuggestionQuery("");
+    setFailedSubmissionEdit(null);
+    setLoggingSubmissions((current) => [
+      submission,
+      ...current.filter((candidate) => candidate.id !== supersededSubmissionId),
+    ]);
     foodLog.historicalSuggestions.clear();
     void saveSubmission(submission, [food]);
     focusChatInput();
+  };
+
+  const historicalSuggestionQuery = chatInput.trim();
+  const historicalSuggestionsVisible =
+    historicalSuggestionQuery.length > 0 &&
+    foodLog.historicalSuggestions.query === historicalSuggestionQuery &&
+    foodLog.historicalSuggestions.fetchState === "success" &&
+    foodLog.historicalSuggestions.items.length > 0 &&
+    dismissedHistoricalSuggestionQuery !== historicalSuggestionQuery;
+  const activeHistoricalSuggestion = historicalSuggestionsVisible
+    ? foodLog.historicalSuggestions.items[activeHistoricalSuggestionIndex]
+    : undefined;
+
+  const handleChatInputChange = (value: string) => {
+    setChatInput(value);
+    setActiveHistoricalSuggestionIndex(-1);
+    setDismissedHistoricalSuggestionQuery("");
+  };
+
+  const beginFailedSubmissionEdit = (submission: LoggingSubmission) => {
+    setFailedSubmissionEdit((current) => ({
+      submissionId: submission.id,
+      previousInput: current?.previousInput ?? chatInput,
+    }));
+    handleChatInputChange(submission.text);
+    focusChatInput();
+  };
+
+  const cancelFailedSubmissionEdit = () => {
+    if (!failedSubmissionEdit) return;
+    handleChatInputChange(failedSubmissionEdit.previousInput);
+    setFailedSubmissionEdit(null);
+    focusChatInput();
+  };
+
+  const handleChatInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    const suggestionCount = foodLog.historicalSuggestions.items.length;
+    if ((event.key === "ArrowDown" || event.key === "ArrowUp") && historicalSuggestionsVisible) {
+      event.preventDefault();
+      setActiveHistoricalSuggestionIndex((current) => {
+        if (event.key === "ArrowDown") return current < 0 ? 0 : (current + 1) % suggestionCount;
+        return current < 0 ? suggestionCount - 1 : (current - 1 + suggestionCount) % suggestionCount;
+      });
+      return;
+    }
+    if (event.key === "Enter" && activeHistoricalSuggestion) {
+      event.preventDefault();
+      handleHistoricalSuggestion(activeHistoricalSuggestion);
+      return;
+    }
+    if (event.key === "Escape" && historicalSuggestionsVisible) {
+      event.preventDefault();
+      event.stopPropagation();
+      setActiveHistoricalSuggestionIndex(-1);
+      setDismissedHistoricalSuggestionQuery(historicalSuggestionQuery);
+      return;
+    }
+    if (event.key === "Escape" && failedSubmissionEdit) {
+      event.preventDefault();
+      event.stopPropagation();
+      cancelFailedSubmissionEdit();
+    }
   };
 
   const onFoodLogSheetOpenChange = (open: boolean) => {
     setChatExpanded(open);
   };
 
+  const openFoodLogSheet = () => {
+    if (!composerMealTargetOverriddenRef.current) {
+      setComposerMealTarget(defaultMealTypeForLocalTime());
+    }
+    setChatExpanded(true);
+  };
+
+  const changeComposerMealTarget = (mealType: MealType) => {
+    composerMealTargetOverriddenRef.current = true;
+    setComposerMealTarget(mealType);
+  };
+
   const handleRetrySubmission = (submission: LoggingSubmission) => {
+    if (failedSubmissionEdit?.submissionId === submission.id) {
+      cancelFailedSubmissionEdit();
+    }
+    const durableFailure = persistedFailureFromSubmission(submission);
+    if (durableFailure) updateSubmission(submission.id, { durableFailure });
     if (submission.retryFrom === "save") {
       void saveSubmission(submission, submission.foods);
     } else {
@@ -338,6 +512,14 @@ const MainPage = observer(function MainPage() {
     return () => window.clearTimeout(timeoutId);
   }, [undoEntry]);
 
+  useEffect(() => {
+    const previousCount = previousReceiptCountRef.current;
+    if (previousCount <= 1 && loggingReceipts.length > 1) {
+      setReceiptActivityOpen(false);
+    }
+    previousReceiptCountRef.current = loggingReceipts.length;
+  }, [loggingReceipts.length]);
+
   const dayData = foodLog.dayRead.data;
   const dayFetch = foodLog.dayRead.fetchState;
   const mutationBusy =
@@ -349,6 +531,10 @@ const MainPage = observer(function MainPage() {
       : foodLog.entryDelete.fetchState === "error"
         ? foodLog.entryDelete.errorKey
         : "";
+  const loggedFoodCount = loggingReceipts.reduce(
+    (count, receipt) => count + receipt.entries.length,
+    0,
+  );
 
   const pendingFoodsForMeal = (mealType: MealType) =>
     loggingSubmissions.flatMap((submission) => {
@@ -392,8 +578,31 @@ const MainPage = observer(function MainPage() {
     return () => window.clearTimeout(timeoutId);
   }, [chatInput, foodLog.historicalSuggestions]);
 
+  useEffect(() => {
+    setActiveHistoricalSuggestionIndex(-1);
+  }, [historicalSuggestionSetIdentity]);
+
+  useEffect(() => {
+    saveFailedLoggingSubmissions(
+      failedSubmissionStorageUserId,
+      loggingSubmissions.flatMap((submission) =>
+        submission.phase === "failed"
+          ? [persistedFailureFromSubmission(submission)].filter(
+              (failure): failure is PersistedFailedLoggingSubmission => failure !== null,
+            )
+          : submission.durableFailure
+            ? [submission.durableFailure]
+            : [],
+      ),
+    );
+  }, [failedSubmissionStorageUserId, loggingSubmissions]);
+
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background">
+    <div
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background"
+      aria-hidden={chatExpanded || undefined}
+      inert={chatExpanded || undefined}
+    >
       {profile.read.fetchState === "error" && profile.read.errorKey ? (
         <div className="px-4 pt-2">
           <Card className="bg-destructive/10 px-0 py-2">
@@ -416,47 +625,12 @@ const MainPage = observer(function MainPage() {
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4">
-        <div
-          className="mb-4 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-2"
-          aria-label={t("main.dateNavigation")}
-        >
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            aria-label={t("main.previousDay")}
-            onClick={() => setSelectedDay((day) => addDaysLocal(day, -1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex min-w-0 flex-col items-center text-center">
-            <Text weight="semibold" className="w-full leading-6">
-              {formatStandaloneCalendarDate(
-                selectedDay,
-                i18n.resolvedLanguage ?? i18n.language,
-              )}
-            </Text>
-            {selectedDay !== today ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mt-0 px-2 text-primary-ink hover:text-primary-ink"
-                onClick={() => setSelectedDay(today)}
-              >
-                {t("main.returnToToday")}
-              </Button>
-            ) : null}
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            aria-label={t("main.nextDay")}
-            onClick={() => setSelectedDay((day) => addDaysLocal(day, 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="mb-4">
+          <DateNavigator
+            selectedDay={selectedDay}
+            today={today}
+            onChange={setSelectedDay}
+          />
         </div>
         <AsyncSection
           fetchState={dayFetch}
@@ -537,7 +711,7 @@ const MainPage = observer(function MainPage() {
               aria-haspopup="dialog"
               aria-controls="food-log-sheet"
               aria-expanded={false}
-              onClick={() => setChatExpanded(true)}
+              onClick={openFoodLogSheet}
               className={cn(
                 inputVariants(),
                 "min-w-0 flex-1 cursor-text items-center text-left font-normal touch-manipulation",
@@ -566,9 +740,10 @@ const MainPage = observer(function MainPage() {
               type="submit"
               size="icon"
               className="shrink-0"
+              aria-label={t("main.sendFood")}
               disabled={!chatInput.trim()}
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             </Button>
           </form>
         </div>
@@ -592,152 +767,85 @@ const MainPage = observer(function MainPage() {
               {t("main.foodLogSheetTitle")}
             </Drawer.Title>
             <Drawer.Handle className="mb-2 shrink-0 bg-muted" />
+            <div className="shrink-0 pt-2">
+              <MealInput value={composerMealTarget} onChange={changeComposerMealTarget} />
+            </div>
             <form onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 shrink-0 gap-2 pt-2">
               <Input
                 ref={setExpandedInputRef}
+                role="combobox"
                 aria-label={t("main.logFoodPlaceholder")}
                 placeholder={foodPlaceholder.text}
                 data-suggestion={foodPlaceholder.suggestion}
                 data-typewriter-phase={foodPlaceholder.phase}
                 value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
+                aria-autocomplete="list"
+                aria-expanded={historicalSuggestionsVisible}
+                aria-controls={historicalSuggestionsVisible ? HISTORICAL_SUGGESTION_LIST_ID : undefined}
+                aria-activedescendant={
+                  activeHistoricalSuggestion
+                    ? `${HISTORICAL_SUGGESTION_LIST_ID}-option-${activeHistoricalSuggestionIndex}`
+                    : undefined
+                }
+                onChange={(e) => handleChatInputChange(e.target.value)}
+                onKeyDown={handleChatInputKeyDown}
                 className="min-w-0 flex-1"
               />
               <Button
                 type="submit"
                 size="icon"
                 className="shrink-0"
+                aria-label={t("main.sendFood")}
                 disabled={!chatInput.trim()}
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-4 w-4" aria-hidden="true" />
               </Button>
             </form>
 
+            {failedSubmissionEdit ? (
+              <div className="mt-2 flex shrink-0 items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-1.5">
+                <Text size="sm" variant="muted" className="min-w-0 truncate">
+                  {t("main.editingFailedSubmission")}
+                </Text>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0"
+                  onClick={cancelFailedSubmissionEdit}
+                >
+                  {t("main.cancelFailedSubmissionEdit")}
+                </Button>
+              </div>
+            ) : null}
+
             <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
-                {loggingSubmissions.some((submission) => submission.phase !== "failed") ? (
-                  <div className="space-y-1" aria-live="polite">
-                    {loggingSubmissions
-                      .filter((submission) => submission.phase !== "failed")
-                      .map((submission) => (
-                        <div
-                          key={submission.id}
-                          className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
-                        >
-                          <Text className="min-w-0 flex-1 truncate">{submission.text}</Text>
-                          <Text variant="muted" size="sm" className="shrink-0">
-                            {t(`main.pending.${submission.phase}`)}
-                          </Text>
-                        </div>
-                      ))}
-                  </div>
-                ) : null}
-
-                {loggingSubmissions.some((submission) => submission.phase === "failed") ? (
-                  <div className="space-y-2">
-                    {loggingSubmissions
-                      .filter((submission) => submission.phase === "failed")
-                      .map((submission) => (
-                        <Card key={submission.id} className="bg-destructive/10 px-3 py-3">
-                          <Text weight="medium" className="break-words">
-                            {submission.text}
-                          </Text>
-                          <Text variant="error" size="sm" className="mt-1" role="alert">
-                            {t(submission.errorKey ?? "errors.unknown")}
-                          </Text>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            className="mt-2"
-                            onClick={() => handleRetrySubmission(submission)}
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                            {t("main.retrySubmission")}
-                          </Button>
-                        </Card>
-                      ))}
-                  </div>
-                ) : null}
-
-                {loggingReceipts.length > 0 ? (
-                  <div className="space-y-2" aria-live="polite">
-                    {loggingReceipts.map((receipt) => (
-                      <Card key={receipt.id} className="bg-success/10 px-3 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <Check className="h-4 w-4 shrink-0 text-success" />
-                            <Text weight="semibold">
-                              {t("main.addedReceipt", { count: receipt.entries.length })}
-                            </Text>
-                          </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            loading={undoingReceiptId === receipt.id}
-                            disabled={undoingReceiptId !== null && undoingReceiptId !== receipt.id}
-                            onClick={() => void handleUndoReceipt(receipt)}
-                          >
-                            {t("main.undoSubmission")}
-                          </Button>
-                        </div>
-                        <div className="mt-2 space-y-2">
-                          {receipt.entries.map((entry) => (
-                            <div key={entry.id} className="flex items-center gap-2">
-                              <div className="min-w-0 flex-1">
-                                <Text className="truncate">{entry.name}</Text>
-                                <Text variant="muted" size="sm">
-                                  {formatLogDayLabel(
-                                    entry.day,
-                                    localIsoDate(),
-                                    i18n.resolvedLanguage ?? i18n.language,
-                                  )}{" "}
-                                  · {t(`meals.${entry.mealType}`)}
-                                </Text>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                aria-label={t("main.editAddedFood", { name: entry.name })}
-                                onClick={() => {
-                                  setChatExpanded(false);
-                                  openEntryEditor(entry);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                                {t("main.edit")}
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                        {receiptErrorId === receipt.id ? (
-                          <Text variant="error" size="sm" className="mt-2" role="alert">
-                            {t(foodLog.entryDelete.errorKey || "errors.unknown")}
-                          </Text>
-                        ) : null}
-                      </Card>
-                    ))}
-                  </div>
-                ) : null}
-
-                {chatInput.trim() && foodLog.historicalSuggestions.items.length > 0 ? (
-                  <div className="shrink-0 rounded-xl bg-muted/35" role="listbox" aria-label={t("main.historicalSuggestions")}>
+                {historicalSuggestionsVisible ? (
+                  <div
+                    id={HISTORICAL_SUGGESTION_LIST_ID}
+                    className="shrink-0 rounded-xl bg-muted/35"
+                    role="listbox"
+                    aria-label={t("main.historicalSuggestions")}
+                    onPointerLeave={() => setActiveHistoricalSuggestionIndex(-1)}
+                  >
                     <Text weight="semibold" className="px-4 pt-3 pb-2">
                       {t("main.historicalSuggestions")}
                     </Text>
                     <ul>
                       {foodLog.historicalSuggestions.items.map((item, index) => (
                         <li
-                          key={`${item.name}|${item.portion ?? ""}|${item.calories}|${item.protein}|${item.carbs}|${item.fats}|${item.fiber}|${index}`}
+                          key={`${historicalSuggestionIdentity(item)}|${index}`}
                           className="border-t border-border/70"
                         >
                           <button
+                            id={`${HISTORICAL_SUGGESTION_LIST_ID}-option-${index}`}
                             type="button"
                             role="option"
-                            aria-selected={false}
-                            className="w-full px-4 py-3 text-left transition-colors hover:bg-accent/90 active:bg-accent"
+                            aria-selected={activeHistoricalSuggestionIndex === index}
+                            className="w-full px-4 py-3 text-left transition-colors hover:bg-accent/90 active:bg-accent aria-selected:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                            onPointerMove={() => setActiveHistoricalSuggestionIndex(index)}
+                            onFocus={() => setActiveHistoricalSuggestionIndex(index)}
                             onClick={() => handleHistoricalSuggestion(item)}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -752,6 +860,12 @@ const MainPage = observer(function MainPage() {
                                     i18n.resolvedLanguage ?? i18n.language,
                                     t("history.calShort"),
                                   )}
+                                </Text>
+                                <Text as="span" variant="muted" size="xs" className="mt-0.5 block">
+                                  {t("macros.proteinLetter")} {formatLocalizedGrams(item.protein, language)} ·{" "}
+                                  {t("macros.carbsLetter")} {formatLocalizedGrams(item.carbs, language)} ·{" "}
+                                  {t("macros.fatsLetter")} {formatLocalizedGrams(item.fats, language)} ·{" "}
+                                  {t("macros.fiberLetter")} {formatLocalizedGrams(item.fiber, language)}
                                 </Text>
                               </div>
                               <Text as="span" variant="muted" size="sm" className="shrink-0 text-right">
@@ -798,6 +912,152 @@ const MainPage = observer(function MainPage() {
                       ))}
                     </ul>
                   </div>
+                ) : null}
+
+                {loggingSubmissions.some((submission) => submission.phase !== "failed") ? (
+                  <div className="space-y-1" aria-live="polite">
+                    {loggingSubmissions
+                      .filter((submission) => submission.phase !== "failed")
+                      .map((submission) => (
+                        <div
+                          key={submission.id}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2"
+                        >
+                          <Text className="min-w-0 flex-1 truncate">{submission.text}</Text>
+                          <Text variant="muted" size="sm" className="shrink-0">
+                            {t(`main.pending.${submission.phase}`)}
+                          </Text>
+                        </div>
+                      ))}
+                  </div>
+                ) : null}
+
+                {loggingSubmissions.some((submission) => submission.phase === "failed") ? (
+                  <div className="space-y-2">
+                    {loggingSubmissions
+                      .filter((submission) => submission.phase === "failed")
+                      .map((submission) => (
+                        <Card key={submission.id} className="bg-destructive/10 px-3 py-3">
+                          <Text weight="medium" className="break-words">
+                            {submission.text}
+                          </Text>
+                          <Text variant="error" size="sm" className="mt-1" role="alert">
+                            {t(submission.errorKey ?? "errors.unknown")}
+                          </Text>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleRetrySubmission(submission)}
+                            >
+                              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                              {t("main.retrySubmission")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => beginFailedSubmissionEdit(submission)}
+                            >
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                              {t("main.editFailedSubmission")}
+                            </Button>
+                          </div>
+                        </Card>
+                      ))}
+                  </div>
+                ) : null}
+
+                {loggingReceipts.length > 0 ? (
+                  <Collapsible
+                    open={receiptActivityOpen}
+                    onOpenChange={setReceiptActivityOpen}
+                    className="shrink-0 rounded-xl border border-border/70 bg-muted/20"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="group w-full px-3 [&>span]:w-full [&>span]:justify-between"
+                      >
+                        <span aria-live="polite" aria-atomic="true">
+                          {t("main.loggingActivitySummary", {
+                            count: loggingReceipts.length,
+                            foods: t("main.loggedFoods", { count: loggedFoodCount }),
+                          })}
+                        </span>
+                        <ChevronDown
+                          className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
+                          aria-hidden="true"
+                        />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="max-h-64 space-y-2 overflow-y-auto overscroll-contain p-2 [scrollbar-gutter:stable]">
+                      {loggingReceipts.map((receipt) => (
+                        <Card key={receipt.id} className="bg-success/10 px-3 py-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <Check className="h-4 w-4 shrink-0 text-success" />
+                              <Text weight="semibold">
+                                {t("main.addedReceipt", { count: receipt.entries.length })}
+                              </Text>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              aria-label={t("main.undoAddedGroup", {
+                                foods: new Intl.ListFormat(language, {
+                                  style: "long",
+                                  type: "conjunction",
+                                }).format(receipt.entries.map((entry) => entry.name)),
+                              })}
+                              loading={undoingReceiptId === receipt.id}
+                              disabled={undoingReceiptId !== null && undoingReceiptId !== receipt.id}
+                              onClick={() => void handleUndoReceipt(receipt)}
+                            >
+                              {t("main.undoSubmission")}
+                            </Button>
+                          </div>
+                          <div className="mt-2 space-y-2">
+                            {receipt.entries.map((entry) => (
+                              <div key={entry.id} className="flex items-center gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <Text className="truncate">{entry.name}</Text>
+                                  <Text variant="muted" size="sm">
+                                    {formatStandaloneCalendarDate(
+                                      entry.day,
+                                      i18n.resolvedLanguage ?? i18n.language,
+                                    )}{" "}
+                                    · {t(`meals.${entry.mealType}`)}
+                                  </Text>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  aria-label={t("main.editAddedFood", { name: entry.name })}
+                                  onClick={() => {
+                                    setChatExpanded(false);
+                                    openEntryEditor(entry);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  {t("main.edit")}
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                          {receiptErrorId === receipt.id ? (
+                            <Text variant="error" size="sm" className="mt-2" role="alert">
+                              {t(foodLog.entryDelete.errorKey || "errors.unknown")}
+                            </Text>
+                          ) : null}
+                        </Card>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
                 ) : null}
 
               </div>

@@ -1,4 +1,4 @@
-import type { MealType } from "@contracts/common";
+import { IsoDateSchema, type MealType } from "@contracts/common";
 import type {
   DayLogResponse,
   FoodEntryResponse,
@@ -27,10 +27,14 @@ import { sumDayMacros } from "@/utils/macroTotals";
 import { AsyncSection, type AsyncFetchState } from "../../components/AsyncSection";
 import { FoodEntryEditor } from "../../components/FoodEntryEditor";
 import { MealSection } from "../../components/MealSection";
+import {
+  ScheduleInputs,
+  type ScheduleInputErrors,
+  type ScheduleInputValue,
+} from "../../components/ScheduleInputs";
 import { Badge } from "../../components/ds/Badge";
 import { Button } from "../../components/ds/Button";
 import { Card } from "../../components/ds/Card";
-import { Input } from "../../components/ds/Input";
 import { Text } from "../../components/ds/Text";
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
@@ -72,9 +76,12 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
   const [selectedEntry, setSelectedEntry] = useState<FoodEntryResponse | null>(null);
   const [undoEntry, setUndoEntry] = useState<FoodEntryResponse | null>(null);
   const [duplicateSourceMealType, setDuplicateSourceMealType] = useState<MealType | null>(null);
-  const [duplicateDestinationDay, setDuplicateDestinationDay] = useState(() => localIsoDate());
-  const [duplicateDestinationMealType, setDuplicateDestinationMealType] =
-    useState<MealType>("breakfast");
+  const [duplicateDestination, setDuplicateDestination] = useState<ScheduleInputValue>(() => ({
+    day: localIsoDate(),
+    mealType: "breakfast",
+  }));
+  const [duplicateScheduleErrors, setDuplicateScheduleErrors] =
+    useState<ScheduleInputErrors>({});
   const [duplicateErrorKey, setDuplicateErrorKey] = useState("");
   const [duplicateReceipt, setDuplicateReceipt] = useState<DuplicateReceipt | null>(null);
   const requestIdRef = useRef(0);
@@ -157,20 +164,33 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
 
   const openDuplicateMeal = (mealType: MealType) => {
     setDuplicateSourceMealType(mealType);
-    setDuplicateDestinationDay(localIsoDate());
-    setDuplicateDestinationMealType(mealType);
+    setDuplicateDestination({ day: localIsoDate(), mealType });
+    setDuplicateScheduleErrors({});
     setDuplicateErrorKey("");
+  };
+
+  const changeDuplicateDestination = (value: ScheduleInputValue) => {
+    setDuplicateDestination(value);
+    setDuplicateScheduleErrors(
+      IsoDateSchema.safeParse(value.day).success
+        ? {}
+        : { day: "entryEditor.validation.date" },
+    );
   };
 
   const handleDuplicateMeal = async (event: FormEvent) => {
     event.preventDefault();
-    if (!duplicateSourceMealType || !duplicateDestinationDay) return;
+    if (!duplicateSourceMealType) return;
+    if (!IsoDateSchema.safeParse(duplicateDestination.day).success) {
+      setDuplicateScheduleErrors({ day: "entryEditor.validation.date" });
+      return;
+    }
     setDuplicateErrorKey("");
     const request = {
       sourceDay: day,
       sourceMealType: duplicateSourceMealType,
-      destinationDay: duplicateDestinationDay,
-      destinationMealType: duplicateDestinationMealType,
+      destinationDay: duplicateDestination.day,
+      destinationMealType: duplicateDestination.mealType,
     };
     const result = await foodLog.mealDuplicate.duplicate(request);
     if (!result || "errorKey" in result) {
@@ -368,58 +388,12 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                               })}
                               onSubmit={(event) => void handleDuplicateMeal(event)}
                             >
-                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="min-w-0 space-y-1.5">
-                                  <Text
-                                    as="label"
-                                    htmlFor={`duplicate-destination-day-${mealType}`}
-                                    size="sm"
-                                    weight="medium"
-                                  >
-                                    {t("history.destinationDay")}
-                                  </Text>
-                                  <Input
-                                    id={`duplicate-destination-day-${mealType}`}
-                                    type="date"
-                                    value={duplicateDestinationDay}
-                                    required
-                                    disabled={duplicateLoading}
-                                    onChange={(event) =>
-                                      setDuplicateDestinationDay(event.target.value)
-                                    }
-                                  />
-                                </div>
-                                <div className="min-w-0 space-y-1.5">
-                                  <Text
-                                    as="label"
-                                    htmlFor={`duplicate-destination-meal-${mealType}`}
-                                    size="sm"
-                                    weight="medium"
-                                  >
-                                    {t("history.destinationMeal")}
-                                  </Text>
-                                  <select
-                                    id={`duplicate-destination-meal-${mealType}`}
-                                    className="h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    value={duplicateDestinationMealType}
-                                    disabled={duplicateLoading}
-                                    onChange={(event) =>
-                                      setDuplicateDestinationMealType(
-                                        event.target.value as MealType,
-                                      )
-                                    }
-                                  >
-                                    {MEAL_TYPES.map((destinationMealType) => (
-                                      <option
-                                        key={destinationMealType}
-                                        value={destinationMealType}
-                                      >
-                                        {t(`meals.${destinationMealType}`)}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
+                              <ScheduleInputs
+                                value={duplicateDestination}
+                                onChange={changeDuplicateDestination}
+                                disabled={duplicateLoading}
+                                errors={duplicateScheduleErrors}
+                              />
 
                               {duplicateErrorKey ? (
                                 <Text variant="error" role="alert">
@@ -441,7 +415,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                                   type="submit"
                                   size="sm"
                                   loading={duplicateLoading}
-                                  disabled={!duplicateDestinationDay}
+                                  disabled={!duplicateDestination.day}
                                 >
                                   {t("history.confirmDuplicate")}
                                 </Button>

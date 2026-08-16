@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db/client.ts";
 import { foodEntriesTable, usersTable } from "../db/schema.ts";
 
@@ -141,7 +141,8 @@ export const drizzleFoodLogRepository: FoodLogRepository = {
       .where(
         and(
           eq(foodEntriesTable.userId, userId),
-          ilike(foodEntriesTable.name, `%${normalizedQuery}%`),
+          // Match the lower(name) pg_trgm expression index created by the migration.
+          sql`lower(${foodEntriesTable.name}) like ${`%${normalizedQuery}%`}`,
           isNull(foodEntriesTable.deletedAt),
         ),
       )

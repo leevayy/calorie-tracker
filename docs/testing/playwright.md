@@ -69,6 +69,7 @@ npm ci --prefix frontend
 npm run e2e:install
 npm run e2e:prepare
 npm run e2e:test
+npm run e2e:verify-artifacts
 ```
 
 The command responsibilities are:
@@ -76,8 +77,11 @@ The command responsibilities are:
 - `e2e:install`: install the pinned Chromium and WebKit browsers.
 - `e2e:prepare`: verify the database is E2E-only, migrate it, reset all mutable
   data, and seed the isolated user and deterministic backend controls.
+- `e2e:verify-artifacts`: scan only the managed ignored artifact targets and
+  fail unless every retained file can be verified as credential-free.
 - `e2e:test`: build and start its own production-shaped frontend and backend on
-  strict ports, then run both deterministic projects from a clean seed.
+  strict ports, reset stale reports/results (including old videos), then run
+  both deterministic projects from a clean seed.
 - `e2e:live`: run only `live-ai-chromium`; it must fail fast unless
   `E2E_LIVE_AI=1` and provider credentials are present.
 
@@ -102,8 +106,11 @@ E2E_LIVE_AI=1 npm run e2e:live
 
 `.github/workflows/e2e.yml` provisions a new PostgreSQL 16 service for each job.
 Pull requests and pushes to `main` prepare a clean seed, run desktop Chromium and
-mobile WebKit serially, and upload the ignored redacted artifact directory even
-when a test fails. Artifacts expire after seven days.
+mobile WebKit serially. An always-run standalone verification step scans the
+managed targets after the test process exits, including when setup, tests, or
+cleanup fail abruptly. CI uploads those targets on ordinary test failures only
+when verification succeeds; unverified artifacts are never uploaded. Artifacts
+expire after seven days.
 
 The live-AI job is absent from ordinary pushes and pull requests. It runs only
 for the weekly schedule or a `workflow_dispatch` whose `live_ai` input is true,
@@ -125,8 +132,11 @@ and it fails before setup when the dedicated provider secrets are missing.
 
 ## Artifact and secret policy
 
-`artifacts/playwright/redacted/` is the only report/upload source. Test code and
-fixtures must ensure it is safe before CI upload:
+`artifacts/playwright/redacted/` is the only permitted report boundary.
+`test-results/`, `html-report/`, `service-logs/`, and `results.json` are the only
+managed reset, scan, and upload targets within it. `E2E_ARTIFACT_DIR` may select
+that directory or one of its descendants, never a path outside it. Test code and
+fixtures must ensure managed output is safe before CI upload:
 
 - do not put passwords, bearer tokens, provider keys, full request headers,
   personal data, or database URLs in titles, logs, annotations, attachments, or
@@ -139,6 +149,15 @@ fixtures must ensure it is safe before CI upload:
   keep authenticated request traces free of credential-bearing tokens;
 - attach sanitized summaries rather than raw backend requests or environment
   dumps;
+- after every run, scan retained report paths and contents, service logs, videos,
+  screenshots, and compressed trace entry paths and contents for the configured
+  database URL, test email/password, control/JWT secrets, provider credentials,
+  compact JWTs, bearer credentials, and serialized access/refresh tokens; any
+  matching file is removed before upload and the run fails (the explicit
+  `e2e-public-session-v1:` handles remain safe
+  because they are non-secret and valid only in the disposable E2E runtime);
+- quarantine unreadable archives, symlinks, and any other output that cannot be
+  fully inspected; if scanning or quarantine fails, CI skips artifact upload;
 - treat traces as sensitive even with synthetic accounts and keep CI retention
   short; and
 - send or report each Playwright video as a separate file, named by project and

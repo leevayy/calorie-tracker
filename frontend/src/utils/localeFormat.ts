@@ -3,6 +3,77 @@ import { parseIsoDateLocal } from "./date";
 
 const NO_BREAK_SPACE = "\u00a0";
 
+const MANUAL_CALENDAR_NAMES = {
+  tt: {
+    months: [
+      "гыйнвар",
+      "февраль",
+      "март",
+      "апрель",
+      "май",
+      "июнь",
+      "июль",
+      "август",
+      "сентябрь",
+      "октябрь",
+      "ноябрь",
+      "декабрь",
+    ],
+    weekdays: [
+      "якшәмбе",
+      "дүшәмбе",
+      "сишәмбе",
+      "чәршәмбе",
+      "пәнҗешәмбе",
+      "җомга",
+      "шимбә",
+    ],
+  },
+  kk: {
+    months: [
+      "қаңтар",
+      "ақпан",
+      "наурыз",
+      "сәуір",
+      "мамыр",
+      "маусым",
+      "шілде",
+      "тамыз",
+      "қыркүйек",
+      "қазан",
+      "қараша",
+      "желтоқсан",
+    ],
+    weekdays: [
+      "жексенбі",
+      "дүйсенбі",
+      "сейсенбі",
+      "сәрсенбі",
+      "бейсенбі",
+      "жұма",
+      "сенбі",
+    ],
+  },
+} as const;
+
+function formatManualCalendarDate(
+  iso: string,
+  locale: "tt" | "kk",
+  includeWeekday: boolean,
+): string {
+  const date = parseIsoDateLocal(iso);
+  const names = MANUAL_CALENDAR_NAMES[locale];
+  const day = date.getDate();
+  const month = names.months[date.getMonth()];
+  const year = date.getFullYear();
+  const weekday = names.weekdays[date.getDay()];
+
+  if (locale === "tt") {
+    return `${day} ${month}, ${year} ел${includeWeekday ? `, ${weekday}` : ""}`;
+  }
+  return `${year} жылғы ${day} ${month}${includeWeekday ? `, ${weekday}` : ""}`;
+}
+
 export function formatLocalizedNumber(
   value: number,
   language: string | undefined,
@@ -48,6 +119,9 @@ function uppercaseFirst(text: string, language: string): string {
 /** Full standalone heading date; Russian month names intentionally remain lowercase. */
 export function formatStandaloneCalendarDate(iso: string, language: string | undefined): string {
   const locale = coercePreferredLanguage(language);
+  if (locale === "tt" || locale === "kk") {
+    return formatManualCalendarDate(iso, locale, true);
+  }
   const formatted = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     year: "numeric",
@@ -59,7 +133,11 @@ export function formatStandaloneCalendarDate(iso: string, language: string | und
 
 /** Sentence-safe date without a weekday, avoiding Russian grammatical-case collisions. */
 export function formatInlineCalendarDate(iso: string, language: string | undefined): string {
-  return new Intl.DateTimeFormat(coercePreferredLanguage(language), {
+  const locale = coercePreferredLanguage(language);
+  if (locale === "tt" || locale === "kk") {
+    return formatManualCalendarDate(iso, locale, false);
+  }
+  return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",

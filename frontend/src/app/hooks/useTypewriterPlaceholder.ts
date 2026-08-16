@@ -15,7 +15,7 @@ type TypewriterState = {
 };
 
 const TYPE_DELAY_MS = 75;
-const HOLD_DELAY_MS = 1_400;
+const COMPLETED_SUGGESTION_HOLD_MS = 7_000;
 const DELETE_DELAY_MS = 35;
 const BETWEEN_SUGGESTIONS_DELAY_MS = 250;
 
@@ -64,7 +64,7 @@ export function useTypewriterPlaceholder(
         };
       });
     } else if (state.phase === "holding") {
-      delay = HOLD_DELAY_MS;
+      delay = COMPLETED_SUGGESTION_HOLD_MS;
       advance = () => setState((current) => ({ ...current, phase: "deleting" }));
     } else if (state.phase === "deleting") {
       delay = DELETE_DELAY_MS;

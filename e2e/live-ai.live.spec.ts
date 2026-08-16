@@ -70,7 +70,7 @@ function allEntries(day: ApiDayLog): ApiFoodEntry[] {
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("textbox", { name: "Log food" });
+  const input = page.getByRole("combobox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }

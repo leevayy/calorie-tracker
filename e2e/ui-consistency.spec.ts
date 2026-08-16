@@ -406,8 +406,12 @@ test.describe("Cross-locale UI consistency", () => {
         const settingsTab = page.getByRole("button", { name: locale.settings, exact: true });
         const homeTab = page.getByRole("button", { name: locale.home, exact: true });
         const historyTab = page.getByRole("button", { name: locale.history, exact: true });
-        const previousDay = page.getByRole("button", { name: locale.previousDay, exact: true });
-        const nextDay = page.getByRole("button", { name: locale.nextDay, exact: true });
+        const previousDay = page.getByRole("button", {
+          name: new RegExp(`^${escapeRegExp(locale.previousDay)}(?:,|:)`),
+        });
+        const nextDay = page.getByRole("button", {
+          name: new RegExp(`^${escapeRegExp(locale.nextDay)}(?:,|:)`),
+        });
         const composerTrigger = page.getByRole("button", {
           name: locale.logFoodPlaceholder,
           exact: true,
@@ -440,7 +444,7 @@ test.describe("Cross-locale UI consistency", () => {
 
         await composerTrigger.click();
         const drawer = page.locator("#food-log-sheet");
-        const drawerInput = drawer.getByRole("textbox", {
+        const drawerInput = drawer.getByRole("combobox", {
           name: locale.logFoodPlaceholder,
           exact: true,
         });

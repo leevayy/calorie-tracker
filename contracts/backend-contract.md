@@ -69,12 +69,6 @@ Searches the authenticated user's active food-entry history by name. Results kee
 
 **Response:** `200` `HistoricalFoodSuggestionsResponse` — reusable stored food fields plus `usageCount` and `lastUsedDay`. Supplying the returned `mealSlug` when creating the copied entry avoids another AI slug-resolution request.
 
-### `POST /days/:day/entries`
-
-**Body:** `CreateFoodEntryBody` (`mealType`, food fields). The calendar day is taken from the path only.
-
-**Response:** `201` `FoodEntryResponse`.
-
 ### `POST /entries/batch`
 
 **Body:** `CreateFoodEntriesBody` — `{ "entries": CreateFoodEntryRequest[] }`. Each entry carries its own `day` and `mealType`, so one request may span calendar days and meals. The array must contain at least one entry.
@@ -178,7 +172,7 @@ Implementations should stay aligned with:
 - `src/contracts/common.ts`
 - `src/contracts/auth.ts`
 - `src/contracts/profile.ts`
-- `src/contracts/food-log.ts` (`CreateFoodEntryBody` for path-style create; `CreateFoodEntryRequest` when `day` is in the body; batch create and full entry update schemas)
+- `src/contracts/food-log.ts` (atomic batch create, full entry update, delete/restore, duplication, and suggestion schemas)
 - `src/contracts/history.ts`
 - `src/contracts/ai-food.ts`
 

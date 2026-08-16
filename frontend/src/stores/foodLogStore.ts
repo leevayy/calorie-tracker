@@ -1,6 +1,5 @@
 import type { FoodEntryResponse } from "@contracts/food-log";
 import { types } from "mobx-state-tree";
-import { CreateFoodEntryStore } from "./createFoodEntryStore";
 import { CreateFoodEntriesStore } from "./createFoodEntriesStore";
 import { DayLogReadStore } from "./dayLogReadStore";
 import { DeleteFoodEntryStore } from "./deleteFoodEntryStore";
@@ -18,7 +17,6 @@ import { UpdateFoodEntryStore } from "./updateFoodEntryStore";
 export const FoodLogStore = types
   .model({
     dayRead: DayLogReadStore,
-    entryCreate: CreateFoodEntryStore,
     entriesCreate: CreateFoodEntriesStore,
     entryUpdate: UpdateFoodEntryStore,
     entryDelete: DeleteFoodEntryStore,
@@ -27,10 +25,6 @@ export const FoodLogStore = types
     historicalSuggestions: types.optional(HistoricalFoodSuggestionsStore, {}),
   })
   .actions((self) => ({
-    applyCreatedEntry(day: string, entry: FoodEntryResponse) {
-      if (self.dayRead.day !== day || !self.dayRead.data) return;
-      self.dayRead.setData(mergeFoodEntry(self.dayRead.data, entry));
-    },
     applyCreatedEntries(entries: FoodEntryResponse[]) {
       if (!self.dayRead.data) return;
       self.dayRead.setData(mergeFoodEntries(self.dayRead.data, entries));

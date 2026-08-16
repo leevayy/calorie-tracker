@@ -33,11 +33,6 @@ const { rootStore } = vi.hoisted(() => ({
         load: vi.fn(),
         clear: vi.fn(),
       },
-      entryCreate: {
-        fetchState: "idle",
-        errorKey: null,
-        create: vi.fn(),
-      },
       entriesCreate: {
         fetchState: "idle",
         errorKey: null,
@@ -220,5 +215,38 @@ describe("MainPage virtual keyboard", () => {
       expect(drawer!.style.bottom).toBe("");
       expect(drawer!.style.height).toBe("");
     }
+  });
+
+  it("makes the underlying dashboard inert while leaving the portaled composer accessible", async () => {
+    const view = render(
+      createElement(AppTabChatProvider, null, createElement(MainPage)),
+    );
+    const dashboard = view.container.firstElementChild as HTMLElement;
+    const trigger = view.container.querySelector<HTMLElement>(
+      "button[aria-label='main.logFoodPlaceholder']",
+    );
+    expect(trigger).not.toBeNull();
+    expect(dashboard.hasAttribute("inert")).toBe(false);
+
+    await act(async () => {
+      userActivation = true;
+      fireEvent.click(trigger!);
+    });
+    userActivation = false;
+
+    const drawer = document.querySelector<HTMLElement>("[data-vaul-drawer]");
+    const drawerInput = drawer?.querySelector<HTMLInputElement>(
+      "input[aria-label='main.logFoodPlaceholder']",
+    );
+    expect(dashboard.getAttribute("aria-hidden")).toBe("true");
+    expect(dashboard.hasAttribute("inert")).toBe(true);
+    expect(drawer).not.toBeNull();
+    expect(drawerInput).not.toBeNull();
+    expect(view.getByRole("combobox", { name: "main.logFoodPlaceholder" })).toBe(
+      drawerInput,
+    );
+    expect(drawer!.closest("[inert]")).toBeNull();
+    expect(drawer!.closest("[aria-hidden='true']")).toBeNull();
+    expect(document.activeElement).toBe(drawerInput);
   });
 });

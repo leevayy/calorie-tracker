@@ -43,6 +43,7 @@ export type E2EAiMode = {
     | "success"
     | "multi-food"
     | "explicit-nutrition"
+    | "explicit-meal"
     | "delay"
     | "ambiguous"
     | "failure";
@@ -78,7 +79,9 @@ export function calendarIsoDay(offset = 0): string {
   return date.toISOString().slice(0, 10);
 }
 
-function requiredEnvironment(name: "E2E_BASE_URL" | "E2E_CONTROL_SECRET"): string {
+function requiredEnvironment(
+  name: "E2E_BASE_URL" | "E2E_CONTROL_SECRET" | "E2E_TEST_EMAIL" | "E2E_TEST_PASSWORD",
+): string {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required for Playwright system tests`);
   return value;
@@ -128,8 +131,8 @@ function createControlClient(): E2EControlClient {
 
 export function isolatedTestUser(overrides: Partial<E2ETestUser> = {}): E2ETestUser {
   return {
-    email: process.env.E2E_TEST_EMAIL?.trim() || "playwright@example.invalid",
-    password: process.env.E2E_TEST_PASSWORD || "playwright-local-only-password",
+    email: requiredEnvironment("E2E_TEST_EMAIL"),
+    password: requiredEnvironment("E2E_TEST_PASSWORD"),
     profile: {
       dailyCalorieGoal: 2_000,
       weightKg: 70,
@@ -198,7 +201,9 @@ export async function loginThroughSetup(
     throw new Error("E2E setup refused to pass secret auth tokens into browser artifacts");
   }
   const storedSession = JSON.stringify(auth);
-  await page.goto("/");
+  // Use a same-origin static document so an earlier app session cannot race this
+  // setup by clearing the freshly seeded credentials during a repeated login.
+  await page.goto("/error.html");
   await page.evaluate((session) => {
     localStorage.setItem("calorie-tracker-auth", session);
   }, storedSession);

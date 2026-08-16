@@ -86,7 +86,9 @@ describe("FoodEntryEditor", () => {
     await waitFor(() => expect(document.activeElement).not.toBe(instruction));
     expect(scheduleFields?.classList.contains("grid-cols-1")).toBe(true);
     expect(scheduleFields?.className).toContain("min-[360px]:grid-cols-2");
-    expect(meal.className).toContain("data-[size=default]:h-11");
+    expect(meal.className).toContain("min-h-11");
+    expect(meal.className).toContain("data-[size=default]:h-auto");
+    expect(meal.className).not.toContain("line-clamp-1");
   });
 
   it("clamps the native date control to the shared input height on WebKit", () => {
@@ -115,6 +117,57 @@ describe("FoodEntryEditor", () => {
     expect(day.className).toContain("[&::-webkit-date-and-time-value]:h-[1.5em]");
     expect(day.className).toContain("[&::-webkit-date-and-time-value]:px-3");
     expect(day.className).toContain("[&::-webkit-date-and-time-value]:text-left");
+  });
+
+  it("disables the shared schedule controls while the editor is busy", () => {
+    render(
+      createElement(FoodEntryEditor, {
+        entry,
+        busy: true,
+        onClose: vi.fn(),
+        onSave: vi.fn(async () => true),
+        onDelete: vi.fn(async () => true),
+      }),
+    );
+
+    openSchedule();
+
+    expect((screen.getByLabelText("entryEditor.day") as HTMLInputElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole("combobox", { name: "entryEditor.meal" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  });
+
+  it("keeps one shared schedule control while switching AI and field modes", () => {
+    render(
+      createElement(FoodEntryEditor, {
+        entry,
+        busy: false,
+        onClose: vi.fn(),
+        onSave: vi.fn(async () => true),
+        onDelete: vi.fn(async () => true),
+      }),
+    );
+
+    expect(
+      screen.getAllByRole("button", { name: "entryEditor.day · entryEditor.meal" }),
+    ).toHaveLength(1);
+    openSchedule();
+    fireEvent.change(screen.getByLabelText("entryEditor.day"), {
+      target: { value: "2026-08-16" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.editFields" }));
+    expect(screen.getAllByLabelText("entryEditor.day")).toHaveLength(1);
+    expect(screen.getAllByRole("combobox", { name: "entryEditor.meal" })).toHaveLength(1);
+    expect((screen.getByLabelText("entryEditor.day") as HTMLInputElement).value).toBe(
+      "2026-08-16",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "entryEditor.backToAi" }));
+    expect(screen.getAllByLabelText("entryEditor.day")).toHaveLength(1);
+    expect(screen.getAllByRole("combobox", { name: "entryEditor.meal" })).toHaveLength(1);
   });
 
   it("opens prefilled and keeps invalid edits while showing field feedback", async () => {

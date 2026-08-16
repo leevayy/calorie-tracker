@@ -88,6 +88,9 @@ makeAutoObservable(rootStore.foodLog.entryUpdate, {
   clearError: false,
   update: false,
 });
+makeAutoObservable(rootStore.foodLog.mealDuplicate, {
+  duplicate: false,
+});
 
 vi.mock("@/api/foodLog", () => ({ apiGetDayLog }));
 vi.mock("@/stores/StoreContext", () => ({ useRootStore: () => rootStore }));
@@ -333,15 +336,16 @@ describe("HistoryPage day detail", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "history.duplicateMeal:meals.breakfast" }),
     );
-    const destinationDay = screen.getByLabelText("history.destinationDay") as HTMLInputElement;
-    const destinationMeal = screen.getByLabelText(
-      "history.destinationMeal",
-    ) as HTMLSelectElement;
+    const destinationDay = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
+    const destinationMeal = screen.getByRole("combobox", {
+      name: "entryEditor.meal",
+    });
     expect(destinationDay.value).toBe(localIsoDate());
-    expect(destinationMeal.value).toBe("breakfast");
+    expect(destinationMeal.textContent).toContain("meals.breakfast");
 
     fireEvent.change(destinationDay, { target: { value: copiedEntry.day } });
-    fireEvent.change(destinationMeal, { target: { value: "lunch" } });
+    fireEvent.click(destinationMeal);
+    fireEvent.click(screen.getByRole("option", { name: "meals.lunch" }));
     await act(async () =>
       fireEvent.click(screen.getByRole("button", { name: "history.confirmDuplicate" })),
     );
@@ -379,12 +383,71 @@ describe("HistoryPage day detail", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "history.duplicateMeal:meals.breakfast" }),
     );
+    fireEvent.change(screen.getByLabelText("entryEditor.day"), {
+      target: { value: copiedEntry.day },
+    });
+    const destinationMeal = screen.getByRole("combobox", { name: "entryEditor.meal" });
+    fireEvent.click(destinationMeal);
+    fireEvent.click(screen.getByRole("option", { name: "meals.lunch" }));
     await act(async () =>
       fireEvent.click(screen.getByRole("button", { name: "history.confirmDuplicate" })),
     );
 
     expect((await screen.findByRole("alert")).textContent).toBe("errors.network");
-    expect(screen.getByLabelText("history.destinationDay")).toBeTruthy();
+    expect((screen.getByLabelText("entryEditor.day") as HTMLInputElement).value).toBe(
+      copiedEntry.day,
+    );
+    expect(screen.getByRole("combobox", { name: "entryEditor.meal" }).textContent).toContain(
+      "meals.lunch",
+    );
     expect(screen.getByRole("button", { name: "history.confirmDuplicate" })).toBeTruthy();
+  });
+
+  it("keeps an invalid duplicate date in the shared control with field feedback", async () => {
+    render(createElement(HistoryPage));
+    fireEvent.click(screen.getByRole("button", { name: "history.openDay" }));
+    await screen.findByRole("button", { name: "Oats" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "history.duplicateMeal:meals.breakfast" }),
+    );
+
+    const destinationDay = screen.getByLabelText("entryEditor.day") as HTMLInputElement;
+    fireEvent.change(destinationDay, { target: { value: "" } });
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "entryEditor.validation.date",
+    );
+    expect(destinationDay.value).toBe("");
+    expect(rootStore.foodLog.mealDuplicate.duplicate).not.toHaveBeenCalled();
+
+    fireEvent.change(destinationDay, { target: { value: copiedEntry.day } });
+    expect(screen.queryByRole("alert")).toBeNull();
+    await act(async () =>
+      fireEvent.click(screen.getByRole("button", { name: "history.confirmDuplicate" })),
+    );
+    expect(rootStore.foodLog.mealDuplicate.duplicate).toHaveBeenCalledWith(
+      expect.objectContaining({ destinationDay: copiedEntry.day }),
+    );
+  });
+
+  it("disables both shared duplicate controls while the copy is pending", async () => {
+    render(createElement(HistoryPage));
+    fireEvent.click(screen.getByRole("button", { name: "history.openDay" }));
+    await screen.findByRole("button", { name: "Oats" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "history.duplicateMeal:meals.breakfast" }),
+    );
+
+    runInAction(() => {
+      rootStore.foodLog.mealDuplicate.fetchState = "loading";
+    });
+
+    await waitFor(() => {
+      expect((screen.getByLabelText("entryEditor.day") as HTMLInputElement).disabled).toBe(true);
+      expect(
+        (screen.getByRole("combobox", { name: "entryEditor.meal" }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true);
+    });
   });
 });

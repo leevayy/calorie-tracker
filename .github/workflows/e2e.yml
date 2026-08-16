@@ -76,12 +76,20 @@ jobs:
         run: npm run e2e:prepare
       - name: Run deterministic Playwright suite
         run: npm run e2e:test
-      - name: Upload redacted deterministic artifacts
+      - name: Verify deterministic artifact safety
+        id: verify_artifacts
         if: always()
+        run: npm run e2e:verify-artifacts
+      - name: Upload redacted deterministic artifacts
+        if: ${{ always() && steps.verify_artifacts.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-deterministic-${{ github.run_attempt }}
-          path: artifacts/playwright/redacted
+          path: |
+            artifacts/playwright/redacted/test-results
+            artifacts/playwright/redacted/html-report
+            artifacts/playwright/redacted/service-logs
+            artifacts/playwright/redacted/results.json
           if-no-files-found: warn
           retention-days: 7
 
@@ -149,11 +157,19 @@ jobs:
         run: npm run e2e:prepare
       - name: Run tagged live-AI smoke project
         run: npm run e2e:live
-      - name: Upload redacted live-AI artifacts
+      - name: Verify live-AI artifact safety
+        id: verify_artifacts
         if: always()
+        run: npm run e2e:verify-artifacts
+      - name: Upload redacted live-AI artifacts
+        if: ${{ always() && steps.verify_artifacts.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-live-ai-${{ github.run_attempt }}
-          path: artifacts/playwright/redacted
+          path: |
+            artifacts/playwright/redacted/test-results
+            artifacts/playwright/redacted/html-report
+            artifacts/playwright/redacted/service-logs
+            artifacts/playwright/redacted/results.json
           if-no-files-found: warn
           retention-days: 7

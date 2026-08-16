@@ -15,3 +15,7 @@
 ## Comments
 
 - 2026-08-15: Added localized date navigation, a direct return-to-today action, selected-day loading and totals, authoritative selected-day logging for AI and reused foods, and stale-response protection during rapid navigation.
+- 2026-08-16: Final deterministic verification passed every mapped date-navigation
+  journey in both supported projects as part of the 75/75 desktop and 75/75 mobile
+  matrix, including persistence, direct selection, boundaries, focus, Today, and
+  selected-day AI/historical logging.

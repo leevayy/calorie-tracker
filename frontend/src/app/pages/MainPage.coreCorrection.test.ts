@@ -38,7 +38,6 @@ const { rootStore } = vi.hoisted(() => ({
       },
       frequentWeekRead: { items: [], load: vi.fn() },
       historicalSuggestions: { items: [], fetchState: "initial", load: vi.fn(), clear: vi.fn() },
-      entryCreate: { fetchState: "initial", errorKey: "", create: vi.fn() },
       entriesCreate: {
         fetchState: "initial",
         errorKey: "",
@@ -167,7 +166,7 @@ describe("MainPage core corrections", () => {
 
     renderMainPage();
     fireEvent.click(screen.getByRole("button", { name: "main.logFoodPlaceholder" }));
-    const input = screen.getByRole("textbox", { name: "main.logFoodPlaceholder" });
+    const input = screen.getByRole("combobox", { name: "main.logFoodPlaceholder" });
     fireEvent.change(input, { target: { value: "four foods" } });
     fireEvent.submit(input.closest("form")!);
 
@@ -179,7 +178,7 @@ describe("MainPage core corrections", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "main.editAddedFood" })[0]!);
     expect(rootStore.foodLog.entryUpdate.clearError).toHaveBeenCalled();
 
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "main.undoSubmission" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "main.undoAddedGroup" })));
     expect(rootStore.foodLog.entryDelete.removeMany).toHaveBeenCalledWith(created);
     await waitFor(() => expect(screen.queryByText("Food 4")).toBeNull());
   });

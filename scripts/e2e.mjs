@@ -3,8 +3,17 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createWriteStream, existsSync } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
-import { dirname, join, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  assertManagedArtifactsSafe,
+  finalizeManagedArtifactRun,
+  resetManagedArtifacts,
+  resolveManagedArtifactLayout,
+  sensitiveArtifactValues,
+} from "./e2e-artifacts.mjs";
+import { createOnceAsync, createSignalShutdown } from "./e2e-lifecycle.mjs";
+import { assertManagedPostgresDataPath } from "./e2e-path-safety.mjs";
 
 const root = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const envFile = join(root, ".env.e2e");
@@ -15,7 +24,7 @@ if (existsSync(envFile) && typeof process.loadEnvFile === "function") {
 const command = process.argv[2] ?? "test";
 const nodeBinDir = dirname(process.execPath);
 const childPath = [nodeBinDir, process.env.PATH].filter(Boolean).join(":");
-const artifactRoot = resolve(root, process.env.E2E_ARTIFACT_DIR ?? "artifacts/playwright/redacted");
+const { artifactRoot } = resolveManagedArtifactLayout(root, process.env.E2E_ARTIFACT_DIR);
 const logDir = join(artifactRoot, "service-logs");
 const browserPath = resolve(root, process.env.PLAYWRIGHT_BROWSERS_PATH ?? ".cache/playwright-browsers");
 const apiUrl = process.env.E2E_API_URL ?? "http://127.0.0.1:3000";
@@ -24,10 +33,14 @@ const controlSecret = process.env.E2E_CONTROL_SECRET;
 const pgPort = Number(process.env.E2E_POSTGRES_PORT ?? "55432");
 const pgDatabase = process.env.E2E_POSTGRES_DB ?? "calorie_tracker_e2e";
 const pgData = resolve(root, process.env.E2E_POSTGRES_DATA ?? ".cache/e2e-postgres");
+const defaultJwtSecret = "e2e-only-jwt-secret-at-least-16-characters";
+const managedDatabaseUrl = `postgresql://postgres@127.0.0.1:${pgPort}/${pgDatabase}`;
+let artifactDatabaseUrl = process.env.DATABASE_URL ?? managedDatabaseUrl;
 
 let backendProcess;
 let frontendProcess;
 let managedPostgres = false;
+const commandProcesses = new Set();
 
 function childEnv(extra = {}) {
   return {
@@ -39,6 +52,14 @@ function childEnv(extra = {}) {
     E2E_API_URL: apiUrl,
     ...extra,
   };
+}
+
+function artifactCanaries(databaseUrl = process.env.DATABASE_URL ?? managedDatabaseUrl) {
+  return sensitiveArtifactValues({
+    ...process.env,
+    DATABASE_URL: databaseUrl,
+    JWT_SECRET: process.env.JWT_SECRET ?? defaultJwtSecret,
+  });
 }
 
 function executable(name, extraCandidates = []) {
@@ -65,8 +86,13 @@ async function run(file, args, options = {}) {
       env: options.env ?? childEnv(),
       stdio: "inherit",
     });
-    child.once("error", reject);
+    commandProcesses.add(child);
+    child.once("error", (error) => {
+      commandProcesses.delete(child);
+      reject(error);
+    });
     child.once("exit", (code, signal) => {
+      commandProcesses.delete(child);
       if (code === 0) resolvePromise();
       else reject(new Error(`${file} exited with ${code ?? signal}`));
     });
@@ -91,10 +117,7 @@ async function prepareDatabase() {
   let databaseUrl = process.env.DATABASE_URL;
 
   if (shouldManage) {
-    const safeCacheRoot = `${resolve(root, ".cache")}${sep}`;
-    if (!pgData.startsWith(safeCacheRoot)) {
-      throw new Error("Managed E2E PostgreSQL data must stay under the repository .cache directory");
-    }
+    assertManagedPostgresDataPath(root, pgData);
     const pgBin = process.env.E2E_POSTGRES_BIN;
     const candidate = (name) => (pgBin ? [join(pgBin, name)] : []);
     const initdb = executable("initdb", candidate("initdb"));
@@ -117,11 +140,12 @@ async function prepareDatabase() {
     ]);
     managedPostgres = true;
     await run(createdb, ["--host=127.0.0.1", `--port=${pgPort}`, "--username=postgres", pgDatabase]);
-    databaseUrl = `postgresql://postgres@127.0.0.1:${pgPort}/${pgDatabase}`;
+    databaseUrl = managedDatabaseUrl;
   }
 
   if (!databaseUrl) throw new Error("DATABASE_URL is required for E2E tests");
   assertDisposableDatabase(databaseUrl);
+  artifactDatabaseUrl = databaseUrl;
   const env = backendEnv(databaseUrl);
   await run(process.execPath, ["--experimental-strip-types", "src/db/migrate.ts"], {
     cwd: join(root, "backend"),
@@ -140,7 +164,7 @@ function backendEnv(databaseUrl) {
     HOST: parsedApi.hostname,
     PORT: parsedApi.port || "3000",
     DATABASE_URL: databaseUrl,
-    JWT_SECRET: process.env.JWT_SECRET ?? "e2e-only-jwt-secret-at-least-16-characters",
+    JWT_SECRET: process.env.JWT_SECRET ?? defaultJwtSecret,
     CORS_ALLOWED_ORIGINS: baseUrl,
     RATE_LIMIT_MAX_REQUESTS_PER_MINUTE: "10000",
     RATE_LIMIT_COOLDOWN_SECONDS: "1",
@@ -222,18 +246,25 @@ async function resetControlState() {
 }
 
 async function stopChild(child) {
-  if (!child || child.exitCode != null) return;
+  if (!child || child.exitCode != null || child.signalCode != null) return;
   child.kill("SIGTERM");
   await Promise.race([
     new Promise((resolvePromise) => child.once("exit", resolvePromise)),
     new Promise((resolvePromise) => setTimeout(resolvePromise, 5_000)),
   ]);
-  if (child.exitCode == null) child.kill("SIGKILL");
+  if (child.exitCode == null && child.signalCode == null) {
+    child.kill("SIGKILL");
+    await Promise.race([
+      new Promise((resolvePromise) => child.once("exit", resolvePromise)),
+      new Promise((resolvePromise) => setTimeout(resolvePromise, 1_000)),
+    ]);
+  }
 }
 
 async function cleanup() {
   await stopChild(frontendProcess);
   await stopChild(backendProcess);
+  await Promise.all([...commandProcesses].map((child) => stopChild(child)));
   if (managedPostgres) {
     const pgBin = process.env.E2E_POSTGRES_BIN;
     const pgCtl = executable("pg_ctl", pgBin ? [join(pgBin, "pg_ctl")] : []);
@@ -242,23 +273,62 @@ async function cleanup() {
   }
 }
 
+const cleanupOnce = createOnceAsync(cleanup);
+const finalizeE2ERun = createOnceAsync((runFailure) =>
+  finalizeManagedArtifactRun({
+    repositoryRoot: root,
+    configuredArtifactRoot: artifactRoot,
+    cleanup: cleanupOnce,
+    needles: artifactCanaries(artifactDatabaseUrl),
+    runFailure,
+  }));
+
 async function prepare({ keepServices = false } = {}) {
   const databaseUrl = await prepareDatabase();
   await buildAndStartServices(databaseUrl);
   await resetControlState();
-  if (!keepServices) await cleanup();
+  if (!keepServices) await cleanupOnce();
 }
 
 async function runPlaywright(extraArgs = []) {
-  const databaseUrl = await prepareDatabase();
-  await buildAndStartServices(databaseUrl);
-  await resetControlState();
-  await run(join(root, "node_modules/.bin/playwright"), ["test", ...extraArgs], {
-    env: childEnv(),
-  });
+  let runFailure;
+  try {
+    await resetManagedArtifacts(root, artifactRoot);
+    const databaseUrl = await prepareDatabase();
+    await buildAndStartServices(databaseUrl);
+    await resetControlState();
+    await run(join(root, "node_modules/.bin/playwright"), ["test", ...extraArgs], {
+      env: childEnv(),
+    });
+  } catch (error) {
+    runFailure = error;
+  }
+  await finalizeE2ERun(runFailure);
 }
 
 async function main() {
+  if (command === "test") {
+    await runPlaywright(process.argv.slice(3));
+    return;
+  }
+  if (command === "live") {
+    if (
+      process.env.E2E_LIVE_AI !== "1" ||
+      !process.env.YANDEX_AI_STUDIO_API_KEY ||
+      !process.env.YANDEX_FOLDER_ID
+    ) {
+      throw new Error(
+        "Live AI requires E2E_LIVE_AI=1, YANDEX_AI_STUDIO_API_KEY, and YANDEX_FOLDER_ID",
+      );
+    }
+    await runPlaywright(["--project=live-ai-chromium", ...process.argv.slice(3)]);
+    return;
+  }
+  if (command === "verify-artifacts") {
+    await assertManagedArtifactsSafe(root, artifactRoot, artifactCanaries());
+    return;
+  }
+
   try {
     if (command === "install") {
       await mkdir(browserPath, { recursive: true });
@@ -283,32 +353,23 @@ async function main() {
       });
       return;
     }
-    if (command === "test") {
-      await runPlaywright(process.argv.slice(3));
-      return;
-    }
-    if (command === "live") {
-      if (
-        process.env.E2E_LIVE_AI !== "1" ||
-        !process.env.YANDEX_AI_STUDIO_API_KEY ||
-        !process.env.YANDEX_FOLDER_ID
-      ) {
-        throw new Error(
-          "Live AI requires E2E_LIVE_AI=1, YANDEX_AI_STUDIO_API_KEY, and YANDEX_FOLDER_ID",
-        );
-      }
-      await runPlaywright(["--project=live-ai-chromium", ...process.argv.slice(3)]);
-      return;
-    }
     throw new Error(`Unknown E2E command: ${command}`);
   } finally {
-    await cleanup();
+    await cleanupOnce();
   }
 }
 
+const shutdownForSignal = createSignalShutdown({
+  finalize: finalizeE2ERun,
+  reportError: (error) => {
+    console.error(error instanceof Error ? error.message : error);
+  },
+  exit: (code) => process.exit(code),
+});
+
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.once(signal, () => {
-    void cleanup().finally(() => process.exit(128));
+    void shutdownForSignal(signal);
   });
 }
 

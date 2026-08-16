@@ -95,6 +95,26 @@ describe("deterministic E2E controls", () => {
     ]);
   });
 
+  test("lets explicit natural-language meal intent override the default target", async () => {
+    const control = runtime();
+    control.configureAi({ parseFood: "explicit-meal" });
+
+    await expect(
+      control.parseFood(
+        "Pasta for dinner",
+        "en",
+        "maintain",
+        "qwen3",
+        { ...timing, defaultMealType: "breakfast" },
+      ),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        name: "E2E oatmeal",
+        mealType: "dinner",
+      }),
+    ]);
+  });
+
   test("provides delayed, ambiguous, and failed correction modes", async () => {
     vi.useFakeTimers();
     try {

@@ -1,5 +1,6 @@
 import type { Page, Request } from "@playwright/test";
 import { expect, test } from "./support/fixtures";
+import { expectAppBackgroundExcludedFromAccessibilityTree } from "./support/modalAccessibility";
 
 const MEAL_LABELS = {
   breakfast: "Breakfast",
@@ -17,7 +18,7 @@ type ParseFoodRequestBody = {
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("textbox", { name: "Log food" });
+  const input = page.getByRole("combobox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -131,9 +132,9 @@ test.describe("Atomic food logging", () => {
   }) => {
     await e2eControls.setAiMode({ parseFood: "success" });
     const dateNavigation = page.getByLabel("Log date");
-    const todayLabel = await dateNavigation.locator("p").first().innerText();
+    const todayLabel = await dateNavigation.getByRole("button").nth(1).innerText();
     await page.getByRole("button", { name: "Previous day" }).click();
-    const selectedLabel = await dateNavigation.locator("p").first().innerText();
+    const selectedLabel = await dateNavigation.getByRole("button").nth(1).innerText();
     expect(selectedLabel).not.toBe(todayLabel);
 
     const parseBody = await submitAndCaptureParse(page, "oatmeal on the selected date");
@@ -142,7 +143,7 @@ test.describe("Atomic food logging", () => {
 
     await page.reload();
     await page.getByRole("button", { name: "Previous day" }).click();
-    await expect(dateNavigation.locator("p").first()).toHaveText(selectedLabel);
+    await expect(dateNavigation.getByRole("button").nth(1)).toHaveText(selectedLabel);
     await openMeal(page, parseBody.defaultMealType);
     await expect(mealSection(page, parseBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ })).toBeVisible();
     await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
@@ -162,11 +163,14 @@ test.describe("Atomic food logging", () => {
 
     await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Edit E2E oatmeal" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Undo added group: E2E oatmeal", exact: true }),
+    ).toBeVisible();
     await page.getByRole("button", { name: "Edit E2E oatmeal" }).click();
 
     const namedEditor = page.getByRole("dialog", { name: "E2E oatmeal" });
     await expect(namedEditor).toBeVisible();
+    await expectAppBackgroundExcludedFromAccessibilityTree(page);
     const editor = page.locator('[data-slot="dialog-content"]');
     await expect(editor).toHaveCount(1);
     await editor.getByRole("button", { name: "Edit fields" }).click();
@@ -177,7 +181,7 @@ test.describe("Atomic food logging", () => {
     await openMeal(page, parseBody.defaultMealType);
     await expect(page.getByRole("button", { name: /E2E oatmeal.*400\s+kcal/ })).toBeVisible();
     await openFoodComposer(page);
-    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    await page.getByRole("button", { name: "Undo added group: E2E oatmeal", exact: true }).click();
     await expect(page.getByText("Added 1", { exact: true })).toBeHidden();
 
     await page.reload();
@@ -194,7 +198,10 @@ test.describe("Atomic food logging", () => {
     const parseBody = await submitAndCaptureParse(page, "grouped oatmeal and banana");
     await expect(page.getByText("Added 2", { exact: true })).toBeVisible();
 
-    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    await page.getByRole("button", {
+      name: "Undo added group: E2E oatmeal and E2E banana",
+      exact: true,
+    }).click();
     await expect(page.getByText("Added 2", { exact: true })).toBeHidden();
 
     await page.reload();

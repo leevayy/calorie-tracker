@@ -8,6 +8,7 @@ import type {
 import type { ParsedFoodSuggestion, ParseFoodRequest } from "../contracts/ai-food.ts";
 import type { FoodEntryCorrectionClassifier } from "../services/foodEntryCorrection.ts";
 import type { FoodLogRepository } from "../services/foodLogRepository.ts";
+import { parseNutritionProviderResponse } from "../services/ai.ts";
 
 export type E2ESeedEntry = {
   day: string;
@@ -55,6 +56,7 @@ export type E2EParseFoodMode =
   | "success"
   | "multi-food"
   | "explicit-nutrition"
+  | "explicit-meal"
   | "delay"
   | "ambiguous"
   | "failure";
@@ -164,24 +166,28 @@ function parseExplicitNutrition(
     throw new Error("Deterministic E2E explicit-nutrition input did not match its fixture format");
   }
 
-  const inferred = parseFoodSuccess(timing)[0];
-  if (!inferred) throw new Error("Deterministic E2E inference fixture is missing");
-  return [
-    {
-      // Begin with deliberately conflicting inference, then let the user's
-      // submitted literals win just as the production provider contract requires.
-      ...inferred,
-      name: groups.name?.trim() ?? inferred.name,
-      portion: groups.portion?.trim() ?? inferred.portion,
-      calories: Number(groups.calories),
-      protein: Number(groups.protein),
-      carbs: Number(groups.carbs),
-      fats: Number(groups.fats),
-      fiber: Number(groups.fiber),
-      description: "Deterministic explicit nutrition over conflicting inference",
-      mealSlug: "explicit-nutrition",
-    },
-  ];
+  return parseNutritionProviderResponse(
+    JSON.stringify({
+      foods: [
+        {
+          name: groups.name?.trim(),
+          estimated_portion: groups.portion?.trim(),
+          nutrients: [
+            { name: "calories", amount: Number(groups.calories), unit: "kcal" },
+            { name: "protein", amount: Number(groups.protein), unit: "g" },
+            { name: "carbohydrates", amount: Number(groups.carbs), unit: "g" },
+            { name: "fat", amount: Number(groups.fats), unit: "g" },
+            { name: "fiber", amount: Number(groups.fiber), unit: "g" },
+          ],
+          description: "Deterministic provider payload for production mapping",
+          meal_slug: "explicit-nutrition",
+          log_day: timing.defaultLogDay,
+          meal_type: timing.defaultMealType,
+        },
+      ],
+    }),
+    timing,
+  );
 }
 
 export function assertE2EControlRuntime(runtime: E2EControlRuntime): void {
@@ -256,6 +262,9 @@ export function createE2EControlRuntime(
       if (mode === "ambiguous") return [];
       if (mode === "delay") await delay(aiState.delayMs);
       if (mode === "explicit-nutrition") return parseExplicitNutrition(text, timing);
+      if (mode === "explicit-meal") {
+        return parseFoodSuccess({ ...timing, defaultMealType: "dinner" });
+      }
       return mode === "multi-food" ? parseFoodMulti(timing) : parseFoodSuccess(timing);
     },
 

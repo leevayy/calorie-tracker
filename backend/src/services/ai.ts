@@ -368,10 +368,41 @@ export function buildNutritionParserSystem(
 - Do not include date, time, or meal words in the food name or meal_slug unless they are genuinely part of the dish name.`;
 }
 
-type ParseFoodTimingContext = Pick<
+export type ParseFoodTimingContext = Pick<
   ParseFoodRequest,
   "localDate" | "localTimeHm" | "clientTimeZone" | "defaultLogDay" | "defaultMealType"
 >;
+
+/** Validate and map a raw provider payload through the same production normalization path. */
+export function parseNutritionProviderResponse(
+  raw: string,
+  timing: ParseFoodTimingContext,
+): ParsedFoodSuggestion[] {
+  const parsed = NutritionParserResponseSchema.parse(JSON.parse(extractFirstJsonObject(raw)));
+
+  return parsed.foods.map((food) => {
+    const trimmed = food.description?.trim();
+    const conf =
+      typeof food.confidence === "number" && Number.isFinite(food.confidence)
+        ? Math.min(1, Math.max(0, food.confidence))
+        : undefined;
+    const slug = food.meal_slug ? sanitizeMealSlug(food.meal_slug) : null;
+    return ParsedFoodSuggestionSchema.parse({
+      name: food.name,
+      ...(trimmed ? { description: trimmed } : {}),
+      ...(conf !== undefined ? { confidence: conf } : {}),
+      ...(slug ? { mealSlug: slug } : {}),
+      calories: getNutrientAmount(food.nutrients, "calories"),
+      protein: getNutrientAmount(food.nutrients, "protein"),
+      carbs: getNutrientAmount(food.nutrients, "carbohydrates"),
+      fats: getNutrientAmount(food.nutrients, "fat"),
+      fiber: getNutrientAmount(food.nutrients, "fiber"),
+      portion: food.estimated_portion ?? "1 serving",
+      day: food.log_day ?? timing.defaultLogDay,
+      mealType: food.meal_type ?? timing.defaultMealType,
+    });
+  });
+}
 
 async function generateParseFoodSuggestions(
   text: string,
@@ -386,33 +417,7 @@ async function generateParseFoodSuggestions(
     aiModelPreference,
     { temperature: 0.1 },
   );
-  const parsed = NutritionParserResponseSchema.parse(JSON.parse(extractFirstJsonObject(raw)));
-
-  return parsed.foods.map((food) => {
-    const trimmed = food.description?.trim();
-    const conf =
-      typeof food.confidence === "number" && Number.isFinite(food.confidence)
-        ? Math.min(1, Math.max(0, food.confidence))
-        : undefined;
-    const slug = food.meal_slug ? sanitizeMealSlug(food.meal_slug) : null;
-    const carbs = getNutrientAmount(food.nutrients, "carbohydrates");
-    const fiberRaw = getNutrientAmount(food.nutrients, "fiber");
-    const fiber = Math.min(fiberRaw, carbs);
-    return ParsedFoodSuggestionSchema.parse({
-      name: food.name,
-      ...(trimmed ? { description: trimmed } : {}),
-      ...(conf !== undefined ? { confidence: conf } : {}),
-      ...(slug ? { mealSlug: slug } : {}),
-      calories: getNutrientAmount(food.nutrients, "calories"),
-      protein: getNutrientAmount(food.nutrients, "protein"),
-      carbs,
-      fats: getNutrientAmount(food.nutrients, "fat"),
-      fiber,
-      portion: food.estimated_portion ?? "1 serving",
-      day: food.log_day ?? timing.defaultLogDay,
-      mealType: food.meal_type ?? timing.defaultMealType,
-    });
-  });
+  return parseNutritionProviderResponse(raw, timing);
 }
 
 const MEAL_SLUG_PROMPT = [

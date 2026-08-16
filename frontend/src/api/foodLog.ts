@@ -1,5 +1,4 @@
 import type {
-  CreateFoodEntryBody,
   CreateFoodEntriesBody,
   CreateFoodEntriesResponse,
   DeleteFoodEntriesBody,
@@ -59,16 +58,6 @@ export async function apiGetDayLog(day: string): Promise<DayLogResponse> {
     throw new ApiError("errors.http_generic", res.status);
   }
   return parseResponse(DayLogResponseSchema, res.data);
-}
-
-export async function apiCreateFoodEntry(day: string, body: CreateFoodEntryBody): Promise<FoodEntryResponse> {
-  const res = await apiClient.post(`/api/v1/days/${encodeURIComponent(day)}/entries`, body);
-  if (res.status !== 201) {
-    if (res.status === 400) throw new ApiError("errors.http_400", res.status);
-    if (res.status === 401) throw new ApiError("errors.http_401", res.status);
-    throw new ApiError("errors.http_generic", res.status);
-  }
-  return parseResponse(FoodEntryResponseSchema, res.data);
 }
 
 export async function apiCreateFoodEntries(

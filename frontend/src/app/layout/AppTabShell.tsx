@@ -148,7 +148,8 @@ const AppTabShellInner = observer(function AppTabShellInner() {
     };
   }, [applyScrollToRoute]);
 
-  const horizontalLocked = chatOpen && pathToIndex(location.pathname) === 1;
+  const activeTabIndex = pathToIndex(location.pathname);
+  const horizontalLocked = chatOpen && activeTabIndex === 1;
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-md flex-col overflow-hidden bg-background">
@@ -156,7 +157,7 @@ const AppTabShellInner = observer(function AppTabShellInner() {
         <AppTabChromeHeader />
         <AppTabNav
           progress={scrollProgress}
-          activeTabIndex={pathToIndex(location.pathname)}
+          activeTabIndex={activeTabIndex}
           onSelectTab={(index) => navigate(indexToPath(index), { replace: true })}
         />
       </header>
@@ -169,13 +170,25 @@ const AppTabShellInner = observer(function AppTabShellInner() {
         }
         style={{ touchAction: horizontalLocked ? "pan-y" : undefined }}
       >
-        <section className="flex h-full min-h-0 shrink-0 grow-0 basis-full snap-center snap-always flex-col overflow-hidden">
+        <section
+          aria-hidden={activeTabIndex !== 0}
+          inert={activeTabIndex !== 0}
+          className="flex h-full min-h-0 shrink-0 grow-0 basis-full snap-center snap-always flex-col overflow-hidden"
+        >
           <SettingsPage />
         </section>
-        <section className="flex h-full min-h-0 shrink-0 grow-0 basis-full snap-center snap-always flex-col overflow-hidden">
+        <section
+          aria-hidden={activeTabIndex !== 1}
+          inert={activeTabIndex !== 1}
+          className="flex h-full min-h-0 shrink-0 grow-0 basis-full snap-center snap-always flex-col overflow-hidden"
+        >
           <MainPage />
         </section>
-        <section className="flex h-full min-h-0 shrink-0 grow-0 basis-full snap-center snap-always flex-col overflow-hidden">
+        <section
+          aria-hidden={activeTabIndex !== 2}
+          inert={activeTabIndex !== 2}
+          className="flex h-full min-h-0 shrink-0 grow-0 basis-full snap-center snap-always flex-col overflow-hidden"
+        >
           <HistoryPage />
         </section>
       </div>

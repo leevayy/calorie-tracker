@@ -1,6 +1,6 @@
-## Android app
+## Maintained product
 
-Ignore the `android/` app during exploration, implementation, testing, and review unless the user specifically asks to inspect or modify the Android app.
+The maintained product surfaces in this repository are the web frontend and backend. There is no maintained native mobile application.
 
 ## Agent skills
 

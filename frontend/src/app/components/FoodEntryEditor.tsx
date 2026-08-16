@@ -1,4 +1,3 @@
-import type { MealType } from "@contracts/common";
 import type { FoodEntryResponse, UpdateFoodEntryBody } from "@contracts/food-log";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useEffect, useState } from "react";
@@ -8,6 +7,7 @@ import { apiCorrectFoodEntry } from "@/api/aiFood";
 import { errorMessageKey } from "@/api/errors";
 import { Button } from "./ds/Button";
 import { Input } from "./ds/Input";
+import { ScheduleInputs, type ScheduleInputValue } from "./ScheduleInputs";
 import { Text } from "./ds/Text";
 import {
   Accordion,
@@ -24,13 +24,6 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
   foodEntryDraftFromEntry,
   parseFoodEntryDraft,
   type FoodEntryDraft,
@@ -44,7 +37,6 @@ import {
   formatLocalizedGrams,
 } from "@/utils/localeFormat";
 
-const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 const EMPTY_DRAFT: FoodEntryDraft = {
   name: "",
   portion: "",
@@ -109,7 +101,7 @@ type EditorFieldProps = {
   value: string;
   errors: FoodEntryDraftErrors;
   onChange: (value: string) => void;
-  type?: "text" | "number" | "date";
+  type?: "text" | "number";
   inputMode?: "text" | "decimal";
 };
 
@@ -138,11 +130,7 @@ function EditorField({
         step={type === "number" ? "any" : undefined}
         value={value}
         variant={error ? "error" : "default"}
-        className={
-          type === "date"
-            ? "inline-flex h-11 max-h-11 min-w-0 appearance-none px-0 py-0 [-webkit-appearance:none] [&::-webkit-date-and-time-value]:box-border [&::-webkit-date-and-time-value]:h-[1.5em] [&::-webkit-date-and-time-value]:px-3 [&::-webkit-date-and-time-value]:text-left"
-            : "min-w-0"
-        }
+        className="min-w-0"
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : undefined}
         onChange={(event) => onChange(event.target.value)}
@@ -199,6 +187,17 @@ export function FoodEntryEditor({
       if (!current[field]) return current;
       const next = { ...current };
       delete next[field];
+      return next;
+    });
+  };
+
+  const setSchedule = (value: ScheduleInputValue) => {
+    setDraft((current) => ({ ...current, ...value }));
+    setErrors((current) => {
+      if (!current.day && !current.mealType) return current;
+      const next = { ...current };
+      delete next.day;
+      delete next.mealType;
       return next;
     });
   };
@@ -484,38 +483,13 @@ export function FoodEntryEditor({
                     </Text>
                   </span>
                 </AccordionTrigger>
-                <AccordionContent className="grid grid-cols-1 gap-3 pt-2 min-[360px]:grid-cols-2">
-                  <EditorField
-                    field="day"
-                    label={t("entryEditor.day")}
-                    value={draft.day}
-                    errors={errors}
-                    onChange={(value) => setField("day", value)}
-                    type="date"
+                <AccordionContent className="pt-2">
+                  <ScheduleInputs
+                    value={{ day: draft.day, mealType: draft.mealType }}
+                    onChange={setSchedule}
+                    disabled={editorBusy}
+                    errors={{ day: errors.day, mealType: errors.mealType }}
                   />
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <Text as="label" size="sm" weight="medium">
-                      {t("entryEditor.meal")}
-                    </Text>
-                    <Select
-                      value={draft.mealType}
-                      onValueChange={(value) => setField("mealType", value as MealType)}
-                    >
-                      <SelectTrigger
-                        aria-label={t("entryEditor.meal")}
-                        className="data-[size=default]:h-11"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MEAL_TYPES.map((mealType) => (
-                          <SelectItem key={mealType} value={mealType}>
-                            {t(`meals.${mealType}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

@@ -32,6 +32,8 @@ const SeedProfileSchema = z
   })
   .strict();
 
+const MAX_SEED_ENTRIES_PER_USER = 2_000;
+
 const ResetAndSeedSchema = z
   .object({
     users: z
@@ -41,7 +43,7 @@ const ResetAndSeedSchema = z
             email: z.string().email(),
             password: z.string().min(8).max(200),
             profile: SeedProfileSchema.optional(),
-            entries: z.array(SeedEntrySchema).max(500).optional(),
+            entries: z.array(SeedEntrySchema).max(MAX_SEED_ENTRIES_PER_USER).optional(),
           })
           .strict(),
       )
@@ -60,6 +62,7 @@ const AiModeSchema = z
         "success",
         "multi-food",
         "explicit-nutrition",
+        "explicit-meal",
         "delay",
         "ambiguous",
         "failure",

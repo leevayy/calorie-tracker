@@ -65,7 +65,7 @@ async function seedAndLogin(
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("textbox", { name: "Log food" });
+  const input = page.getByRole("combobox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -126,15 +126,56 @@ test.describe("Historical food suggestions", () => {
         carbs: 30,
         mealSlug: "greek-yogurt",
       }),
+      seedEntry(addDays(today, -1), "Greek yogurt", 150, {
+        portion: "170 g",
+        protein: 9,
+        carbs: 24,
+        fats: 2,
+        fiber: 1,
+        mealSlug: "greek-yogurt",
+      }),
     ]);
 
     const input = await openFoodComposer(page);
     await input.fill("Greek yogurt");
 
     const options = suggestionList(page).getByRole("option", { name: /Greek yogurt/ });
-    await expect(options).toHaveCount(2);
-    await expect(options.filter({ hasText: "170 g · 150 kcal" })).toHaveCount(1);
+    await expect(options).toHaveCount(3);
+    await expect(
+      options.filter({ hasText: "170 g · 150 kcal" }).filter({ hasText: /P:?\s*15\s*g/ }),
+    ).toHaveCount(1);
+    await expect(
+      options.filter({ hasText: "170 g · 150 kcal" }).filter({ hasText: /P:?\s*9\s*g/ }),
+    ).toHaveCount(1);
     await expect(options.filter({ hasText: "300 g · 260 kcal" })).toHaveCount(1);
+  });
+
+  test("shows a matching large-history result within the user-visible latency budget", async ({
+    page,
+    e2eControls,
+  }) => {
+    const today = await behavioralToday(page);
+    const bulkEntries = Array.from({ length: 1_000 }, (_, index) =>
+      seedEntry(
+        addDays(today, -1 - (index % 30)),
+        `Archived meal ${String(index).padStart(4, "0")}`,
+        100 + (index % 100),
+      ),
+    );
+    await seedAndLogin(page, e2eControls, [
+      ...bulkEntries,
+      seedEntry(addDays(today, -1), "Needle porridge", 321),
+    ]);
+
+    const input = await openFoodComposer(page);
+    const startedAt = await page.evaluate(() => performance.now());
+    await input.fill("Needle porridge");
+    await expect(
+      suggestionList(page).getByRole("option", { name: /Needle porridge/ }),
+    ).toBeVisible();
+    const elapsedMs = await page.evaluate((start) => performance.now() - start, startedAt);
+
+    expect(elapsedMs).toBeLessThan(1_250);
   });
 
   test("ranks historical suggestions by relevance frequency and recency", async ({
@@ -172,6 +213,122 @@ test.describe("Historical food suggestions", () => {
       "Apple old pair",
       "Green apple",
     ]);
+  });
+
+  test("selects an active historical suggestion with arrows and Enter without AI", async ({
+    page,
+    e2eControls,
+  }) => {
+    const today = await behavioralToday(page);
+    await seedAndLogin(page, e2eControls, [
+      seedEntry(addDays(today, -2), "Keyboard porridge", 210),
+      seedEntry(addDays(today, -1), "Keyboard omelet", 330),
+    ]);
+    await e2eControls.setAiMode({ parseFood: "failure" });
+
+    const input = await openFoodComposer(page);
+    await input.fill("Keyboard");
+    const options = suggestionList(page).getByRole("option");
+    await expect(options).toHaveCount(2);
+    const firstOption = options.nth(0);
+    const secondOption = options.nth(1);
+    const firstOptionId = await firstOption.getAttribute("id");
+    const secondOptionId = await secondOption.getAttribute("id");
+    const firstOptionName = await firstOption.locator("span").first().innerText();
+    expect(firstOptionId).toBeTruthy();
+    expect(secondOptionId).toBeTruthy();
+
+    await input.press("ArrowDown");
+    await expect(input).toBeFocused();
+    await expect(input).toHaveAttribute("aria-activedescendant", firstOptionId ?? "");
+    await expect(firstOption).toHaveAttribute("aria-selected", "true");
+    await expect(secondOption).toHaveAttribute("aria-selected", "false");
+
+    await input.press("ArrowDown");
+    await expect(input).toHaveAttribute("aria-activedescendant", secondOptionId ?? "");
+    await expect(secondOption).toHaveAttribute("aria-selected", "true");
+    await input.press("ArrowUp");
+    await expect(input).toHaveAttribute("aria-activedescendant", firstOptionId ?? "");
+
+    let parseRequests = 0;
+    const countParseRequests = (request: Request) => {
+      if (new URL(request.url()).pathname === "/api/v1/ai/parse-food") parseRequests += 1;
+    };
+    page.on("request", countParseRequests);
+    const batchRequestPromise = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return request.method() === "POST" && url.pathname === "/api/v1/entries/batch";
+    });
+    await input.press("Enter");
+    const batch = (await batchRequestPromise).postDataJSON() as {
+      entries: Array<{ name: string }>;
+    };
+    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    page.off("request", countParseRequests);
+
+    expect(parseRequests).toBe(0);
+    expect(batch.entries).toEqual([expect.objectContaining({ name: firstOptionName })]);
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue("");
+    await expect(suggestionList(page)).toHaveCount(0);
+  });
+
+  test("dismisses suggestions without losing text and keeps accessibility state current", async ({
+    page,
+    e2eControls,
+    browserName,
+  }) => {
+    const today = await behavioralToday(page);
+    await seedAndLogin(page, e2eControls, [
+      seedEntry(addDays(today, -1), "Dismissible porridge", 245),
+    ]);
+
+    const input = await openFoodComposer(page);
+    const query = "Dismissible";
+    await input.fill(query);
+    const list = suggestionList(page);
+    const option = list.getByRole("option", { name: /Dismissible porridge/ });
+    await expect(option).toBeVisible();
+    const optionId = await option.getAttribute("id");
+    expect(optionId).toBeTruthy();
+    const send = page.getByRole("button", { name: "Submit food description" });
+
+    await option.hover();
+    await expect(option).toHaveAttribute("aria-selected", "true");
+    await expect(input).toHaveAttribute("aria-activedescendant", optionId ?? "");
+    await send.hover();
+    await expect(option).toHaveAttribute("aria-selected", "false");
+    await expect.poll(() => input.getAttribute("aria-activedescendant")).toBeNull();
+    const unfocusedIndicator = await option.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { boxShadow: style.boxShadow, outline: style.outline };
+    });
+
+    await expect(send).toHaveAccessibleName("Submit food description");
+    // Mobile WebKit models Safari's default focus preference: Option+Tab, rather
+    // than Tab, advances through buttons when a hardware keyboard is attached.
+    const advanceFocusKey = browserName === "webkit" ? "Alt+Tab" : "Tab";
+    await expect(input).toBeFocused();
+    await page.keyboard.press(advanceFocusKey);
+    await expect(send).toBeFocused();
+    await page.keyboard.press(advanceFocusKey);
+    await expect(option).toBeFocused();
+    const focusedIndicator = await option.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { boxShadow: style.boxShadow, outline: style.outline };
+    });
+    expect(focusedIndicator).not.toEqual(unfocusedIndicator);
+    expect(
+      focusedIndicator.outline !== "none" || focusedIndicator.boxShadow !== "none",
+    ).toBe(true);
+
+    await input.focus();
+    await input.press("Escape");
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(query);
+    await expect(input).toHaveAttribute("aria-expanded", "false");
+    await expect.poll(() => input.getAttribute("aria-controls")).toBeNull();
+    await expect(list).toHaveCount(0);
   });
 
   test("reuses a stored suggestion on the selected day without an AI request", async ({

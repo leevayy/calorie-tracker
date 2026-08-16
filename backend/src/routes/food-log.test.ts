@@ -351,6 +351,20 @@ describe("food log routes", () => {
     });
   });
 
+  test("does not expose the retired path-based single-entry create route", async () => {
+    const repository = new MemoryFoodLogRepository();
+    const app = await buildTestApp(repository);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/days/2026-08-15/entries",
+      payload: { mealType: "breakfast", ...food() },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(repository.entries).toEqual([]);
+  });
+
   test("leaves the food log unchanged when any batch write fails", async () => {
     const existing = entry();
     const repository = new MemoryFoodLogRepository([existing]);

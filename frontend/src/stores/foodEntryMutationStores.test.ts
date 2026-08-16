@@ -9,7 +9,6 @@ import type { HistoryRangeResponse } from "@contracts/history";
 import { RootStore } from "./rootStore";
 
 const api = vi.hoisted(() => ({
-  apiCreateFoodEntry: vi.fn(),
   apiCreateFoodEntries: vi.fn(),
   apiDeleteFoodEntry: vi.fn(),
   apiDeleteFoodEntries: vi.fn(),
@@ -84,7 +83,6 @@ function createStore() {
     profile: { read: {}, patch: {} },
     foodLog: {
       dayRead: { day: day.day, data: day, fetchState: "success" },
-      entryCreate: {},
       entriesCreate: {},
       entryUpdate: {},
       entryDelete: {},

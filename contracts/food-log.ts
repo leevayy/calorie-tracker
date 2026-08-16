@@ -5,23 +5,18 @@ export const FoodEntryResponseSchema = FoodMacrosSchema.extend({
   id: z.string().uuid(),
   mealType: MealTypeSchema,
   day: IsoDateSchema,
-  /** Server-derived normalized slug for tips / habits. */
+  /** Server-derived normalized slug for grouping and historical reuse. */
   mealSlug: z.string().min(1).optional(),
   createdAt: z.string().datetime(),
 });
 export type FoodEntryResponse = z.infer<typeof FoodEntryResponseSchema>;
 
-/** Use with `POST /days/:day/entries` — `day` comes from the path. */
-export const CreateFoodEntryBodySchema = FoodMacrosSchema.extend({
+/** One entry in an atomic `POST /entries/batch` logging submission. */
+export const CreateFoodEntryRequestSchema = FoodMacrosSchema.extend({
+  day: IsoDateSchema,
   mealType: MealTypeSchema,
   /** Optional: precomputed slug from the parse-food step; server re-validates and derives one if missing. */
   mealSlug: z.string().min(1).optional(),
-});
-export type CreateFoodEntryBody = z.infer<typeof CreateFoodEntryBodySchema>;
-
-/** Client bundle when calling a single `POST /log`-style endpoint that accepts `day` in the body. */
-export const CreateFoodEntryRequestSchema = CreateFoodEntryBodySchema.extend({
-  day: IsoDateSchema,
 });
 export type CreateFoodEntryRequest = z.infer<typeof CreateFoodEntryRequestSchema>;
 

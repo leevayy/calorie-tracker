@@ -10,7 +10,6 @@ const defaultSnapshot = {
   },
   foodLog: {
     dayRead: {},
-    entryCreate: {},
     entriesCreate: {},
     entryUpdate: {},
       entryDelete: {},

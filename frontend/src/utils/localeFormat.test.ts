@@ -27,4 +27,22 @@ describe("locale-aware display formatting", () => {
     expect(formatInlineCalendarDate("2026-08-15", "en")).toBe("August 15, 2026");
     expect(formatInlineCalendarDate("2026-08-15", "ru")).toBe("15 августа 2026 г.");
   });
+
+  it("formats Tatar dates without depending on browser ICU locale coverage", () => {
+    expect(formatStandaloneCalendarDate("2039-12-31", "tt")).toBe(
+      "31 декабрь, 2039 ел, шимбә",
+    );
+    expect(formatInlineCalendarDate("2039-12-31", "tt")).toBe(
+      "31 декабрь, 2039 ел",
+    );
+  });
+
+  it("formats Kazakh dates without depending on browser ICU locale coverage", () => {
+    expect(formatStandaloneCalendarDate("2039-12-31", "kk")).toBe(
+      "2039 жылғы 31 желтоқсан, сенбі",
+    );
+    expect(formatInlineCalendarDate("2039-12-31", "kk")).toBe(
+      "2039 жылғы 31 желтоқсан",
+    );
+  });
 });
