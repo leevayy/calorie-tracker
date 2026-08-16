@@ -67,7 +67,15 @@
     "macrosSummary": "Нутриентлар",
     "recognizedFoods": "Танылган азыклар",
     "clear": "Чистарту",
-    "logFoodPlaceholder": "Азыкны языгыз… (мәсәлән, күрчәк һәм борыч)",
+    "logFoodPlaceholder": "Азыкны языгыз",
+    "logFoodSuggestions": {
+      "chickenMushrooms": "Гөмбәле тавык",
+      "hamSandwich": "Ветчиналы сэндвич",
+      "bananaOatmeal": "Бананлы солы боткасы",
+      "tunaSalad": "Тунец салаты",
+      "cheeseOmelet": "Сырлы омлет",
+      "berryYogurt": "Җиләкле йогурт"
+    },
     "addToMeal": "Өстәргә",
     "parsingFood": "Текстны анализлыйбыз…",
     "recentLogged": "Әлеге атнада иң еш",
@@ -92,12 +100,6 @@
     "editAddedFood": "{{name}} үзгәртү"
   },
   "entryEditor": {
-    "title": "Язманы үзгәртү",
-    "description": "Теркәлгән азык турындагы мәгълүматны төзәтегез.",
-    "aiTitle": "Азыкны төзәтү",
-    "aiDescription": "Төзәтүне тасвирлагыз, тулы нәтиҗәне тикшерегез һәм саклагыз.",
-    "aiMode": "ЯИ белән төзәтү",
-    "fieldsMode": "Кырларны үзгәртү",
     "editFields": "Кырларны үзгәртү",
     "backToAi": "ЯИгә кайту",
     "instruction": "Нәрсәне үзгәртергә?",
@@ -116,8 +118,8 @@
     "fiber": "Клетчатка",
     "day": "Дата",
     "meal": "Аш төре",
-    "save": "Үзгәрешләрне саклау",
-    "delete": "Язманы бетерү",
+    "save": "Саклау",
+    "delete": "Бетерү",
     "undoMessage": "«{{name}}» язмасы бетерелде.",
     "undo": "Кире кайтару",
     "validation": {

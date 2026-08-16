@@ -211,7 +211,7 @@ export async function loginThroughSetup(
 }
 
 export async function openSettingsThroughVisibleUi(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 }

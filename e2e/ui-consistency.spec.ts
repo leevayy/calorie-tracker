@@ -24,11 +24,11 @@ type UiLocale = {
   previousDay: string;
   nextDay: string;
   logFoodPlaceholder: string;
+  logFoodSuggestions: readonly string[];
   foodLogTitle: string;
   lunch: string;
   breakfast: string;
-  editorTitle: string;
-  editorFieldsTitle: string;
+  editorHeaderMacros: readonly [string, string, string, string];
   editorInstruction: string;
   editorCorrectionInstruction: string;
   editorEditFields: string;
@@ -83,21 +83,28 @@ const LOCALES: readonly UiLocale[] = [
     home: "Calorie Tracker",
     history: "History",
     calories: "Calories",
-    nutrients: "Nutrients",
+    nutrients: "Macros",
     previousDay: "Previous day",
     nextDay: "Next day",
-    logFoodPlaceholder: "Log food… (e.g. chicken and rice)",
+    logFoodPlaceholder: "Log food",
+    logFoodSuggestions: [
+      "Chicken with mushrooms",
+      "Ham sandwich",
+      "Oatmeal with banana",
+      "Tuna salad",
+      "Cheese omelet",
+      "Yogurt with berries",
+    ],
     foodLogTitle: "Log food",
     lunch: "Lunch",
     breakfast: "Breakfast",
-    editorTitle: "Correct food",
-    editorFieldsTitle: "Edit food",
+    editorHeaderMacros: ["P 48\u00a0g", "C 72\u00a0g", "F 18\u00a0g", "Fi 7\u00a0g"],
     editorInstruction: "What should change?",
     editorCorrectionInstruction: "Double this serving and every nutrition value",
     editorEditFields: "Edit fields",
     editorBackToAi: "Back to AI",
-    editorPreview: "Preview correction",
-    editorProposedResult: "Proposed result",
+    editorPreview: "Preview",
+    editorProposedResult: "Result",
     editorProposalSummary: "2 servings · 1280\u00a0kcal",
     editorProposalMacros: ["P 96\u00a0g", "C 144\u00a0g", "F 36\u00a0g", "Fi 14\u00a0g"],
     editorCurrentResult: "Current saved values",
@@ -110,19 +117,19 @@ const LOCALES: readonly UiLocale[] = [
     editorFiber: "Fiber",
     editorDate: "Date",
     editorMeal: "Meal",
-    editorDelete: "Delete entry",
-    editorSave: "Save changes",
+    editorDelete: "Delete",
+    editorSave: "Save",
     weeklySummary: "Weekly summary",
     openDayPrefix: "Open log:",
     historyUnit: "kcal",
-    dayDetail: "Itemized daily log",
-    itemizedMeals: "Meals and foods",
+    dayDetail: "Daily log",
+    itemizedMeals: "Meals",
     backToHistory: "Back to history",
     duplicateBreakfast: "Duplicate Breakfast",
-    duplicateBreakfastForm: "Duplicate Breakfast form",
-    destinationMeal: "Destination meal",
+    duplicateBreakfastForm: "Duplicate Breakfast",
+    destinationMeal: "Meal",
     cancelDuplicate: "Cancel",
-    confirmDuplicate: "Duplicate meal",
+    confirmDuplicate: "Duplicate",
     languageLabel: "App language",
     nutritionGoal: "Nutrition goal",
     signOut: "Sign out",
@@ -145,21 +152,28 @@ const LOCALES: readonly UiLocale[] = [
     home: "Трекер калорий",
     history: "История",
     calories: "Калории",
-    nutrients: "Нутриенты",
+    nutrients: "БЖУ",
     previousDay: "Предыдущий день",
     nextDay: "Следующий день",
-    logFoodPlaceholder: "Записать еду… (например, курица с рисом)",
+    logFoodPlaceholder: "Записать еду",
+    logFoodSuggestions: [
+      "Курица с грибами",
+      "Сэндвич с ветчиной",
+      "Овсянка с бананом",
+      "Салат с тунцом",
+      "Омлет с сыром",
+      "Йогурт с ягодами",
+    ],
     foodLogTitle: "Записать еду",
     lunch: "Обед",
     breakfast: "Завтрак",
-    editorTitle: "Исправить продукт",
-    editorFieldsTitle: "Изменить запись",
-    editorInstruction: "Что нужно изменить?",
+    editorHeaderMacros: ["Б 48\u00a0г", "У 72\u00a0г", "Ж 18\u00a0г", "Кл 7\u00a0г"],
+    editorInstruction: "Что изменить?",
     editorCorrectionInstruction: "Удвойте порцию и все значения пищевой ценности",
     editorEditFields: "Изменить поля",
     editorBackToAi: "Вернуться к ИИ",
-    editorPreview: "Показать исправление",
-    editorProposedResult: "Предлагаемый результат",
+    editorPreview: "Превью",
+    editorProposedResult: "Результат",
     editorProposalSummary: "2 servings · 1280\u00a0ккал",
     editorProposalMacros: ["Б 96\u00a0г", "У 144\u00a0г", "Ж 36\u00a0г", "Кл 14\u00a0г"],
     editorCurrentResult: "Текущие значения",
@@ -172,17 +186,17 @@ const LOCALES: readonly UiLocale[] = [
     editorFiber: "Клетчатка",
     editorDate: "Дата",
     editorMeal: "Приём пищи",
-    editorDelete: "Удалить запись",
-    editorSave: "Сохранить изменения",
+    editorDelete: "Удалить",
+    editorSave: "Сохранить",
     weeklySummary: "Неделя",
-    openDayPrefix: "Открыть дневник:",
+    openDayPrefix: "Открыть записи за",
     historyUnit: "ккал",
-    dayDetail: "Подробный дневник",
-    itemizedMeals: "Приёмы пищи и продукты",
+    dayDetail: "Записи за день",
+    itemizedMeals: "Приёмы пищи",
     backToHistory: "Назад к истории",
     duplicateBreakfast: "Дублировать: Завтрак",
-    duplicateBreakfastForm: "Форма дублирования: Завтрак",
-    destinationMeal: "Приём пищи назначения",
+    duplicateBreakfastForm: "Дублирование: Завтрак",
+    destinationMeal: "Приём пищи",
     cancelDuplicate: "Отмена",
     confirmDuplicate: "Дублировать",
     languageLabel: "Язык приложения",
@@ -405,19 +419,37 @@ test.describe("Cross-locale UI consistency", () => {
         await expect(heading).toBeVisible();
         await expect(page.getByText(locale.calories, { exact: true })).toBeVisible();
         await expect(page.getByText(locale.nutrients, { exact: true })).toBeVisible();
+        const calorieSectors = page.locator(".recharts-pie-sector path");
+        await expect(calorieSectors).toHaveCount(2);
+        for (const sector of await calorieSectors.all()) {
+          await expect(sector).toHaveAttribute("stroke", "none");
+        }
         await expect(lunch).toContainText("640");
         await expectScreenInvariant(page, locale);
         await expectSharedFontFamily(page, [heading, lunch, composerTrigger]);
         await expectHorizontallyContained(page, composerTrigger);
+        const placeholderPreview = page.getByTestId("food-placeholder-preview");
+        await expect(placeholderPreview).toBeVisible();
+        expect(locale.logFoodSuggestions).toContain(
+          await placeholderPreview.getAttribute("data-suggestion"),
+        );
+        await expectHorizontallyContained(page, placeholderPreview);
         for (const target of [settingsTab, homeTab, historyTab, previousDay, nextDay, composerTrigger]) {
           await expectMinimumTarget(target);
         }
 
         await composerTrigger.click();
         const drawer = page.locator("#food-log-sheet");
-        const drawerInput = drawer.getByPlaceholder(locale.logFoodPlaceholder, { exact: true });
+        const drawerInput = drawer.getByRole("textbox", {
+          name: locale.logFoodPlaceholder,
+          exact: true,
+        });
         await expect(drawer.locator('[data-slot="drawer-title"]')).toHaveText(locale.foodLogTitle);
         await expect(drawerInput).toBeVisible();
+        const drawerPlaceholder = await drawerInput.getAttribute("placeholder");
+        const drawerSuggestion = await drawerInput.getAttribute("data-suggestion");
+        expect(drawerPlaceholder).not.toBe("");
+        expect(drawerSuggestion?.startsWith(drawerPlaceholder ?? "")).toBe(true);
         await expectHorizontallyContained(page, drawer);
         await expectMinimumTarget(drawerInput);
         await expectSharedFontFamily(page, [drawerInput]);
@@ -430,13 +462,12 @@ test.describe("Cross-locale UI consistency", () => {
           .getByRole("button", { name: new RegExp(`^${escapeRegExp(locale.homeEntryName)}`) })
           .click();
         const initialEditor = page.getByRole("dialog", {
-          name: locale.editorTitle,
+          name: locale.homeEntryName,
           exact: true,
         });
         await expect(initialEditor).toBeVisible();
 
-        // The accessible dialog name changes with its mode, so use the stable
-        // content slot for assertions that continue after switching modes.
+        // Use the stable content slot for assertions that continue after switching modes.
         const editor = page.locator('[data-slot="dialog-content"]');
         const editorClose = editor.locator('[data-slot="dialog-close"]');
         const editorDescription = editor.locator('[data-slot="dialog-description"]');
@@ -471,8 +502,10 @@ test.describe("Cross-locale UI consistency", () => {
 
         await expect(editor).toBeVisible();
         await expect(editor).toHaveCount(1);
-        await expect(editorDescription).toContainText(locale.homeEntryName);
         await expect(editorDescription).toContainText(`640 ${locale.historyUnit}`);
+        for (const macro of locale.editorHeaderMacros) {
+          await expect(editorDescription.getByText(macro, { exact: true })).toBeVisible();
+        }
         const editorContextBox = await editorDescription.boundingBox();
         expect(editorContextBox, "expected compact saved-food context").not.toBeNull();
         if (editorContextBox) {
@@ -483,6 +516,24 @@ test.describe("Cross-locale UI consistency", () => {
         await expect(instruction).toBeVisible();
         await expect(editFields).toBeVisible();
         await expect(preview).toBeVisible();
+        const instructionLabel = editor.locator('label[for="food-entry-correction"]');
+        const instructionLabelBox = await instructionLabel.boundingBox();
+        const instructionBox = await instruction.boundingBox();
+        const editFieldsBox = await editFields.boundingBox();
+        expect(instructionLabelBox).not.toBeNull();
+        expect(instructionBox).not.toBeNull();
+        expect(editFieldsBox).not.toBeNull();
+        if (instructionLabelBox && instructionBox && editFieldsBox) {
+          const labelToInputGap = instructionBox.y
+            - instructionLabelBox.y
+            - instructionLabelBox.height;
+          const modeToLabelGap = instructionLabelBox.y
+            - editFieldsBox.y
+            - editFieldsBox.height;
+          expect(labelToInputGap).toBeGreaterThanOrEqual(7);
+          expect(modeToLabelGap).toBeGreaterThanOrEqual(0);
+          expect(modeToLabelGap).toBeLessThanOrEqual(16);
+        }
         await expect(editor.getByText(locale.editorCurrentResult, { exact: true })).toHaveCount(0);
         await expect(editor.getByText(locale.editorProposedResult, { exact: true })).toHaveCount(0);
         await expect(scheduleSummary).toHaveAttribute("aria-expanded", "false");
@@ -507,7 +558,7 @@ test.describe("Cross-locale UI consistency", () => {
           await expectHorizontallyContained(page, target);
         }
         await expectSharedFontFamily(page, [
-          editor.getByRole("heading", { name: locale.editorTitle, exact: true }),
+          editor.getByRole("heading", { name: locale.homeEntryName, exact: true }),
           instruction,
           editFields,
           scheduleSummary,
@@ -517,7 +568,7 @@ test.describe("Cross-locale UI consistency", () => {
 
         await editFields.click();
         await expect(
-          editor.getByRole("heading", { name: locale.editorFieldsTitle, exact: true }),
+          editor.getByRole("heading", { name: locale.homeEntryName, exact: true }),
         ).toBeVisible();
 
         const backToAi = editor.getByRole("button", {
@@ -621,7 +672,7 @@ test.describe("Cross-locale UI consistency", () => {
         // the denser result state in both languages and both viewports.
         await backToAi.click();
         await expect(
-          editor.getByRole("heading", { name: locale.editorTitle, exact: true }),
+          editor.getByRole("heading", { name: locale.homeEntryName, exact: true }),
         ).toBeVisible();
         await instruction.fill(locale.editorCorrectionInstruction);
         await preview.click();

@@ -63,6 +63,11 @@ describe("FoodEntryEditor", () => {
     expect(dialog.className).toContain("bottom-0");
     expect(dialog.className).toContain("env(safe-area-inset-top,0px)");
     expect(dialog.className).toContain("sm:top-[50%]");
+    expect(screen.getByRole("heading", { name: "Soup" })).toBeTruthy();
+    expect(
+      dialog.querySelector('[data-slot="dialog-description"]')?.textContent,
+    ).toContain("220\u00a0history.calShort");
+    expect(instruction.parentElement?.className).toContain("space-y-2");
     expect(scheduleTrigger.getAttribute("aria-label")).toBe(
       "entryEditor.day · entryEditor.meal",
     );
@@ -212,7 +217,7 @@ describe("FoodEntryEditor", () => {
       }),
     );
 
-    expect(screen.getByText("entryEditor.aiTitle")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Soup" })).toBeTruthy();
     expect(screen.queryByText("entryEditor.aiMode")).toBeNull();
     expect(screen.queryByText("entryEditor.currentResult")).toBeNull();
     openSchedule();

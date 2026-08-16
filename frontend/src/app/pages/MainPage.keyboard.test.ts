@@ -162,12 +162,12 @@ describe("MainPage virtual keyboard", () => {
       createElement(AppTabChatProvider, null, createElement(MainPage)),
     );
     const trigger = view.container.querySelector<HTMLElement>(
-      "input[placeholder='main.logFoodPlaceholder'], button[aria-label='main.logFoodPlaceholder']",
+      "input[aria-label='main.logFoodPlaceholder'], button[aria-label='main.logFoodPlaceholder']",
     );
     expect(trigger).not.toBeNull();
     expect(trigger).toBeInstanceOf(HTMLButtonElement);
     expect(
-      document.querySelectorAll("input[placeholder='main.logFoodPlaceholder']"),
+      document.querySelectorAll("input[aria-label='main.logFoodPlaceholder']"),
     ).toHaveLength(0);
 
     await act(async () => {
@@ -181,12 +181,12 @@ describe("MainPage virtual keyboard", () => {
     });
 
     const drawerInput = document.querySelector<HTMLInputElement>(
-      "[data-vaul-drawer] input[placeholder='main.logFoodPlaceholder']",
+      "[data-vaul-drawer] input[aria-label='main.logFoodPlaceholder']",
     );
     const drawer = document.querySelector<HTMLElement>("[data-vaul-drawer]");
     expect(drawerInput).not.toBeNull();
     expect(
-      document.querySelectorAll("input[placeholder='main.logFoodPlaceholder']"),
+      document.querySelectorAll("input[aria-label='main.logFoodPlaceholder']"),
     ).toHaveLength(1);
     expect(drawer).not.toBeNull();
     expect(document.activeElement).toBe(drawerInput);

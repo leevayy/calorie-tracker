@@ -61,7 +61,7 @@ async function openHistoryDay(page: Page, day: string): Promise<Locator> {
   await button.click();
   const detail = page.getByRole("region", { name: displayDay(day), exact: true });
   await expect(detail).toBeVisible();
-  await expect(detail.getByText("Itemized daily log", { exact: true })).toBeVisible();
+  await expect(detail.getByText("Daily log", { exact: true })).toBeVisible();
   return detail;
 }
 
@@ -84,9 +84,9 @@ async function openFieldsEditor(
 ): Promise<Locator> {
   await (await revealEntry(detail, meal, entryName)).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toHaveAccessibleName("Correct food");
+  await expect(dialog).toHaveAccessibleName(entryName);
   await dialog.getByRole("button", { name: "Edit fields" }).click();
-  await expect(dialog).toHaveAccessibleName("Edit food");
+  await expect(dialog).toHaveAccessibleName(entryName);
   await dialog.getByRole("button", { name: "Nutrition details" }).click();
   return dialog;
 }
@@ -114,7 +114,7 @@ async function chooseEditorMeal(dialog: Locator, meal: string): Promise<void> {
 }
 
 async function saveEditor(dialog: Locator): Promise<void> {
-  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -200,7 +200,7 @@ test.describe("History detail", () => {
 
     let editor = await openFieldsEditor(page, detail, "Breakfast", "History workflow");
     await editor.getByLabel("Name").fill("Corrected history workflow");
-    await editor.getByLabel("Calories").fill("400");
+    await editor.getByLabel("Calories", { exact: true }).fill("400");
     await saveEditor(editor);
 
     editor = await openFieldsEditor(page, detail, "Breakfast", "Corrected history workflow");
@@ -212,7 +212,7 @@ test.describe("History detail", () => {
     await detail.getByRole("button", { name: "Back to history" }).click();
     detail = await openHistoryDay(page, DESTINATION_DAY);
     editor = await openFieldsEditor(page, detail, "Lunch", "Corrected history workflow");
-    await editor.getByRole("button", { name: "Delete entry" }).click();
+    await editor.getByRole("button", { name: "Delete" }).click();
     await expect(editor).toBeHidden();
 
     const undoStatus = detail.getByRole("status");
@@ -224,7 +224,7 @@ test.describe("History detail", () => {
     await page.reload();
     detail = await openHistoryDay(page, DESTINATION_DAY);
     editor = await openFieldsEditor(page, detail, "Lunch", "Corrected history workflow");
-    await expect(editor.getByLabel("Calories")).toHaveValue("400");
+    await expect(editor.getByLabel("Calories", { exact: true })).toHaveValue("400");
     await expandEditorSchedule(editor);
     await expect(
       editor.getByRole("textbox", { name: "Date", exact: true }),
@@ -265,7 +265,7 @@ test.describe("History detail", () => {
     await openHistory(page);
     let detail = await openHistoryDay(page, HISTORY_DAY);
     const editor = await openFieldsEditor(page, detail, "Breakfast", "Correctable bowl");
-    await editor.getByLabel("Calories").fill("450");
+    await editor.getByLabel("Calories", { exact: true }).fill("450");
     await editor.getByLabel("Protein").fill("30");
     await saveEditor(editor);
 

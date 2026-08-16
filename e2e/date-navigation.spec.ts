@@ -64,7 +64,7 @@ async function seedAndLogin(
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByPlaceholder(/Log food/);
+  const input = page.getByRole("textbox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -112,7 +112,17 @@ test.describe("Dashboard date navigation", () => {
     await page.getByRole("button", { name: "Next day" }).click();
     const tomorrowLabel = await selectedDateLabel(page);
     expect(tomorrowLabel).not.toBe(todayLabel);
-    await expect(page.getByRole("button", { name: "Today" })).toBeVisible();
+    const returnToToday = page.getByRole("button", { name: "Today" });
+    await expect(returnToToday).toBeVisible();
+    const selectedDateBox = await page.getByLabel("Log date").locator("p").first().boundingBox();
+    const returnToTodayBox = await returnToToday.boundingBox();
+    expect(selectedDateBox).not.toBeNull();
+    expect(returnToTodayBox).not.toBeNull();
+    if (selectedDateBox && returnToTodayBox) {
+      expect(returnToTodayBox.y).toBeGreaterThanOrEqual(
+        selectedDateBox.y + selectedDateBox.height,
+      );
+    }
 
     await page.getByRole("button", { name: "Previous day" }).click();
     await expect(page.getByLabel("Log date").locator("p").first()).toHaveText(todayLabel);
@@ -194,7 +204,7 @@ test.describe("Dashboard date navigation", () => {
 
     await input.fill("Stored date porridge");
     const historicalOption = page
-      .getByRole("listbox", { name: "Previously logged" })
+      .getByRole("listbox", { name: "Previous entries" })
       .getByRole("option", { name: /Stored date porridge/ });
     await expect(historicalOption).toBeVisible();
     const historicalBatchPromise = nextBatchRequest(page);

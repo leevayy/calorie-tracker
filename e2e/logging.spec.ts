@@ -17,7 +17,7 @@ type ParseFoodRequestBody = {
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByPlaceholder(/Log food/);
+  const input = page.getByRole("textbox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -165,13 +165,13 @@ test.describe("Atomic food logging", () => {
     await expect(page.getByRole("button", { name: "Undo", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Edit E2E oatmeal" }).click();
 
-    const namedEditor = page.getByRole("dialog", { name: "Correct food" });
+    const namedEditor = page.getByRole("dialog", { name: "E2E oatmeal" });
     await expect(namedEditor).toBeVisible();
     const editor = page.locator('[data-slot="dialog-content"]');
     await expect(editor).toHaveCount(1);
     await editor.getByRole("button", { name: "Edit fields" }).click();
-    await editor.getByLabel("Calories").fill("400");
-    await editor.getByRole("button", { name: "Save changes" }).click();
+    await editor.getByLabel("Calories", { exact: true }).fill("400");
+    await editor.getByRole("button", { name: "Save" }).click();
     await expect(editor).toBeHidden();
 
     await openMeal(page, parseBody.defaultMealType);

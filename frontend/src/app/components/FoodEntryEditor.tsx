@@ -275,6 +275,15 @@ export function FoodEntryEditor({
 
   const editorBusy = busy || correctionState === "loading";
   const language = i18n.resolvedLanguage ?? i18n.language;
+  const headerNutrition = entry
+    ? [
+        formatLocalizedEnergy(entry.calories, language, t("history.calShort")),
+        `${t("macros.proteinLetter")} ${formatLocalizedGrams(entry.protein, language)}`,
+        `${t("macros.carbsLetter")} ${formatLocalizedGrams(entry.carbs, language)}`,
+        `${t("macros.fatsLetter")} ${formatLocalizedGrams(entry.fats, language)}`,
+        `${t("macros.fiberLetter")} ${formatLocalizedGrams(entry.fiber, language)}`,
+      ]
+    : [];
 
   return (
     <Dialog open={entry != null} onOpenChange={(open) => !open && !editorBusy && onClose()}>
@@ -282,26 +291,23 @@ export function FoodEntryEditor({
         className="bottom-0 left-0 top-auto flex max-h-[calc(100dvh-max(0.5rem,env(safe-area-inset-top,0px)))] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-b-none rounded-t-2xl p-0 sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl"
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
-        <DialogHeader className="shrink-0 gap-1.5 px-4 pb-3 pt-4 pr-14 sm:px-5 sm:pb-4 sm:pt-5 sm:pr-14">
-          <DialogTitle>
-            {mode === "ai" ? t("entryEditor.aiTitle") : t("entryEditor.title")}
+        <DialogHeader className="shrink-0 gap-1 px-4 pb-1 pt-4 pr-14 sm:px-5 sm:pb-2 sm:pt-5 sm:pr-14">
+          <DialogTitle className="line-clamp-2 break-words leading-snug">
+            {entry?.name}
           </DialogTitle>
-          <DialogDescription className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-            {entry ? (
-              <>
-                <span className="min-w-0 truncate font-medium text-foreground">{entry.name}</span>
-                <span aria-hidden="true">·</span>
-                <span className="whitespace-nowrap tabular-nums">
-                  {formatLocalizedEnergy(entry.calories, language, t("history.calShort"))}
-                </span>
-              </>
-            ) : null}
+          <DialogDescription className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 leading-5">
+            {headerNutrition.map((value, index) => (
+              <span key={value} className="inline-flex items-baseline gap-1 whitespace-nowrap tabular-nums">
+                {index > 0 ? <span aria-hidden="true">·</span> : null}
+                <span>{value}</span>
+              </span>
+            ))}
           </DialogDescription>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            className="-ml-3 mt-1 w-fit px-3 text-primary-ink hover:text-primary-ink"
+            className="-ml-3 w-fit px-3 text-primary-ink hover:text-primary-ink"
             disabled={editorBusy}
             onClick={() => setMode((current) => (current === "ai" ? "fields" : "ai"))}
           >
@@ -322,8 +328,14 @@ export function FoodEntryEditor({
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-4 sm:px-5">
             {mode === "ai" ? (
               <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Text as="label" htmlFor="food-entry-correction" size="sm" weight="medium">
+                <div className="space-y-2">
+                  <Text
+                    as="label"
+                    htmlFor="food-entry-correction"
+                    size="sm"
+                    weight="medium"
+                    className="block"
+                  >
                     {t("entryEditor.instruction")}
                   </Text>
                   <Input

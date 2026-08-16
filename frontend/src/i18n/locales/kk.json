@@ -67,7 +67,15 @@
     "macrosSummary": "Нутриенттер",
     "recognizedFoods": "Танылған тағамдар",
     "clear": "Тазалау",
-    "logFoodPlaceholder": "Тамақты жазыңыз… (мыс: тауық және күріш)",
+    "logFoodPlaceholder": "Тамақты жазу",
+    "logFoodSuggestions": {
+      "chickenMushrooms": "Тауық пен саңырауқұлақ",
+      "hamSandwich": "Ветчина сэндвичі",
+      "bananaOatmeal": "Бананды сұлы ботқасы",
+      "tunaSalad": "Тунец салаты",
+      "cheeseOmelet": "Ірімшік омлеті",
+      "berryYogurt": "Жидекті йогурт"
+    },
     "addToMeal": "Қосу",
     "parsingFood": "Тамақты түсінеміз…",
     "recentLogged": "Осы аптада жиі жазылған",
@@ -92,12 +100,6 @@
     "editAddedFood": "{{name}} өңдеу"
   },
   "entryEditor": {
-    "title": "Жазбаны өңдеу",
-    "description": "Енгізілген тағам деректерін түзетіңіз.",
-    "aiTitle": "Тағамды түзету",
-    "aiDescription": "Түзетуді сипаттап, толық нәтижені тексеріңіз де сақтаңыз.",
-    "aiMode": "ЖИ арқылы түзету",
-    "fieldsMode": "Өрістерді өңдеу",
     "editFields": "Өрістерді өңдеу",
     "backToAi": "ЖИ-ге оралу",
     "instruction": "Нені өзгерту керек?",
@@ -116,8 +118,8 @@
     "fiber": "Талшық",
     "day": "Күн",
     "meal": "Ас түрі",
-    "save": "Өзгерістерді сақтау",
-    "delete": "Жазбаны жою",
+    "save": "Сақтау",
+    "delete": "Жою",
     "undoMessage": "«{{name}}» жойылды.",
     "undo": "Қайтару",
     "validation": {

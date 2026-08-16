@@ -105,7 +105,7 @@ function renderMainPage() {
 
 function openComposer() {
   fireEvent.click(screen.getByRole("button", { name: "main.logFoodPlaceholder" }));
-  return screen.getByPlaceholderText("main.logFoodPlaceholder") as HTMLInputElement;
+  return screen.getByRole("textbox", { name: "main.logFoodPlaceholder" }) as HTMLInputElement;
 }
 
 function suggestion(name: string, mealType: "lunch" | "dinner") {

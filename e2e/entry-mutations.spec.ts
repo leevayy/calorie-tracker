@@ -81,9 +81,9 @@ async function editEntry(
 ): Promise<Locator> {
   await (await revealEntry(detail, meal, name)).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog).toHaveAccessibleName("Correct food");
+  await expect(dialog).toHaveAccessibleName(name);
   await dialog.getByRole("button", { name: "Edit fields" }).click();
-  await expect(dialog).toHaveAccessibleName("Edit food");
+  await expect(dialog).toHaveAccessibleName(name);
   await dialog.getByRole("button", { name: "Nutrition details" }).click();
   return dialog;
 }
@@ -111,7 +111,7 @@ async function selectMeal(dialog: Locator, meal: string): Promise<void> {
 }
 
 async function save(dialog: Locator): Promise<void> {
-  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -149,7 +149,7 @@ test.describe("Entry movement and deletion", () => {
     detail = await openDay(page, DESTINATION_DAY);
     dialog = await editEntry(page, detail, "Dinner", "Move intact bowl");
     await expect(dialog.getByLabel("Portion")).toHaveValue("1 large bowl");
-    await expect(dialog.getByLabel("Calories")).toHaveValue("420");
+    await expect(dialog.getByLabel("Calories", { exact: true })).toHaveValue("420");
     await expect(dialog.getByLabel("Protein")).toHaveValue("31");
     await expect(dialog.getByLabel("Carbohydrates")).toHaveValue("42");
     await expect(dialog.getByLabel("Fat")).toHaveValue("14");
@@ -165,7 +165,7 @@ test.describe("Entry movement and deletion", () => {
     await expect(
       dialog.getByRole("combobox", { name: "Meal", exact: true }),
     ).toContainText("Dinner");
-    await expect(dialog.getByLabel("Calories")).toHaveValue("420");
+    await expect(dialog.getByLabel("Calories", { exact: true })).toHaveValue("420");
   });
 
   test("reconciles source and destination totals once after a move and reload", async ({
@@ -254,7 +254,7 @@ test.describe("Entry movement and deletion", () => {
     ]);
     let detail = await openDay(page, SOURCE_DAY);
     const dialog = await editEntry(page, detail, "Breakfast", "Delete toast");
-    await dialog.getByRole("button", { name: "Delete entry" }).click();
+    await dialog.getByRole("button", { name: "Delete" }).click();
     await expect(dialog).toBeHidden();
     await expect(entryButton(detail, "Delete toast")).toHaveCount(0);
     await expect(detail.getByText("80 kcal", { exact: true })).toBeVisible();
@@ -291,7 +291,7 @@ test.describe("Entry movement and deletion", () => {
     ]);
     let detail = await openDay(page, SOURCE_DAY);
     let dialog = await editEntry(page, detail, "Snack", "Restorable yogurt");
-    await dialog.getByRole("button", { name: "Delete entry" }).click();
+    await dialog.getByRole("button", { name: "Delete" }).click();
     const status = detail.getByRole("status");
     await expect(status).toContainText("Restorable yogurt was deleted.");
     await status.getByRole("button", { name: "Undo" }).click();
@@ -302,7 +302,7 @@ test.describe("Entry movement and deletion", () => {
     detail = await openDay(page, SOURCE_DAY);
     dialog = await editEntry(page, detail, "Snack", "Restorable yogurt");
     await expect(dialog.getByLabel("Portion")).toHaveValue("170 g cup");
-    await expect(dialog.getByLabel("Calories")).toHaveValue("185");
+    await expect(dialog.getByLabel("Calories", { exact: true })).toHaveValue("185");
     await expect(dialog.getByLabel("Protein")).toHaveValue("16.5");
     await expect(dialog.getByLabel("Carbohydrates")).toHaveValue("19");
     await expect(dialog.getByLabel("Fat")).toHaveValue("5.5");

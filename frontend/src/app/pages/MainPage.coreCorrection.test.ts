@@ -167,7 +167,7 @@ describe("MainPage core corrections", () => {
 
     renderMainPage();
     fireEvent.click(screen.getByRole("button", { name: "main.logFoodPlaceholder" }));
-    const input = screen.getByPlaceholderText("main.logFoodPlaceholder");
+    const input = screen.getByRole("textbox", { name: "main.logFoodPlaceholder" });
     fireEvent.change(input, { target: { value: "four foods" } });
     fireEvent.submit(input.closest("form")!);
 

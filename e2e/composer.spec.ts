@@ -17,7 +17,7 @@ type ParseFoodRequestBody = {
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByPlaceholder(/Log food/);
+  const input = page.getByRole("textbox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -48,6 +48,29 @@ function mealSection(page: Page, mealType: MealType) {
 }
 
 test.describe("Keyboard-fast food composer", () => {
+  test("rotates concise food examples without changing the input label", async ({
+    authenticatedPage: page,
+  }) => {
+    const preview = page.getByTestId("food-placeholder-preview");
+    await expect(preview).toHaveAttribute("data-suggestion", "Chicken with mushrooms");
+    await expect(preview).toContainText("Chicken with mushrooms");
+    await expect(preview).toHaveAttribute("data-typewriter-phase", "holding");
+    await expect(preview).toHaveAttribute("data-suggestion", "Ham sandwich");
+
+    await page.getByRole("button", { name: "Log food" }).click();
+    const input = page.getByRole("textbox", { name: "Log food" });
+    const animatedState = await input.evaluate((element) => ({
+      placeholder: element.getAttribute("placeholder") ?? "",
+      suggestion: element.getAttribute("data-suggestion") ?? "",
+    }));
+    expect(animatedState.placeholder.length).toBeGreaterThan(0);
+    expect(animatedState.suggestion.startsWith(animatedState.placeholder)).toBe(true);
+
+    await input.fill("My own dinner");
+    await expect(input).toHaveValue("My own dinner");
+    await expect(input).toHaveAccessibleName("Log food");
+  });
+
   test("submits consecutive entries with Enter and restores composer focus", async ({
     authenticatedPage: page,
     e2eControls,
@@ -160,7 +183,9 @@ test.describe("Keyboard-fast food composer", () => {
     await e2eControls.failNextBatchSave();
     await input.fill(saveFailureText);
     await input.press("Enter");
-    await expect(page.getByText(saveFailureText, { exact: true })).toBeVisible();
+    await expect(
+      page.locator("#food-log-sheet").getByText(saveFailureText, { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("alert")).toContainText("Request failed");
     await expect(input).toHaveValue("");
 
@@ -207,20 +232,22 @@ test.describe("Keyboard-fast food composer", () => {
     await expect(savedEntry).toBeVisible();
     await savedEntry.click();
 
-    await expect(page.getByRole("dialog", { name: "Correct food" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "E2E trail mix" })).toBeVisible();
 
-    // The title changes with editor mode, so keep a stable content locator
-    // after asserting the initial AI state.
+    // Keep a stable content locator while switching editor modes.
     const editor = page.locator('[data-slot="dialog-content"]');
     const context = editor.locator('[data-slot="dialog-description"]');
     await expect(editor).toHaveCount(1);
-    await expect(context).toContainText("E2E trail mix");
     await expect(context).toContainText("913\u00a0kcal");
+    await expect(context).toContainText("P 17\u00a0g");
+    await expect(context).toContainText("C 23\u00a0g");
+    await expect(context).toContainText("F 29\u00a0g");
+    await expect(context).toContainText("Fi 31\u00a0g");
     await expect(editor.getByText("Current saved values", { exact: true })).toHaveCount(0);
-    await expect(editor.getByText("Proposed result", { exact: true })).toHaveCount(0);
+    await expect(editor.getByText("Result", { exact: true })).toHaveCount(0);
 
     await editor.getByRole("button", { name: "Edit fields", exact: true }).click();
-    await expect(editor.getByRole("heading", { name: "Edit food", exact: true })).toBeVisible();
+    await expect(editor.getByRole("heading", { name: "E2E trail mix", exact: true })).toBeVisible();
     await expect(editor.getByLabel("Name", { exact: true })).toHaveValue("E2E trail mix");
     await expect(editor.getByLabel("Portion", { exact: true })).toHaveValue("37 g");
     await expect(editor.getByLabel("Calories", { exact: true })).toHaveValue("913");

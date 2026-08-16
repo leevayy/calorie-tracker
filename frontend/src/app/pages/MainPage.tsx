@@ -8,7 +8,7 @@ import type {
   UpdateFoodEntryBody,
 } from "@contracts/food-log";
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Drawer } from "vaul";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronLeft, ChevronRight, Pencil, RotateCcw, Send } from "lucide-react";
@@ -18,6 +18,7 @@ import { DayMacrosLabels } from "../components/DayMacrosLabels";
 import { FoodEntryEditor } from "../components/FoodEntryEditor";
 import { MealSection } from "../components/MealSection";
 import { useRequireAuth } from "../hooks/useRequireAuth";
+import { useTypewriterPlaceholder } from "../hooks/useTypewriterPlaceholder";
 import { useAppTabChat } from "../context/AppTabChatContext";
 import { useBehavioralToday } from "./main/mainPageHooks";
 import { Button } from "../components/ds/Button";
@@ -41,6 +42,14 @@ import {
 } from "@/utils/localeFormat";
 
 const CHAT_SUGGESTION_LIMIT = 3;
+const FOOD_PLACEHOLDER_KEYS = [
+  "chickenMushrooms",
+  "hamSandwich",
+  "bananaOatmeal",
+  "tunaSalad",
+  "cheeseOmelet",
+  "berryYogurt",
+] as const;
 
 type LoggingSubmission = {
   id: string;
@@ -61,6 +70,12 @@ const MainPage = observer(function MainPage() {
   useRequireAuth();
   const { t, i18n } = useTranslation();
   const { profile, foodLog, aiParse } = useRootStore();
+  const language = i18n.resolvedLanguage ?? i18n.language;
+  const foodPlaceholderSuggestions = useMemo(
+    () => FOOD_PLACEHOLDER_KEYS.map((key) => t(`main.logFoodSuggestions.${key}`)),
+    [language],
+  );
+  const foodPlaceholder = useTypewriterPlaceholder(foodPlaceholderSuggestions);
 
   const today = useBehavioralToday();
   const [selectedDay, setSelectedDay] = useState(today);
@@ -401,7 +416,10 @@ const MainPage = observer(function MainPage() {
       ) : null}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4">
-        <div className="mb-4 flex items-center justify-between gap-2" aria-label={t("main.dateNavigation")}>
+        <div
+          className="mb-4 grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-2"
+          aria-label={t("main.dateNavigation")}
+        >
           <Button
             type="button"
             variant="secondary"
@@ -411,8 +429,8 @@ const MainPage = observer(function MainPage() {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="min-w-0 flex-1 text-center">
-            <Text weight="semibold">
+          <div className="flex min-w-0 flex-col items-center text-center">
+            <Text weight="semibold" className="w-full leading-6">
               {formatStandaloneCalendarDate(
                 selectedDay,
                 i18n.resolvedLanguage ?? i18n.language,
@@ -423,7 +441,7 @@ const MainPage = observer(function MainPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="mt-1"
+                className="mt-0 px-2 text-primary-ink hover:text-primary-ink"
                 onClick={() => setSelectedDay(today)}
               >
                 {t("main.returnToToday")}
@@ -526,12 +544,22 @@ const MainPage = observer(function MainPage() {
               )}
             >
               <span
+                aria-hidden="true"
+                data-testid="food-placeholder-preview"
+                data-suggestion={foodPlaceholder.suggestion}
+                data-typewriter-phase={foodPlaceholder.phase}
                 className={cn(
-                  "block min-w-0 truncate",
+                  "flex min-w-0 items-center overflow-hidden",
                   chatInput ? "text-foreground" : "text-muted-foreground",
                 )}
               >
-                {chatInput || t("main.logFoodPlaceholder")}
+                <span className="min-w-0 truncate">{chatInput || foodPlaceholder.text}</span>
+                {!chatInput ? (
+                  <span
+                    className="ml-0.5 h-4 w-px shrink-0 bg-muted-foreground/70 motion-safe:animate-pulse"
+                    aria-hidden="true"
+                  />
+                ) : null}
               </span>
             </button>
             <Button
@@ -567,7 +595,10 @@ const MainPage = observer(function MainPage() {
             <form onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 shrink-0 gap-2 pt-2">
               <Input
                 ref={setExpandedInputRef}
-                placeholder={t("main.logFoodPlaceholder")}
+                aria-label={t("main.logFoodPlaceholder")}
+                placeholder={foodPlaceholder.text}
+                data-suggestion={foodPlaceholder.suggestion}
+                data-typewriter-phase={foodPlaceholder.phase}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 className="min-w-0 flex-1"

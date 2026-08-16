@@ -70,7 +70,7 @@ function allEntries(day: ApiDayLog): ApiFoodEntry[] {
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByPlaceholder(/Log food/);
+  const input = page.getByRole("textbox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
@@ -154,18 +154,18 @@ test.describe("Live AI smoke journeys", () => {
       .getByRole("button", { name: new RegExp(`^${escapeRegExp(seedName)}\\b`) })
       .click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toHaveAccessibleName("Correct food");
+    await expect(dialog).toHaveAccessibleName(seedName);
 
     await dialog
       .getByLabel("What should change?")
       .fill("Make the saved serving exactly twice as large and double every nutrition value.");
-    await dialog.getByRole("button", { name: "Preview correction" }).click();
-    const proposedResult = dialog.getByText("Proposed result", { exact: true }).locator("..");
+    await dialog.getByRole("button", { name: "Preview" }).click();
+    const proposedResult = dialog.getByText("Result", { exact: true }).locator("..");
     await expect(proposedResult).toBeVisible();
     await expect(proposedResult.getByText(seedName, { exact: true })).toBeVisible();
 
     await dialog.getByRole("button", { name: "Edit fields" }).click();
-    await expect(dialog).toHaveAccessibleName("Edit food");
+    await expect(dialog).toHaveAccessibleName(seedName);
     await expect(dialog.getByLabel("Name")).toHaveValue(seedName);
     await expandEditorSchedule(dialog);
     await expect(
@@ -174,7 +174,9 @@ test.describe("Live AI smoke journeys", () => {
     await expect(
       dialog.getByRole("combobox", { name: "Meal", exact: true }),
     ).toContainText("Lunch");
-    const proposedCalories = Number(await dialog.getByLabel("Calories").inputValue());
+    const proposedCalories = Number(
+      await dialog.getByLabel("Calories", { exact: true }).inputValue(),
+    );
     await dialog.getByRole("button", { name: "Nutrition details" }).click();
     const proposedProtein = Number(await dialog.getByLabel("Protein").inputValue());
     const proposedCarbs = Number(await dialog.getByLabel("Carbohydrates").inputValue());
@@ -186,7 +188,7 @@ test.describe("Live AI smoke journeys", () => {
     expect(proposedFats).toBeGreaterThan(10);
     expect(proposedFiber).toBeGreaterThan(5);
 
-    await dialog.getByRole("button", { name: "Save changes" }).click();
+    await dialog.getByRole("button", { name: "Save" }).click();
     await expect(dialog).toBeHidden();
     await page.reload();
     const persistedDay = await readDayThroughSession(page, day);

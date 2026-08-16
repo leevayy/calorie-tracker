@@ -77,7 +77,7 @@ async function openDuplicateForm(detail: Locator, sourceMeal: string): Promise<L
   await detail
     .getByRole("button", { name: `Duplicate ${sourceMeal}`, exact: true })
     .click();
-  const form = detail.getByRole("form", { name: `Duplicate ${sourceMeal} form`, exact: true });
+  const form = detail.getByRole("form", { name: `Duplicate ${sourceMeal}`, exact: true });
   await expect(form).toBeVisible();
   return form;
 }
@@ -88,18 +88,18 @@ async function submitDuplicate(
   destinationDay: string,
   destinationMeal: string,
 ): Promise<Locator> {
-  await form.getByLabel("Destination day").fill(destinationDay);
-  await form.getByLabel("Destination meal").selectOption({ label: destinationMeal });
-  await form.getByRole("button", { name: "Duplicate meal" }).click();
+  await form.getByLabel("Date").fill(destinationDay);
+  await form.getByLabel("Meal").selectOption({ label: destinationMeal });
+  await form.getByRole("button", { name: "Duplicate", exact: true }).click();
   const status = detail.getByRole("status");
   await expect(status).toContainText(
-    `Entries copied: 2. ${destinationMeal}, ${inlineDisplayDay(destinationDay)}.`,
+    `Duplicated: 2. ${destinationMeal}, ${inlineDisplayDay(destinationDay)}.`,
   );
   return status;
 }
 
 async function openCopiedDay(page: Page, status: Locator, day: string): Promise<Locator> {
-  await status.getByRole("button", { name: "Open copied day" }).click();
+  await status.getByRole("button", { name: "Open day" }).click();
   const detail = page.getByRole("region", { name: displayDay(day), exact: true });
   await expect(detail).toBeVisible();
   return detail;
@@ -112,7 +112,7 @@ async function editEntry(
   name: string,
 ): Promise<Locator> {
   await (await revealEntry(detail, meal, name)).click();
-  const namedDialog = page.getByRole("dialog", { name: "Correct food" });
+  const namedDialog = page.getByRole("dialog", { name });
   await expect(namedDialog).toBeVisible();
   const dialog = page.locator('[data-slot="dialog-content"]');
   await expect(dialog).toHaveCount(1);
@@ -122,7 +122,7 @@ async function editEntry(
 }
 
 async function save(dialog: Locator): Promise<void> {
-  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
 }
 
@@ -167,15 +167,15 @@ test.describe("Historical meal duplication", () => {
     let detail = await openDay(page, SOURCE_DAY);
     const form = await openDuplicateForm(detail, "Breakfast");
 
-    await form.getByLabel("Destination day").fill(DESTINATION_DAY);
-    await form.getByLabel("Destination meal").selectOption("dinner");
-    await expect(form.getByLabel("Destination day")).toHaveValue(DESTINATION_DAY);
-    await expect(form.getByLabel("Destination meal")).toHaveValue("dinner");
-    await form.getByRole("button", { name: "Duplicate meal" }).click();
+    await form.getByLabel("Date").fill(DESTINATION_DAY);
+    await form.getByLabel("Meal").selectOption("dinner");
+    await expect(form.getByLabel("Date")).toHaveValue(DESTINATION_DAY);
+    await expect(form.getByLabel("Meal")).toHaveValue("dinner");
+    await form.getByRole("button", { name: "Duplicate", exact: true }).click();
 
     const status = detail.getByRole("status");
     await expect(status).toContainText(
-      `Entries copied: 2. Dinner, ${inlineDisplayDay(DESTINATION_DAY)}.`,
+      `Duplicated: 2. Dinner, ${inlineDisplayDay(DESTINATION_DAY)}.`,
     );
     detail = await openCopiedDay(page, status, DESTINATION_DAY);
     await expect(await revealEntry(detail, "Dinner", "Duplicate oatmeal")).toBeVisible();
@@ -199,7 +199,7 @@ test.describe("Historical meal duplication", () => {
 
     let dialog = await editEntry(page, detail, "Lunch", "Duplicate oatmeal");
     await expect(dialog.getByLabel("Portion")).toHaveValue("1 ceramic bowl");
-    await expect(dialog.getByLabel("Calories")).toHaveValue("305");
+    await expect(dialog.getByLabel("Calories", { exact: true })).toHaveValue("305");
     await expect(dialog.getByLabel("Protein")).toHaveValue("13.5");
     await expect(dialog.getByLabel("Carbohydrates")).toHaveValue("50");
     await expect(dialog.getByLabel("Fat")).toHaveValue("8.5");
@@ -209,7 +209,7 @@ test.describe("Historical meal duplication", () => {
 
     dialog = await editEntry(page, detail, "Lunch", "Duplicate berries");
     await expect(dialog.getByLabel("Portion")).toHaveValue("250 g");
-    await expect(dialog.getByLabel("Calories")).toHaveValue("200");
+    await expect(dialog.getByLabel("Calories", { exact: true })).toHaveValue("200");
     await expect(dialog.getByLabel("Protein")).toHaveValue("2");
     await expect(dialog.getByLabel("Carbohydrates")).toHaveValue("42");
     await expect(dialog.getByLabel("Fat")).toHaveValue("1");
@@ -253,11 +253,11 @@ test.describe("Historical meal duplication", () => {
 
     let dialog = await editEntry(page, detail, "Snack", "Duplicate oatmeal");
     await dialog.getByLabel("Name").fill("Edited copied oatmeal");
-    await dialog.getByLabel("Calories").fill("350");
+    await dialog.getByLabel("Calories", { exact: true }).fill("350");
     await save(dialog);
 
     dialog = await editEntry(page, detail, "Snack", "Edited copied oatmeal");
-    await dialog.getByRole("button", { name: "Delete entry" }).click();
+    await dialog.getByRole("button", { name: "Delete" }).click();
     await expect(dialog).toBeHidden();
     const undoStatus = detail.getByRole("status");
     await expect(undoStatus).toContainText("Edited copied oatmeal was deleted.");
@@ -268,7 +268,7 @@ test.describe("Historical meal duplication", () => {
     await page.reload();
     detail = await openDay(page, DESTINATION_DAY);
     dialog = await editEntry(page, detail, "Snack", "Edited copied oatmeal");
-    await expect(dialog.getByLabel("Calories")).toHaveValue("350");
+    await expect(dialog.getByLabel("Calories", { exact: true })).toHaveValue("350");
     await expect(dialog.getByLabel("Portion")).toHaveValue("1 ceramic bowl");
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
@@ -290,10 +290,10 @@ test.describe("Historical meal duplication", () => {
     await arrangeMeals(page, e2eControls, [...sourceMealEntries(), destinationAnchor]);
     let detail = await openDay(page, SOURCE_DAY);
     const form = await openDuplicateForm(detail, "Breakfast");
-    await form.getByLabel("Destination day").fill(DESTINATION_DAY);
-    await form.getByLabel("Destination meal").selectOption("dinner");
+    await form.getByLabel("Date").fill(DESTINATION_DAY);
+    await form.getByLabel("Meal").selectOption("dinner");
     await e2eControls.failNextBatchSave();
-    await form.getByRole("button", { name: "Duplicate meal" }).click();
+    await form.getByRole("button", { name: "Duplicate", exact: true }).click();
 
     await expect(form.getByRole("alert")).toHaveText("Request failed. Please try again.");
     await expect(await revealEntry(detail, "Breakfast", "Duplicate oatmeal")).toBeVisible();

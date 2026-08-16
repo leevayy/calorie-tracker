@@ -12,10 +12,10 @@ test.describe("Supported profile settings", () => {
 
     await page.getByLabel("App language").selectOption("ru");
     await page.getByLabel("Your target").selectOption("muscle_gain");
-    await page.getByLabel("Daily calorie goal").fill("2450");
+    await page.getByLabel("Daily calories").fill("2450");
     await page.getByLabel("Weight (kg)").fill("74.5");
     await page.getByLabel("Height (cm)").fill("181");
-    await page.getByRole("button", { name: "Save profile" }).click();
+    await page.getByRole("button", { name: "Save settings", exact: true }).click();
 
     await expect(page.getByLabel("Язык приложения")).toHaveValue("ru");
     await page.reload();
@@ -23,7 +23,7 @@ test.describe("Supported profile settings", () => {
 
     await expect(page.getByLabel("Язык приложения")).toHaveValue("ru");
     await expect(page.getByLabel("Ваша цель")).toHaveValue("muscle_gain");
-    await expect(page.getByLabel("Дневная норма калорий")).toHaveValue("2450");
+    await expect(page.getByLabel("Калории в день")).toHaveValue("2450");
     await expect(page.getByLabel("Вес (кг)")).toHaveValue("74.5");
     await expect(page.getByLabel("Рост (см)")).toHaveValue("181");
   });
@@ -66,8 +66,8 @@ test.describe("Supported profile settings", () => {
   test("keeps auth logging totals and history working without coaching", async ({
     authenticatedPage: page,
   }) => {
-    await page.getByRole("button", { name: "Log food… (e.g. chicken and rice)" }).click();
-    const composer = page.getByPlaceholder("Log food… (e.g. chicken and rice)");
+    await page.getByRole("button", { name: "Log food" }).click();
+    const composer = page.getByRole("textbox", { name: "Log food" });
     await composer.fill("A deterministic oatmeal bowl");
     await composer.press("Enter");
     await expect(page.getByText("Added 1", { exact: true })).toBeVisible();

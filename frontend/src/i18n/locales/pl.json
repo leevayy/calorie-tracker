@@ -67,7 +67,15 @@
     "macrosSummary": "Wartości odżywcze",
     "recognizedFoods": "Rozpoznane produkty",
     "clear": "Wyczyść",
-    "logFoodPlaceholder": "Zapisz posiłek… (np. kurczak z ryżem)",
+    "logFoodPlaceholder": "Zapisz posiłek",
+    "logFoodSuggestions": {
+      "chickenMushrooms": "Kurczak z grzybami",
+      "hamSandwich": "Kanapka z szynką",
+      "bananaOatmeal": "Owsianka z bananem",
+      "tunaSalad": "Sałatka z tuńczykiem",
+      "cheeseOmelet": "Omlet z serem",
+      "berryYogurt": "Jogurt z owocami"
+    },
     "addToMeal": "Dodaj do",
     "parsingFood": "Analizujemy opis…",
     "recentLogged": "Najczęściej w tym tygodniu",
@@ -92,12 +100,6 @@
     "editAddedFood": "Edytuj {{name}}"
   },
   "entryEditor": {
-    "title": "Edytuj wpis",
-    "description": "Popraw dane zapisanego produktu.",
-    "aiTitle": "Popraw produkt",
-    "aiDescription": "Opisz korektę, sprawdź pełny wynik, a następnie go zapisz.",
-    "aiMode": "Korekta AI",
-    "fieldsMode": "Edycja pól",
     "editFields": "Edytuj pola",
     "backToAi": "Wróć do AI",
     "instruction": "Co należy zmienić?",
@@ -116,8 +118,8 @@
     "fiber": "Błonnik",
     "day": "Data",
     "meal": "Posiłek",
-    "save": "Zapisz zmiany",
-    "delete": "Usuń wpis",
+    "save": "Zapisz",
+    "delete": "Usuń",
     "undoMessage": "Usunięto „{{name}}”.",
     "undo": "Cofnij",
     "validation": {

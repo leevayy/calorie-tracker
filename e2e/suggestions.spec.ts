@@ -65,13 +65,13 @@ async function seedAndLogin(
 
 async function openFoodComposer(page: Page) {
   await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByPlaceholder(/Log food/);
+  const input = page.getByRole("textbox", { name: "Log food" });
   await expect(input).toBeVisible();
   return input;
 }
 
 function suggestionList(page: Page) {
-  return page.getByRole("listbox", { name: "Previously logged" });
+  return page.getByRole("listbox", { name: "Previous entries" });
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
@@ -105,7 +105,7 @@ test.describe("Historical food suggestions", () => {
     const option = list.getByRole("option", { name: /Greek Yogurt/ });
     await expect(option).toBeVisible();
     await expect(option).toContainText("170 g · 150 kcal");
-    await expect(option).toContainText("Uses: 3");
+    await expect(option).toContainText("×3");
     await expect(option).toContainText("Yesterday");
   });
 

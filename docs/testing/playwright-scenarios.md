@@ -26,8 +26,10 @@ controls.
 | Authentication lifecycle | `e2e/auth.spec.ts` — `signs up, signs in, persists the session, and signs out` | Yes | Yes | — |
 | Authentication validation | `e2e/auth.spec.ts` — `shows validation and rejects invalid credentials without losing input` | Yes | Yes | — |
 | Supported profile/settings | `e2e/settings.spec.ts` — `updates supported profile fields and language after reload` | Yes | Yes | — |
-| English UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent` | Yes | Yes | — |
-| Russian UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
+| Concise English UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent` | Yes | Yes | — |
+| Idiomatic Russian UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
+| Dashboard visual consistency | Both localized `e2e/ui-consistency.spec.ts` scenarios verify the calorie ring has no slice outlines | Yes | Yes | — |
+| Localized composer hints | `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
 | Entry ownership | `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |
 | Historical ownership | `e2e/authorization.spec.ts` — `cannot open or duplicate another user's historical meal` | Yes | Yes | — |
 
@@ -45,7 +47,7 @@ controls.
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
 | 02.1 | Tapping a saved food opens an editor populated from persisted values. | `e2e/ai-correction.spec.ts` — `opens a saved entry in the AI-first editor with its persisted draft` | Yes | Yes | — |
-| 02.2 | The initial editor and generated proposal stay concise and contained; long names and macro rows wrap; manual fields, nutrients, and schedule use progressive disclosure; and footer actions remain reachable while the body scrolls. | `e2e/ai-correction.spec.ts` — `switches to Edit fields and exposes detailed nutrients without losing the draft`; `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent`; `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
+| 02.2 | The initial editor uses the record name as its title, shows calories and macros as a compact subtitle, keeps instruction spacing balanced, and uses concise Save/Delete actions; long names and macro rows wrap; manual fields, nutrients, and schedule use progressive disclosure; and footer actions remain reachable while the body scrolls. | `e2e/ai-correction.spec.ts` — `switches to Edit fields and exposes detailed nutrients without losing the draft`; `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent`; `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
 | 02.3 | Valid changes persist and refresh the row, meal/day totals, and history aggregate. | `e2e/ai-correction.spec.ts` — `saves a structured correction and reconciles every aggregate after reload` | Yes | Yes | — |
 | 02.4 | Invalid values show field-level feedback without losing edits. | `e2e/ai-correction.spec.ts` — `keeps invalid structured edits with field-level feedback` | Yes | Yes | — |
 | 02.5 | Owned updates succeed; unauthorized updates are rejected. | `e2e/ai-correction.spec.ts` — `saves a structured correction and reconciles every aggregate after reload`; `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |
@@ -74,7 +76,7 @@ controls.
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
-| 05.1 | Enter submits and leaves the composer ready for another entry. | `e2e/composer.spec.ts` — `submits consecutive entries with Enter and restores composer focus` | Yes | Yes | — |
+| 05.1 | The empty composer rotates concise localized examples without changing its stable accessible label; Enter submits and leaves it ready for another entry. | `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; `submits consecutive entries with Enter and restores composer focus` | Yes | Yes | — |
 | 05.2 | A pending row appears in the target meal during parse/save. | `e2e/composer.spec.ts` — `shows parsing and saving rows in the target meal` | Yes | Yes | — |
 | 05.3 | Parse/save failure preserves exact text and offers direct retry. | `e2e/composer.spec.ts` — `preserves the exact failed submission and retries from the failed stage` | Yes | Yes | — |
 | 05.4 | Explicit portion/calorie/nutrient values override inference. | `e2e/composer.spec.ts` — `honors explicit portion and nutrition values over inference` derives the submitted literals over deliberately conflicting deterministic inference | Yes | Yes | — |
@@ -94,17 +96,17 @@ controls.
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
-| 07.1 | Dashboard labels the selected date and provides previous/next navigation. | `e2e/date-navigation.spec.ts` — `navigates previous and next dates and labels the selected day` | Yes | Yes | — |
+| 07.1 | Dashboard labels the selected date, provides previous/next navigation, and keeps the selected date visually separate from the return-to-today action. | `e2e/date-navigation.spec.ts` — `navigates previous and next dates and labels the selected day` | Yes | Yes | — |
 | 07.2 | Selected-day meals/totals load without losing navigation context. | `e2e/date-navigation.spec.ts` — `keeps the selected day and its totals while navigating` | Yes | Yes | — |
 | 07.3 | AI submissions and historical suggestions save only to the selected day. | `e2e/date-navigation.spec.ts` — `logs AI and historical suggestions into the selected day only`; `e2e/live-ai.live.spec.ts` — `@live-ai parses and saves a real multi-food description` | Yes | Yes | Yes |
-| 07.4 | A direct return-to-today action is available off today. | `e2e/date-navigation.spec.ts` — `returns directly to today from another date` | Yes | Yes | — |
+| 07.4 | A direct, concise Today action is available off today. | `e2e/date-navigation.spec.ts` — `returns directly to today from another date` | Yes | Yes | — |
 | 07.5 | Date-boundary tests prove submissions never leak to another day. | `e2e/date-navigation.spec.ts` — `does not leak submissions across calendar-day boundaries` | Yes | Yes | — |
 
 ## Issue 08 — Open and correct a history day
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
-| 08.1 | Selecting a history day opens itemized meals and totals for that date. | `e2e/history.spec.ts` — `opens a history day with itemized meals and totals` | Yes | Yes | — |
+| 08.1 | Selecting a history day opens localized meal records and totals for that date without calling the tracker a diary. | `e2e/history.spec.ts` — `opens a history day with itemized meals and totals`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
 | 08.2 | History detail supports edit, move, delete, and Undo. | `e2e/history.spec.ts` — `edits moves deletes and undoes from history detail` | Yes | Yes | — |
 | 08.3 | Corrections update the detail and aggregate history immediately. | `e2e/history.spec.ts` — `reconciles history detail and aggregate after a correction` | Yes | Yes | — |
 | 08.4 | Returning to history preserves the previous history context. | `e2e/history.spec.ts` — `returns to the same history scroll context` | Yes | Yes | — |
@@ -114,7 +116,7 @@ controls.
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
-| 09.1 | Historical meal detail has a duplicate action with explicit destination day/meal. | `e2e/meal-duplication.spec.ts` — `chooses an explicit destination for a historical meal` | Yes | Yes | — |
+| 09.1 | Historical meal detail consistently uses duplicate terminology and has explicit destination date/meal controls. | `e2e/meal-duplication.spec.ts` — `chooses an explicit destination for a historical meal`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
 | 09.2 | Every food is copied atomically with stored portion/nutrition. | `e2e/meal-duplication.spec.ts` — `duplicates every food atomically with stored nutrition` | Yes | Yes | — |
 | 09.3 | The source historical meal remains unchanged. | `e2e/meal-duplication.spec.ts` — `keeps the source meal unchanged after duplication and reload` | Yes | Yes | — |
 | 09.4 | Copied entries immediately support established edit and Undo interactions. | `e2e/meal-duplication.spec.ts` — `edits a copied entry and undoes its deletion` | Yes | Yes | — |
@@ -134,7 +136,7 @@ controls.
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
-| 13.1 | Tapping a saved food opens a concise AI correction state with stored-food context, a visible instruction input, a collapsed schedule summary, and no proposal card before preview. | `e2e/ai-correction.spec.ts` — `opens AI correction by default for a saved entry`; `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent`; `keeps Russian core screens contained and typographically consistent`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
+| 13.1 | Tapping a saved food opens a concise AI correction state titled with the record name and a calories/macros subtitle, with localized Preview/Превью copy, a well-spaced instruction input, a collapsed schedule summary, and no result card before preview. | `e2e/ai-correction.spec.ts` — `opens AI correction by default for a saved entry`; `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent`; `keeps Russian core screens contained and typographically consistent`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
 | 13.2 | The correction request uses the stored entry as structured context. | `e2e/ai-correction.spec.ts` — `uses the stored structured entry as correction context`; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
 | 13.3 | Schema-validated AI output becomes a complete inspectable draft before persistence. | `e2e/ai-correction.spec.ts` — `validates a complete AI draft before Save persists it`; both localized `e2e/ui-consistency.spec.ts` scenarios; `e2e/live-ai.live.spec.ts` — `@live-ai proposes and saves a correction from stored entry context` | Yes | Yes | Yes |
 | 13.4 | Proportional instructions scale calories and all nutrients exactly; portion changes only when implied. | `e2e/ai-correction.spec.ts` — `scales calories and every nutrient exactly for a proportional instruction`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |

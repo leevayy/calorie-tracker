@@ -57,8 +57,8 @@ async function openSeededEntry(
 
 async function previewDouble(page: Page, instruction = "Double this serving"): Promise<void> {
   await page.getByLabel("What should change?").fill(instruction);
-  await page.getByRole("button", { name: "Preview correction" }).click();
-  await expect(page.getByText("Proposed result")).toBeVisible();
+  await page.getByRole("button", { name: "Preview" }).click();
+  await expect(page.getByText("Result", { exact: true })).toBeVisible();
 }
 
 async function expandEditorSchedule(dialog: Locator): Promise<void> {
@@ -89,12 +89,14 @@ test.describe("AI-first food-entry correction", () => {
   }) => {
     await openSeededEntry(page, e2eControls);
 
-    await expect(page.getByRole("heading", { name: "Correct food" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: SEEDED_NAME })).toBeVisible();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText(SEEDED_NAME, { exact: true })).toBeVisible();
     await expect(dialog.getByText("300\u00a0kcal", { exact: true })).toBeVisible();
+    for (const macro of ["P 20\u00a0g", "C 30\u00a0g", "F 10\u00a0g", "Fi 5\u00a0g"]) {
+      await expect(dialog.getByText(macro, { exact: true })).toBeVisible();
+    }
     await expect(dialog.getByText("Current saved values", { exact: true })).toHaveCount(0);
-    await expect(dialog.getByText("Proposed result", { exact: true })).toHaveCount(0);
+    await expect(dialog.getByText("Result", { exact: true })).toHaveCount(0);
     const scheduleDisclosure = dialog.getByRole("button", {
       name: "Date · Meal",
       exact: true,
@@ -116,7 +118,7 @@ test.describe("AI-first food-entry correction", () => {
     await previewDouble(page);
 
     await page.getByRole("button", { name: "Edit fields" }).click();
-    await expect(page.getByLabel("Calories")).toHaveValue("600");
+    await expect(page.getByLabel("Calories", { exact: true })).toHaveValue("600");
     await page.getByRole("button", { name: "Nutrition details" }).click();
     await expect(page.getByLabel("Protein")).toHaveValue("40");
     await expect(page.getByLabel("Carbohydrates")).toHaveValue("60");
@@ -133,10 +135,10 @@ test.describe("AI-first food-entry correction", () => {
     await openSeededEntry(page, e2eControls);
     await page.getByRole("button", { name: "Edit fields" }).click();
     await page.getByLabel("Name").fill("Corrected power bowl");
-    await page.getByLabel("Calories").fill("450");
+    await page.getByLabel("Calories", { exact: true }).fill("450");
     await page.getByRole("button", { name: "Nutrition details" }).click();
     await page.getByLabel("Protein").fill("25");
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Lunch/ })).toContainText("450\u00a0kcal");
@@ -163,13 +165,13 @@ test.describe("AI-first food-entry correction", () => {
     await openSeededEntry(page, e2eControls);
     await page.getByRole("button", { name: "Edit fields" }).click();
     await page.getByLabel("Name").fill("   ");
-    await page.getByLabel("Calories").fill("-4");
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByLabel("Calories", { exact: true }).fill("-4");
+    await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("This field is required.")).toBeVisible();
-    await expect(page.getByText("Must be zero or greater.")).toBeVisible();
+    await expect(page.getByText("Must be 0 or more.")).toBeVisible();
     await expect(page.getByLabel("Name")).toHaveValue("   ");
-    await expect(page.getByLabel("Calories")).toHaveValue("-4");
+    await expect(page.getByLabel("Calories", { exact: true })).toHaveValue("-4");
     expect((await readDayThroughSession(page)).body.totalCalories).toBe(300);
   });
 
@@ -177,7 +179,7 @@ test.describe("AI-first food-entry correction", () => {
     await openSeededEntry(page, e2eControls);
 
     await expect(page.getByLabel("What should change?")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Preview correction" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Preview" })).toBeVisible();
     await expect(page.getByLabel("Name")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Edit fields" })).toBeVisible();
   });
@@ -186,7 +188,7 @@ test.describe("AI-first food-entry correction", () => {
     await openSeededEntry(page, e2eControls);
     await previewDouble(page, "Make the saved serving twice as large");
 
-    const proposedResult = page.getByText("Proposed result", { exact: true }).locator("..");
+    const proposedResult = page.getByText("Result", { exact: true }).locator("..");
     await expect(
       proposedResult.getByText("2 servings · 600\u00a0kcal", { exact: true }),
     ).toBeVisible();
@@ -201,7 +203,7 @@ test.describe("AI-first food-entry correction", () => {
     await previewDouble(page);
 
     const dialog = page.getByRole("dialog");
-    const proposedResult = dialog.getByText("Proposed result", { exact: true }).locator("..");
+    const proposedResult = dialog.getByText("Result", { exact: true }).locator("..");
     await expect(proposedResult.getByText(SEEDED_NAME, { exact: true })).toBeVisible();
     await expect(
       proposedResult.getByText("2 servings · 600\u00a0kcal", { exact: true }),
@@ -211,7 +213,7 @@ test.describe("AI-first food-entry correction", () => {
     }
     expect((await readDayThroughSession(page)).body.totalCalories).toBe(300);
 
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
     expect((await readDayThroughSession(page)).body.totalCalories).toBe(600);
   });
 
@@ -223,7 +225,7 @@ test.describe("AI-first food-entry correction", () => {
     await previewDouble(page, "Double the portion and all nutrition values");
     await page.getByRole("button", { name: "Edit fields" }).click();
     await expect(page.getByLabel("Portion")).toHaveValue("2 servings");
-    await expect(page.getByLabel("Calories")).toHaveValue("600");
+    await expect(page.getByLabel("Calories", { exact: true })).toHaveValue("600");
     await page.getByRole("button", { name: "Nutrition details" }).click();
     await expect(page.getByLabel("Protein")).toHaveValue("40");
     await expect(page.getByLabel("Carbohydrates")).toHaveValue("60");
@@ -245,7 +247,7 @@ test.describe("AI-first food-entry correction", () => {
     await expandEditorSchedule(dialog);
     await expect(dialog.getByRole("textbox", { name: "Date" })).toHaveValue(behavioralIsoDay(1));
     await expect(dialog.getByRole("combobox", { name: "Meal" })).toHaveText("Dinner");
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByRole("button", { name: /^Lunch/ })).toContainText("0\u00a0kcal");
     await page.getByRole("button", { name: "Next day" }).click();
@@ -268,7 +270,7 @@ test.describe("AI-first food-entry correction", () => {
     await expect(page.getByText("2 servings · 600\u00a0kcal", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Edit fields" }).click();
     await expect(page.getByLabel("Name")).toHaveValue("Shared draft bowl");
-    await expect(page.getByLabel("Calories")).toHaveValue("600");
+    await expect(page.getByLabel("Calories", { exact: true })).toHaveValue("600");
   });
 
   test("preserves the instruction and persisted entry after a failed AI correction", async ({
@@ -279,7 +281,7 @@ test.describe("AI-first food-entry correction", () => {
     await e2eControls.setAiMode({ correction: "failure" });
     const instruction = "Double this but keep my note";
     await page.getByLabel("What should change?").fill(instruction);
-    await page.getByRole("button", { name: "Preview correction" }).click();
+    await page.getByRole("button", { name: "Preview" }).click();
 
     await expect(page.getByRole("alert")).toContainText("correction service is unavailable");
     await expect(page.getByLabel("What should change?")).toHaveValue(instruction);
@@ -299,7 +301,7 @@ test.describe("AI-first food-entry correction", () => {
         updateResponses.push(response.status());
       }
     });
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await page.reload();
 

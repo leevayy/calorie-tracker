@@ -43,6 +43,7 @@ export function CaloriePieChart({
                 outerRadius={60}
                 paddingAngle={2}
                 dataKey="value"
+                stroke="none"
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index]} />
