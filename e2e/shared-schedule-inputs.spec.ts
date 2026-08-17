@@ -7,6 +7,7 @@ import {
   loginThroughSetup,
   test,
 } from "./support/fixtures";
+import { usesDesktopWorkspace } from "./support/adaptiveComposer";
 
 const MIN_TARGET_PX = 44;
 const GEOMETRY_TOLERANCE_PX = 1;
@@ -163,9 +164,12 @@ test.describe("Shared schedule inputs", () => {
     page,
     e2eControls,
   }) => {
+    const desktop = usesDesktopWorkspace(page);
     for (const locale of SCHEDULE_LOCALES) {
       await test.step(locale.code, async () => {
-        await page.setViewportSize({ width: 320, height: 844 });
+        await page.setViewportSize(desktop
+          ? { width: 1280, height: 900 }
+          : { width: 320, height: 844 });
         const user = isolatedTestUser({
           profile: {
             dailyCalorieGoal: 2_000,
@@ -205,13 +209,21 @@ test.describe("Shared schedule inputs", () => {
         await loginThroughSetup(page, user);
         await expect(page.locator("html")).toHaveAttribute("lang", locale.code);
 
-        await page.getByRole("button", {
-          name: new RegExp(`^${locale.lunch}(?:\\s|$)`),
-        }).click();
-        await page.getByRole("button", { name: new RegExp(`^${EDITOR_ENTRY}`) }).click();
-        const editor = page.getByRole("dialog", { name: EDITOR_ENTRY, exact: true });
-        await editor.getByRole("button", { name: locale.editFields, exact: true }).click();
-        await editor.getByRole("button", { name: locale.schedule, exact: true }).click();
+        const lunch = page.getByRole("region", { name: locale.lunch, exact: true });
+        let editor: Locator;
+        if (desktop) {
+          await lunch.getByRole("row", { name: new RegExp(`^${EDITOR_ENTRY}`) }).click();
+          editor = lunch.getByRole("form");
+        } else {
+          await page.getByRole("button", {
+            name: new RegExp(`^${locale.lunch}(?:\\s|$)`),
+          }).click();
+          await page.getByRole("button", { name: new RegExp(`^${EDITOR_ENTRY}`) }).click();
+          editor = page.getByRole("dialog", { name: EDITOR_ENTRY, exact: true });
+          await editor.getByRole("button", { name: locale.editFields, exact: true }).click();
+          await editor.getByRole("button", { name: locale.schedule, exact: true }).click();
+        }
+        await expect(editor).toBeVisible();
         const editorDate = editor.getByLabel(locale.date, { exact: true });
         const editorMeal = editor.getByRole("combobox", {
           name: locale.meal,
@@ -224,7 +236,11 @@ test.describe("Shared schedule inputs", () => {
         await expectContained(page, editorMeal);
         await exposeMealOptions(page, editorMeal, locale.meals, locale.dinner);
         await expectNoDocumentOverflow(page);
-        await page.keyboard.press("Escape");
+        if (desktop) {
+          await page.reload();
+        } else {
+          await page.keyboard.press("Escape");
+        }
         await expect(editor).toBeHidden();
 
         await page.getByRole("button", { name: locale.history, exact: true }).click();

@@ -7,6 +7,10 @@ import {
   type E2EControlClient,
   type E2ESeedEntry,
 } from "./support/fixtures";
+import {
+  openAdaptiveFoodComposer,
+  usesDesktopWorkspace,
+} from "./support/adaptiveComposer";
 
 const MEAL_LABELS = {
   breakfast: "Breakfast",
@@ -83,12 +87,7 @@ async function seedAndLogin(
   await loginThroughSetup(page, user);
 }
 
-async function openFoodComposer(page: Page) {
-  await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("combobox", { name: "Log food" });
-  await expect(input).toBeVisible();
-  return input;
-}
+const openFoodComposer = openAdaptiveFoodComposer;
 
 function nextParseRequest(page: Page): Promise<Request> {
   return page.waitForRequest((request) => {
@@ -111,11 +110,53 @@ function nextBatchResponse(page: Page) {
   });
 }
 
-function mealButton(page: Page, mealType: MealType, calories?: number) {
-  const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
+function mealButton(page: Page, mealType: MealType) {
+  if (usesDesktopWorkspace(page)) {
+    return page
+      .getByRole("region", { name: MEAL_LABELS[mealType], exact: true })
+      .getByRole("button", { name: MEAL_LABELS[mealType], exact: true });
+  }
   return page.getByRole("button", {
-    name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
+    name: new RegExp(`^${MEAL_LABELS[mealType]}\\b`),
   });
+}
+
+async function expectMealCalories(
+  page: Page,
+  mealType: MealType,
+  calories: number,
+): Promise<void> {
+  if (!usesDesktopWorkspace(page)) {
+    await expect(page.getByRole("button", {
+      name: new RegExp(`^${MEAL_LABELS[mealType]}\\b.*${calories}\\s+kcal`),
+    })).toBeVisible();
+    return;
+  }
+
+  const meal = page.getByRole("region", { name: MEAL_LABELS[mealType], exact: true });
+  await expect(meal).toBeVisible();
+  const calorieCells = meal.getByRole("cell").filter({ hasText: /\bkcal\b/ });
+  await expect.poll(async () => {
+    const values = await calorieCells.allTextContents();
+    return values.reduce((sum, value) => sum + Number(value.replace(/[^\d.-]/g, "")), 0);
+  }).toBe(calories);
+}
+
+async function revealMeal(page: Page, mealType: MealType): Promise<void> {
+  const control = mealButton(page, mealType);
+  if (!usesDesktopWorkspace(page) || (await control.getAttribute("aria-expanded")) !== "true") {
+    await control.click();
+  }
+}
+
+async function returnToToday(page: Page): Promise<void> {
+  await returnToTodayControl(page).click();
+}
+
+function returnToTodayControl(page: Page) {
+  return page
+    .locator('[data-slot="date-navigator-today"]')
+    .getByRole("button");
 }
 
 function dateNavigation(page: Page, accessibleName = "Log date") {
@@ -154,21 +195,41 @@ test.describe("Dashboard date navigation", () => {
     await page.getByRole("button", { name: "Next day" }).click();
     const tomorrowLabel = await selectedDateLabel(page);
     expect(tomorrowLabel).not.toBe(todayLabel);
-    const returnToToday = page.getByRole("button", { name: "Today" });
-    await expect(returnToToday).toBeVisible();
-    const selectedDateBox = await selectedDateControl(page).boundingBox();
-    const returnToTodayBox = await returnToToday.boundingBox();
-    expect(selectedDateBox).not.toBeNull();
-    expect(returnToTodayBox).not.toBeNull();
-    if (selectedDateBox && returnToTodayBox) {
-      expect(returnToTodayBox.y).toBeGreaterThanOrEqual(
-        selectedDateBox.y + selectedDateBox.height,
-      );
+    const todayControl = returnToTodayControl(page);
+    await expect(todayControl).toBeVisible();
+    if (usesDesktopWorkspace(page)) {
+      const header = page.getByTestId("desktop-journal-header");
+      const selectedDateBox = await selectedDateControl(page).boundingBox();
+      const returnToTodayBox = await todayControl.boundingBox();
+      const headerBox = await header.boundingBox();
+      expect(selectedDateBox).not.toBeNull();
+      expect(returnToTodayBox).not.toBeNull();
+      expect(headerBox).not.toBeNull();
+      if (selectedDateBox && returnToTodayBox && headerBox) {
+        expect(selectedDateBox.y).toBeGreaterThanOrEqual(headerBox.y);
+        expect(selectedDateBox.y + selectedDateBox.height).toBeLessThanOrEqual(
+          headerBox.y + headerBox.height + 1,
+        );
+        expect(returnToTodayBox.y).toBeGreaterThanOrEqual(headerBox.y);
+        expect(returnToTodayBox.y + returnToTodayBox.height).toBeLessThanOrEqual(
+          headerBox.y + headerBox.height + 1,
+        );
+      }
+    } else {
+      const selectedDateBox = await selectedDateControl(page).boundingBox();
+      const returnToTodayBox = await todayControl.boundingBox();
+      expect(selectedDateBox).not.toBeNull();
+      expect(returnToTodayBox).not.toBeNull();
+      if (selectedDateBox && returnToTodayBox) {
+        expect(returnToTodayBox.y).toBeGreaterThanOrEqual(
+          selectedDateBox.y + selectedDateBox.height,
+        );
+      }
     }
 
     await page.getByRole("button", { name: "Previous day" }).click();
     await expect(selectedDateControl(page)).toHaveText(todayLabel);
-    await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
+    await expect(returnToTodayControl(page)).toHaveCount(0);
 
     await page.getByRole("button", { name: "Previous day" }).click();
     const yesterdayLabel = await selectedDateLabel(page);
@@ -186,22 +247,22 @@ test.describe("Dashboard date navigation", () => {
       seedEntry(addDays(today, -1), "Previous dinner", 250, { mealType: "dinner" }),
     ]);
     const todayLabel = await selectedDateLabel(page);
-    await expect(mealButton(page, "breakfast", 100)).toBeVisible();
-    await expect(mealButton(page, "dinner", 0)).toBeVisible();
+    await expectMealCalories(page, "breakfast", 100);
+    await expectMealCalories(page, "dinner", 0);
 
     await page.getByRole("button", { name: "Previous day" }).click();
     const previousLabel = await selectedDateLabel(page);
     expect(previousLabel).not.toBe(todayLabel);
-    await expect(mealButton(page, "breakfast", 0)).toBeVisible();
-    await expect(mealButton(page, "dinner", 250)).toBeVisible();
-    await mealButton(page, "dinner").click();
+    await expectMealCalories(page, "breakfast", 0);
+    await expectMealCalories(page, "dinner", 250);
+    await revealMeal(page, "dinner");
     await expect(page.getByText("Previous dinner", { exact: true })).toBeVisible();
     await expect(selectedDateControl(page)).toHaveText(previousLabel);
 
     await page.getByRole("button", { name: "Next day" }).click();
     await expect(selectedDateControl(page)).toHaveText(todayLabel);
-    await expect(mealButton(page, "breakfast", 100)).toBeVisible();
-    await expect(mealButton(page, "dinner", 0)).toBeVisible();
+    await expectMealCalories(page, "breakfast", 100);
+    await expectMealCalories(page, "dinner", 0);
   });
 
   test("logs AI and historical suggestions into the selected day only", async ({
@@ -230,7 +291,9 @@ test.describe("Dashboard date navigation", () => {
     await input.press("Enter");
     const parseRequest = await parseRequestPromise;
     const aiBatch = await aiBatchPromise;
-    await expect(page.getByText("Added 1", { exact: true })).toHaveCount(1);
+    await expect(page.getByText(usesDesktopWorkspace(page) ? "Added 1 food" : "Added 1", {
+      exact: true,
+    })).toHaveCount(1);
 
     const parseBody = parseRequest.postDataJSON() as {
       defaultLogDay: string;
@@ -252,13 +315,17 @@ test.describe("Dashboard date navigation", () => {
     const historicalBatchPromise = nextBatchRequest(page);
     await historicalOption.click();
     const historicalBatch = await historicalBatchPromise;
-    const activity = page.getByRole("button", {
-      name: "Logging activity · 2 groups logged · 2 foods",
-      exact: true,
-    });
-    await expect(activity).toHaveAttribute("aria-expanded", "false");
-    await activity.click();
-    await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
+    if (usesDesktopWorkspace(page)) {
+      await expect(page.getByText("Added 1 food", { exact: true })).toHaveCount(1);
+    } else {
+      const activity = page.getByRole("button", {
+        name: "Logging activity · 2 groups logged · 2 foods",
+        exact: true,
+      });
+      await expect(activity).toHaveAttribute("aria-expanded", "false");
+      await activity.click();
+      await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
+    }
     const historicalBody = historicalBatch.postDataJSON() as {
       entries: Array<{ day: string; mealType: MealType; name: string; calories: number }>;
     };
@@ -274,15 +341,15 @@ test.describe("Dashboard date navigation", () => {
     expect(targetMeal).toBe(historicalBody.entries[0]?.mealType);
     await page.reload();
     await page.getByRole("button", { name: "Previous day" }).click();
-    await mealButton(page, targetMeal as MealType).click();
+    await revealMeal(page, targetMeal as MealType);
     await expect(page.getByText("E2E oatmeal", { exact: true })).toBeVisible();
     await expect(page.getByText("Stored date porridge", { exact: true })).toBeVisible();
-    await expect(mealButton(page, targetMeal as MealType, 542)).toBeVisible();
+    await expectMealCalories(page, targetMeal as MealType, 542);
 
-    await page.getByRole("button", { name: "Today" }).click();
+    await returnToToday(page);
     await expect(page.getByText("E2E oatmeal", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Stored date porridge", { exact: true })).toHaveCount(0);
-    await expect(mealButton(page, targetMeal as MealType, 0)).toBeVisible();
+    await expectMealCalories(page, targetMeal as MealType, 0);
   });
 
   test("returns directly to today from another date", async ({ page, e2eControls }) => {
@@ -292,9 +359,9 @@ test.describe("Dashboard date navigation", () => {
     await page.getByRole("button", { name: "Previous day" }).click();
     expect(await selectedDateLabel(page)).not.toBe(todayLabel);
 
-    await page.getByRole("button", { name: "Today" }).click();
+    await returnToToday(page);
     await expect(selectedDateControl(page)).toHaveText(todayLabel);
-    await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
+    await expect(returnToTodayControl(page)).toHaveCount(0);
   });
 
   test("does not leak submissions across calendar-day boundaries", async ({
@@ -323,17 +390,17 @@ test.describe("Dashboard date navigation", () => {
     const previousLabel = await selectedDateLabel(page);
     expect(previousLabel).not.toBe(todayLabel);
     expect((await batchResponsePromise).status()).toBe(201);
-    await expect(mealButton(page, parseBody.defaultMealType, 0)).toBeVisible();
+    await expectMealCalories(page, parseBody.defaultMealType, 0);
 
-    await page.getByRole("button", { name: "Today" }).click();
-    await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
-    await mealButton(page, parseBody.defaultMealType).click();
+    await returnToToday(page);
+    await expectMealCalories(page, parseBody.defaultMealType, 320);
+    await revealMeal(page, parseBody.defaultMealType);
     await expect(page.getByText("E2E oatmeal", { exact: true })).toBeVisible();
 
     await page.reload();
-    await mealButton(page, parseBody.defaultMealType).click();
+    await revealMeal(page, parseBody.defaultMealType);
     await expect(page.getByText("E2E oatmeal", { exact: true })).toBeVisible();
-    await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
+    await expectMealCalories(page, parseBody.defaultMealType, 320);
   });
 
   test("directly selects a date across a month and year boundary with destination labels", async ({
@@ -343,7 +410,9 @@ test.describe("Dashboard date navigation", () => {
     await seedAndLogin(page, e2eControls, []);
     await selectDirectDay(page, "2039-12-31");
 
-    await expect(selectedDateControl(page)).toHaveText("Saturday, December 31, 2039");
+    await expect(selectedDateControl(page)).toHaveAccessibleName(
+      "Choose date, currently Saturday, December 31, 2039",
+    );
     await expect(
       dateNavigation(page).getByRole("button", {
         name: "Previous day, Friday, December 30, 2039",
@@ -358,7 +427,9 @@ test.describe("Dashboard date navigation", () => {
 
     await next.click();
 
-    await expect(selectedDateControl(page)).toHaveText("Sunday, January 1, 2040");
+    await expect(selectedDateControl(page)).toHaveAccessibleName(
+      "Choose date, currently Sunday, January 1, 2040",
+    );
   });
 
   test("keeps keyboard focus, announces one selected day, and returns to Today without shifting", async ({
@@ -369,8 +440,13 @@ test.describe("Dashboard date navigation", () => {
     const todayLabel = await selectedDateLabel(page);
     const navigator = dateNavigation(page).locator("..");
     const todaySlot = navigator.locator('[data-slot="date-navigator-today"]');
-    const initialSlotBox = await todaySlot.boundingBox();
-    await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveCount(0);
+    const initialSlotBox = usesDesktopWorkspace(page) ? null : await todaySlot.boundingBox();
+    if (usesDesktopWorkspace(page)) {
+      await expect(todaySlot).toHaveCount(0);
+    } else {
+      await expect(todaySlot).toHaveCount(1);
+    }
+    await expect(returnToTodayControl(page)).toHaveCount(0);
 
     await selectDirectDay(page, "2039-12-31");
     const statuses = navigator.getByRole("status");
@@ -378,9 +454,9 @@ test.describe("Dashboard date navigation", () => {
     await expect(statuses).toHaveAttribute("aria-live", "polite");
     await expect(statuses).toHaveText("Selected date: Saturday, December 31, 2039");
     const offTodaySlotBox = await todaySlot.boundingBox();
-    expect(initialSlotBox).not.toBeNull();
     expect(offTodaySlotBox).not.toBeNull();
-    if (initialSlotBox && offTodaySlotBox) {
+    if (!usesDesktopWorkspace(page)) expect(initialSlotBox).not.toBeNull();
+    if (!usesDesktopWorkspace(page) && initialSlotBox && offTodaySlotBox) {
       expect(offTodaySlotBox.height).toBe(initialSlotBox.height);
     }
 
@@ -392,12 +468,16 @@ test.describe("Dashboard date navigation", () => {
     await expect(statuses).toHaveCount(1);
     await expect(statuses).toHaveText("Selected date: Sunday, January 1, 2040");
 
-    await page.getByRole("button", { name: "Today", exact: true }).click();
+    const todayControl = returnToTodayControl(page);
+    await expect(todayControl).toBeVisible();
+    await todayControl.focus();
+    await expect(todayControl).toBeFocused();
+    await todayControl.press("Enter");
     await expect(selectedDateControl(page)).toHaveText(todayLabel);
-    await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveCount(0);
-    const returnedSlotBox = await todaySlot.boundingBox();
-    expect(returnedSlotBox).not.toBeNull();
-    if (initialSlotBox && returnedSlotBox) {
+    await expect(returnToTodayControl(page)).toHaveCount(0);
+    const returnedSlotBox = usesDesktopWorkspace(page) ? null : await todaySlot.boundingBox();
+    if (!usesDesktopWorkspace(page)) expect(returnedSlotBox).not.toBeNull();
+    if (!usesDesktopWorkspace(page) && initialSlotBox && returnedSlotBox) {
       expect(returnedSlotBox.height).toBe(initialSlotBox.height);
     }
   });
@@ -456,6 +536,106 @@ test.describe("Dashboard date navigation", () => {
             expect(geometry.selectedScrollWidth).toBeLessThanOrEqual(
               geometry.selectedClientWidth + 1,
             );
+          });
+        }
+      });
+    }
+  });
+
+  test("fits localized dates in the one-row desktop journal header", async ({
+    page,
+    e2eControls,
+  }) => {
+    if (!usesDesktopWorkspace(page)) {
+      const locale = LOCALIZED_DATE_NAVIGATION[0];
+      const user = isolatedTestUser({
+        profile: {
+          dailyCalorieGoal: 2_000,
+          weightKg: 70,
+          heightCm: 175,
+          preferredLanguage: locale.code,
+          nutritionGoal: "maintain",
+        },
+      });
+      await e2eControls.reset([user]);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await loginThroughSetup(page, user);
+      await selectDirectDay(page, "2039-12-31", locale.navigation, locale.dateInput);
+
+      await expect(page.getByTestId("desktop-journal-header")).toHaveCount(0);
+      const navigation = dateNavigation(page, locale.navigation);
+      const selected = selectedDateControl(page, locale.navigation);
+      await expect(selected).toHaveText(locale.selectedDate);
+      const todayControl = returnToTodayControl(page);
+      await expect(todayControl).toBeVisible();
+      const [navigationBox, selectedBox, todayBox] = await Promise.all([
+        navigation.boundingBox(),
+        selected.boundingBox(),
+        todayControl.boundingBox(),
+      ]);
+      expect(navigationBox).not.toBeNull();
+      expect(selectedBox).not.toBeNull();
+      expect(todayBox).not.toBeNull();
+      if (navigationBox && selectedBox && todayBox) {
+        expect(selectedBox.x).toBeGreaterThanOrEqual(navigationBox.x);
+        expect(selectedBox.x + selectedBox.width).toBeLessThanOrEqual(
+          navigationBox.x + navigationBox.width + 1,
+        );
+        expect(todayBox.x).toBeGreaterThanOrEqual(0);
+        expect(todayBox.x + todayBox.width).toBeLessThanOrEqual(390);
+      }
+      return;
+    }
+
+    for (const locale of LOCALIZED_DATE_NAVIGATION) {
+      await test.step(locale.code, async () => {
+        const user = isolatedTestUser({
+          profile: {
+            dailyCalorieGoal: 2_000,
+            weightKg: 70,
+            heightCm: 175,
+            preferredLanguage: locale.code,
+            nutritionGoal: "maintain",
+          },
+        });
+        await e2eControls.reset([user]);
+        await page.setViewportSize({ width: 768, height: 900 });
+        await loginThroughSetup(page, user);
+        await selectDirectDay(page, "2039-12-31", locale.navigation, locale.dateInput);
+
+        const header = page.getByTestId("desktop-journal-header");
+        const selected = selectedDateControl(page, locale.navigation);
+        await expect(selected).toHaveAttribute("aria-label", new RegExp(locale.selectedDate));
+        for (const viewport of [
+          { width: 768, height: 900 },
+          { width: 900, height: 1_024 },
+          { width: 1_280, height: 720 },
+          { width: 1_440, height: 900 },
+        ]) {
+          await test.step(`${viewport.width}x${viewport.height}`, async () => {
+            await page.setViewportSize(viewport);
+            await expect(returnToTodayControl(page)).toBeVisible();
+            const geometry = await header.evaluate((element) => {
+              const children = [...element.children].map((child) => child.getBoundingClientRect());
+              const bounds = element.getBoundingClientRect();
+              const today = element.querySelector('[data-slot="date-navigator-today"] button')?.getBoundingClientRect();
+              return {
+                oneRow: children.every((rect) => Math.abs(rect.top - children[0]!.top) < 2),
+                contained: children.every((rect) => rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1),
+                todayContained: Boolean(today && today.left >= bounds.left - 1 && today.right <= bounds.right + 1),
+                todayOnRow: Boolean(today && Math.abs(
+                  today.top + today.height / 2 - (children[0]!.top + children[0]!.height / 2),
+                ) < 2),
+                noDocumentOverflow: document.documentElement.scrollWidth <= window.innerWidth + 1,
+              };
+            });
+            expect(geometry).toEqual({
+              oneRow: true,
+              contained: true,
+              todayContained: true,
+              todayOnRow: true,
+              noDocumentOverflow: true,
+            });
           });
         }
       });

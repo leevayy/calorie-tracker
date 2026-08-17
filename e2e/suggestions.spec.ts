@@ -7,6 +7,7 @@ import {
   type E2EControlClient,
   type E2ESeedEntry,
 } from "./support/fixtures";
+import { openAdaptiveFoodComposer, usesDesktopWorkspace } from "./support/adaptiveComposer";
 
 const MEAL_LABELS = {
   breakfast: "Breakfast",
@@ -63,22 +64,66 @@ async function seedAndLogin(
   return user;
 }
 
-async function openFoodComposer(page: Page) {
-  await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("combobox", { name: "Log food" });
-  await expect(input).toBeVisible();
-  return input;
-}
+const openFoodComposer = openAdaptiveFoodComposer;
 
 function suggestionList(page: Page) {
   return page.getByRole("listbox", { name: "Previous entries" });
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
+  if (usesDesktopWorkspace(page)) {
+    return page.getByRole("region", { name: MEAL_LABELS[mealType], exact: true })
+      .getByRole("button", { name: MEAL_LABELS[mealType], exact: true });
+  }
   const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
   return page.getByRole("button", {
     name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
   });
+}
+
+function mealSection(page: Page, mealType: MealType) {
+  return usesDesktopWorkspace(page)
+    ? page.getByRole("region", { name: MEAL_LABELS[mealType], exact: true })
+    : mealButton(page, mealType).locator("..");
+}
+
+async function openMeal(page: Page, mealType: MealType) {
+  const button = mealButton(page, mealType);
+  if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
+  await expect(button).toHaveAttribute("aria-expanded", "true");
+}
+
+async function expectMealCalories(page: Page, mealType: MealType, calories: number) {
+  if (usesDesktopWorkspace(page)) {
+    const calorieCells = mealSection(page, mealType).locator('button[role="row"] [role="cell"]:nth-child(2)');
+    await expect.poll(async () => {
+      const values = await calorieCells.allTextContents();
+      return values.reduce((sum, value) => sum + Number(value.replace(/[^\d.-]/g, "")), 0);
+    }).toBe(calories);
+    return;
+  }
+  await expect(mealButton(page, mealType, calories)).toBeVisible();
+}
+
+function savedFood(page: Page, mealType: MealType, name: RegExp) {
+  const section = mealSection(page, mealType);
+  return usesDesktopWorkspace(page)
+    ? section.getByRole("row", { name })
+    : section.getByRole("button", { name });
+}
+
+function desktopLoggingStatus(page: Page) {
+  return page.getByRole("status").filter({ hasText: /^Added \d+ foods?/ });
+}
+
+async function expectLoggingSuccess(page: Page, foodCount: number) {
+  if (usesDesktopWorkspace(page)) {
+    await expect(desktopLoggingStatus(page)).toContainText(
+      `Added ${foodCount} ${foodCount === 1 ? "food" : "foods"}`,
+    );
+    return;
+  }
+  await expect(page.getByText(`Added ${foodCount}`, { exact: true })).toBeVisible();
 }
 
 function isSuggestionRequest(request: Request): boolean {
@@ -104,12 +149,13 @@ test.describe("Historical food suggestions", () => {
     await expect(list).toBeVisible();
     const option = list.getByRole("option", { name: /Greek Yogurt/ });
     await expect(option).toBeVisible();
-    await expect(option).toContainText("170 g · 150 kcal");
+    await expect(option).toContainText("170 g");
+    await expect(option).toContainText("150 kcal");
     await expect(option).toContainText("×3");
     await expect(option).toContainText("Yesterday");
   });
 
-  test("keeps same-name historical configurations distinct", async ({
+  test("keeps same-name historical configurations distinct when their slugs differ", async ({
     page,
     e2eControls,
   }) => {
@@ -118,13 +164,13 @@ test.describe("Historical food suggestions", () => {
       seedEntry(addDays(today, -4), "Greek yogurt", 150, {
         portion: "170 g",
         protein: 15,
-        mealSlug: "greek-yogurt",
+        mealSlug: "greek-yogurt-high-protein",
       }),
       seedEntry(addDays(today, -2), "Greek yogurt", 260, {
         portion: "300 g",
         protein: 26,
         carbs: 30,
-        mealSlug: "greek-yogurt",
+        mealSlug: "greek-yogurt-large",
       }),
       seedEntry(addDays(today, -1), "Greek yogurt", 150, {
         portion: "170 g",
@@ -132,7 +178,7 @@ test.describe("Historical food suggestions", () => {
         carbs: 24,
         fats: 2,
         fiber: 1,
-        mealSlug: "greek-yogurt",
+        mealSlug: "greek-yogurt-low-fat",
       }),
     ]);
 
@@ -142,12 +188,56 @@ test.describe("Historical food suggestions", () => {
     const options = suggestionList(page).getByRole("option", { name: /Greek yogurt/ });
     await expect(options).toHaveCount(3);
     await expect(
-      options.filter({ hasText: "170 g · 150 kcal" }).filter({ hasText: /P:?\s*15\s*g/ }),
+      options.filter({ hasText: "170 g" }).filter({ hasText: "150 kcal" }).filter({ hasText: /P:?\s*15\s*g/ }),
     ).toHaveCount(1);
     await expect(
-      options.filter({ hasText: "170 g · 150 kcal" }).filter({ hasText: /P:?\s*9\s*g/ }),
+      options.filter({ hasText: "170 g" }).filter({ hasText: "150 kcal" }).filter({ hasText: /P:?\s*9\s*g/ }),
     ).toHaveCount(1);
-    await expect(options.filter({ hasText: "300 g · 260 kcal" })).toHaveCount(1);
+    await expect(options.filter({ hasText: "300 g" }).filter({ hasText: "260 kcal" })).toHaveCount(1);
+  });
+
+  test("merges shared-slug suggestions and keeps the highest-ranked representative", async ({
+    page,
+    e2eControls,
+  }) => {
+    const today = await behavioralToday(page);
+    await seedAndLogin(page, e2eControls, [
+      seedEntry(addDays(today, -5), "Fried eggs", 100, {
+        portion: "1 egg",
+        mealSlug: "fried-eggs",
+      }),
+      seedEntry(addDays(today, -3), "Fried eggs", 200, {
+        portion: "2 eggs",
+        mealSlug: "fried-eggs",
+      }),
+      seedEntry(addDays(today, -1), "Fried eggs", 200, {
+        portion: "2 eggs",
+        mealSlug: "fried-eggs",
+      }),
+      seedEntry(addDays(today, -2), "Fried eggs with spinach", 240, {
+        portion: "1 plate",
+        mealSlug: "fried-eggs-spinach",
+      }),
+      seedEntry(addDays(today, -4), "Fried eggs with mushrooms", 180, {
+        portion: "1 plate",
+        mealSlug: null,
+      }),
+      seedEntry(addDays(today, -6), "Fried eggs with tomato", 190, {
+        portion: "1 plate",
+        mealSlug: null,
+      }),
+    ]);
+
+    const input = await openFoodComposer(page);
+    await input.fill("Fried eggs");
+
+    const options = suggestionList(page).getByRole("option", { name: /Fried eggs/ });
+    await expect(options).toHaveCount(4);
+    await expect(options.filter({ hasText: "2 eggs" }).filter({ hasText: "200 kcal" })).toContainText("×2");
+    await expect(options.filter({ hasText: "1 egg" }).filter({ hasText: "100 kcal" })).toHaveCount(0);
+    await expect(options.filter({ hasText: "Fried eggs with spinach" })).toHaveCount(1);
+    await expect(options.filter({ hasText: "Fried eggs with mushrooms" })).toHaveCount(1);
+    await expect(options.filter({ hasText: "Fried eggs with tomato" })).toHaveCount(1);
   });
 
   test("shows a matching large-history result within the user-visible latency budget", async ({
@@ -203,7 +293,8 @@ test.describe("Historical food suggestions", () => {
     await expect(options).toHaveCount(5);
     const names: string[] = [];
     for (let index = 0; index < 5; index += 1) {
-      names.push(await options.nth(index).locator("span").first().innerText());
+      const text = await options.nth(index).locator("span").first().innerText();
+      names.push(usesDesktopWorkspace(page) ? text.split(" · ")[0] : text);
     }
 
     expect(names).toEqual([
@@ -234,7 +325,8 @@ test.describe("Historical food suggestions", () => {
     const secondOption = options.nth(1);
     const firstOptionId = await firstOption.getAttribute("id");
     const secondOptionId = await secondOption.getAttribute("id");
-    const firstOptionName = await firstOption.locator("span").first().innerText();
+    const firstOptionText = await firstOption.locator("span").first().innerText();
+    const firstOptionName = usesDesktopWorkspace(page) ? firstOptionText.split(" · ")[0] : firstOptionText;
     expect(firstOptionId).toBeTruthy();
     expect(secondOptionId).toBeTruthy();
 
@@ -263,7 +355,7 @@ test.describe("Historical food suggestions", () => {
     const batch = (await batchRequestPromise).postDataJSON() as {
       entries: Array<{ name: string }>;
     };
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
     page.off("request", countParseRequests);
 
     expect(parseRequests).toBe(0);
@@ -366,7 +458,7 @@ test.describe("Historical food suggestions", () => {
     });
     await option.click();
     const batchRequest = await batchRequestPromise;
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
     page.off("request", countParseRequests);
 
     expect(parseRequests).toBe(0);
@@ -386,11 +478,9 @@ test.describe("Historical food suggestions", () => {
     expect(targetMeal).toBeTruthy();
     await page.reload();
     await page.getByRole("button", { name: "Previous day" }).click();
-    await mealButton(page, targetMeal as MealType).click();
-    await expect(
-      page.getByRole("button", { name: /Stored porridge.*222\s+kcal/ }),
-    ).toBeVisible();
-    await expect(mealButton(page, targetMeal as MealType, 222)).toBeVisible();
+    await openMeal(page, targetMeal as MealType);
+    await expect(savedFood(page, targetMeal as MealType, /Stored porridge.*222\s+kcal/)).toBeVisible();
+    await expectMealCalories(page, targetMeal as MealType, 222);
   });
 
   test("debounces a large history and ignores stale suggestion responses", async ({

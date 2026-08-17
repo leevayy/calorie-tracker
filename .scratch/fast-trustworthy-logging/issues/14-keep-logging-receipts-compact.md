@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] Every receipt from the current logging burst remains reachable; the UI never reduces the burst to only its latest result.
 - [x] Matching historical suggestions remain directly below the composer input and visible without vertical scrolling after at least ten consecutive successful submissions.
 - [x] The receipt summary has bounded vertical height and communicates the number and state of logged groups without overwhelming the composer.
@@ -18,3 +20,7 @@
 ## Comments
 
 - 2026-08-16: Implemented a bounded, vertically collapsible activity list that retains every receipt below historical suggestions, summarizes group/food counts, and keeps explicit dates plus labeled Edit/Undo controls. The mapped long-burst and selected-day Playwright scenarios passed in the 14/14 desktop composer run; the same scenarios are registered for mobile, and the frontend suite passed 112/112 while the complete browser matrix continues.
+- 2026-08-16: Closed with consolidated verification: backend 84/84,
+  frontend 118/118, production build and backend check green, and deterministic
+  Playwright 152/152 (76 desktop + 76 mobile) with zero skipped, unexpected, or
+  flaky results, 152 separate videos, and clean artifact verification.

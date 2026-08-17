@@ -7,8 +7,16 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 - One feature per directory: `.scratch/<feature-slug>/`
 - The spec is `.scratch/<feature-slug>/spec.md`
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01` — never a single combined tickets file
+- Lifecycle is recorded near the top of each issue file using the repository's metadata syntax, `**State:** open` or `**State:** closed`. An unbolded `State:` line is equivalent, and a missing state line is treated as `open` for backward compatibility.
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
+
+`State` and `Status` answer different questions. `State` records whether work is
+still outstanding; `Status` retains the canonical triage role used to route the
+issue and may remain as historical routing metadata after closure. Close an issue
+only when every acceptance criterion has been checked or explicitly disposed of
+and the comments contain current evidence, or when `Status: wontfix` has a clear
+rationale. A triage label by itself never closes or reopens an issue.
 
 ## When a skill says "publish to the issue tracker"
 

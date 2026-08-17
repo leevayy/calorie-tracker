@@ -54,6 +54,12 @@ E2E_TEST_PASSWORD=playwright-local-only-password
 E2E_ARTIFACT_DIR=artifacts/playwright/redacted
 ```
 
+Keep the three documented E2E identity/control values exactly as shown. The
+runner replaces any locally configured alternatives at the browser boundary and
+retains the alternatives only as artifact-scan canaries; provider credentials,
+the database URL, and the JWT secret remain on the runner/backend side and are
+never forwarded to Playwright, browser processes, or the frontend build.
+
 Never point `DATABASE_URL` at a development, shared, staging, or production
 database: preparation resets the selected database. Never reuse a personal
 account or production provider token.
@@ -75,6 +81,8 @@ npm run e2e:verify-artifacts
 The command responsibilities are:
 
 - `e2e:install`: install the pinned Chromium and WebKit browsers.
+- `e2e:list`: discover tests with a console-only reporter; it does not reset or
+  rewrite retained JSON, HTML, video, trace, or screenshot evidence.
 - `e2e:prepare`: verify the database is E2E-only, migrate it, reset all mutable
   data, and seed the isolated user and deterministic backend controls.
 - `e2e:verify-artifacts`: scan only the managed ignored artifact targets and
@@ -143,19 +151,37 @@ fixtures must ensure managed output is safe before CI upload:
   snapshots;
 - authenticate through setup/API state where possible so videos do not record a
   password being typed; when the authentication UI itself is under test, use
-  only the documented disposable credentials;
+  only the documented `playwright@example.invalid` identity and its disposable
+  password, and assert the password control is `type=password` before filling;
+- the runner gives Playwright workers, browser processes, and frontend build an
+  explicit environment allowlist. Database/JWT/provider credentials and unknown
+  host variables never enter that boundary. The configured control credential
+  and visible-auth values are replaced with public E2E-only values; salted
+  one-way guards let auth helpers reject an attempted configured value without
+  receiving that value;
 - explicit test mode issues `e2e-public-session-v1` handles instead of JWTs;
   these handles are non-secret, work only in the disposable E2E runtime, and
-  keep authenticated request traces free of credential-bearing tokens;
+  keep authenticated request traces free of credential-bearing tokens. Setup
+  rejects non-public handles and any browser-state email outside
+  `example.invalid` before writing local storage;
 - attach sanitized summaries rather than raw backend requests or environment
   dumps;
-- after every run, scan retained report paths and contents, service logs, videos,
-  screenshots, and compressed trace entry paths and contents for the configured
-  database URL, test email/password, control/JWT secrets, provider credentials,
-  compact JWTs, bearer credentials, and serialized access/refresh tokens; any
-  matching file is removed before upload and the run fails (the explicit
+- after every run, incrementally byte-scan retained report paths and contents,
+  service logs, binary video/screenshot containers, and compressed trace entry
+  paths and decompressed contents for the configured database URL, test
+  email/password, control/JWT secrets, provider credentials, compact JWTs,
+  bearer credentials, and serialized access/refresh tokens; oversized ZIP
+  entries, aggregate expansion, entry counts, and extreme compression ratios
+  fail closed instead of being buffered without bound; any matching file is
+  removed before upload and the run fails (the explicit
   `e2e-public-session-v1:` handles remain safe
   because they are non-secret and valid only in the disposable E2E runtime);
+- binary byte scanning is not OCR and does not claim to recognize text encoded
+  only as pixels. Visual-media safety is instead enforced structurally: real
+  configured secrets are absent from the browser boundary, visible identities
+  are public synthetic data, and password controls are browser-masked. A future
+  journey that intentionally renders secret-sourced canvas, CSS, or raster media
+  must add a pixel-aware verifier or disable artifact upload for that journey;
 - quarantine unreadable archives, symlinks, and any other output that cannot be
   fully inspected; if scanning or quarantine fails, CI skips artifact upload;
 - treat traces as sensitive even with synthetic accounts and keep CI retention

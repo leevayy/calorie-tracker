@@ -1,6 +1,7 @@
-import type { Page, Request } from "@playwright/test";
+import type { Locator, Page, Request } from "@playwright/test";
 import { expect, test } from "./support/fixtures";
 import { expectAppBackgroundExcludedFromAccessibilityTree } from "./support/modalAccessibility";
+import { closeAdaptiveFoodComposer, openAdaptiveFoodComposer, usesDesktopWorkspace } from "./support/adaptiveComposer";
 
 const MEAL_LABELS = {
   breakfast: "Breakfast",
@@ -16,12 +17,7 @@ type ParseFoodRequestBody = {
   defaultMealType: MealType;
 };
 
-async function openFoodComposer(page: Page) {
-  await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("combobox", { name: "Log food" });
-  await expect(input).toBeVisible();
-  return input;
-}
+const openFoodComposer = openAdaptiveFoodComposer;
 
 function nextParseRequest(page: Page): Promise<Request> {
   return page.waitForRequest((request) => {
@@ -53,6 +49,13 @@ async function selectDashboardDay(page: Page, day: string): Promise<void> {
 }
 
 async function chooseComposerMeal(page: Page, mealType: MealType): Promise<void> {
+  if (usesDesktopWorkspace(page)) {
+    const input = await openFoodComposer(page);
+    await mealSection(page, mealType).getByRole("button", { name: "Add", exact: true }).click();
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(`For ${MEAL_LABELS[mealType].toLowerCase()} I ate `);
+    return;
+  }
   const meal = page.getByRole("combobox", { name: "Meal", exact: true });
   await meal.click();
   await page.getByRole("option", { name: MEAL_LABELS[mealType], exact: true }).click();
@@ -74,6 +77,10 @@ function fullEnglishDate(day: string): string {
 }
 
 function mealButton(page: Page, mealType: MealType, calories?: number) {
+  if (usesDesktopWorkspace(page)) {
+    return page.getByRole("region", { name: MEAL_LABELS[mealType], exact: true })
+      .getByRole("button", { name: MEAL_LABELS[mealType], exact: true });
+  }
   const caloriePattern = calories === undefined ? ".*" : `.*${calories}\\s+kcal`;
   return page.getByRole("button", {
     name: new RegExp(`^${MEAL_LABELS[mealType]}\\b${caloriePattern}`),
@@ -81,13 +88,68 @@ function mealButton(page: Page, mealType: MealType, calories?: number) {
 }
 
 function mealSection(page: Page, mealType: MealType) {
+  if (usesDesktopWorkspace(page)) {
+    return page.getByRole("region", { name: MEAL_LABELS[mealType], exact: true });
+  }
   return mealButton(page, mealType).locator("..");
 }
 
+async function openMeal(page: Page, mealType: MealType): Promise<Locator> {
+  const section = mealSection(page, mealType);
+  const button = mealButton(page, mealType);
+  if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
+  await expect(button).toHaveAttribute("aria-expanded", "true");
+  return section;
+}
+
+async function expectMealCalories(page: Page, mealType: MealType, calories: number) {
+  if (usesDesktopWorkspace(page)) {
+    const calorieCells = mealSection(page, mealType).locator('button[role="row"] [role="cell"]:nth-child(2)');
+    await expect.poll(async () => {
+      const values = await calorieCells.allTextContents();
+      return values.reduce((sum, value) => sum + Number(value.replace(/[^\d.-]/g, "")), 0);
+    }).toBe(calories);
+    return;
+  }
+  await expect(mealButton(page, mealType, calories)).toBeVisible();
+}
+
+function failedSubmissionCopy(page: Page, text: string) {
+  return usesDesktopWorkspace(page)
+    ? mealSection(page, "breakfast").getByText(text, { exact: true })
+      .or(mealSection(page, "lunch").getByText(text, { exact: true }))
+      .or(mealSection(page, "dinner").getByText(text, { exact: true }))
+      .or(mealSection(page, "snack").getByText(text, { exact: true }))
+    : page.locator("#food-log-sheet").getByText(text, { exact: true });
+}
+
+function savedFood(page: Page, mealType: MealType, name: RegExp) {
+  const section = mealSection(page, mealType);
+  return usesDesktopWorkspace(page)
+    ? section.getByRole("row", { name })
+    : section.getByRole("button", { name });
+}
+
+function desktopLoggingStatus(page: Page) {
+  return page.getByRole("status").filter({ hasText: /^Added \d+ foods?/ });
+}
+
+async function expectLoggingSuccess(page: Page, foodCount: number) {
+  if (usesDesktopWorkspace(page)) {
+    await expect(desktopLoggingStatus(page)).toContainText(
+      `Added ${foodCount} ${foodCount === 1 ? "food" : "foods"}`,
+    );
+    return;
+  }
+  await expect(page.getByText(`Added ${foodCount}`, { exact: true })).toBeVisible();
+}
+
 async function expectOnlyComposerCopyExposed(page: Page, text: string) {
-  await expect(
-    page.locator("#food-log-sheet").getByText(text, { exact: true }),
-  ).toBeVisible();
+  if (!usesDesktopWorkspace(page)) {
+    await expect(
+      page.locator("#food-log-sheet").getByText(text, { exact: true }),
+    ).toBeVisible();
+  }
   expect(
     await page.getByText(text, { exact: true }).evaluateAll(
       (elements) =>
@@ -103,20 +165,35 @@ test.describe("Keyboard-fast food composer", () => {
     authenticatedPage: page,
   }) => {
     const preview = page.getByTestId("food-placeholder-preview");
-    await expect(preview).toHaveAttribute("data-suggestion", "Chicken with mushrooms");
-    await expect(preview).toContainText("Chicken with mushrooms");
-    await expect(preview).toHaveAttribute("data-typewriter-phase", "holding");
-    await expect(preview).toHaveAttribute("data-suggestion", "Ham sandwich");
+    if (!usesDesktopWorkspace(page)) {
+      await expect(preview).toHaveAttribute("data-suggestion", "Chicken with mushrooms");
+      await expect(preview).toContainText("Chicken with mushrooms");
+      await expect(preview).toHaveAttribute("data-typewriter-phase", "holding");
+      await expect(preview).toHaveAttribute("data-suggestion", "Ham sandwich");
+    } else {
+      await expect(preview).toHaveCount(0);
+    }
 
-    await page.getByRole("button", { name: "Log food" }).click();
-    const input = page.getByRole("combobox", { name: "Log food" });
-    await expectAppBackgroundExcludedFromAccessibilityTree(page);
+    const input = await openFoodComposer(page);
+    if (usesDesktopWorkspace(page)) {
+      await expect(input).toHaveAttribute("placeholder", "What did you eat?");
+      await expect(input).toHaveAttribute("data-suggestion", "Chicken with mushrooms");
+      await expect(input).toHaveAttribute("data-typewriter-phase", "holding");
+      await expect(input).toHaveAttribute("data-suggestion", "Ham sandwich");
+    } else {
+      await expectAppBackgroundExcludedFromAccessibilityTree(page);
+    }
     const animatedState = await input.evaluate((element) => ({
       placeholder: element.getAttribute("placeholder") ?? "",
       suggestion: element.getAttribute("data-suggestion") ?? "",
     }));
     expect(animatedState.placeholder.length).toBeGreaterThan(0);
-    expect(animatedState.suggestion.startsWith(animatedState.placeholder)).toBe(true);
+    expect(animatedState.suggestion.length).toBeGreaterThan(0);
+    if (usesDesktopWorkspace(page)) {
+      expect(animatedState.placeholder).toBe("What did you eat?");
+    } else {
+      expect(animatedState.suggestion.startsWith(animatedState.placeholder)).toBe(true);
+    }
 
     await input.fill("My own dinner");
     await expect(input).toHaveValue("My own dinner");
@@ -130,38 +207,45 @@ test.describe("Keyboard-fast food composer", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await e2eControls.setAiMode({ parseFood: "success" });
 
+    const compact = !usesDesktopWorkspace(page);
     const trigger = page.getByRole("button", { name: "Log food" });
     const preview = page.getByTestId("food-placeholder-preview");
-    await expect(trigger).toHaveAccessibleName("Log food");
-    await expect(preview).toHaveAttribute("data-typewriter-phase", "reduced");
-    const stableSuggestion = await preview.getAttribute("data-suggestion");
+    if (compact) {
+      await expect(trigger).toHaveAccessibleName("Log food");
+      await expect(preview).toHaveAttribute("data-typewriter-phase", "reduced");
+    }
+    const compactStableSuggestion = compact ? await preview.getAttribute("data-suggestion") : null;
+    const input = await openFoodComposer(page);
+    const stableSuggestion = compactStableSuggestion ?? await input.getAttribute("data-suggestion");
     expect(stableSuggestion).toBeTruthy();
-    await expect(preview).toHaveText(stableSuggestion ?? "");
-
-    await trigger.click();
-    const input = page.getByRole("combobox", { name: "Log food" });
     await expect(input).toHaveAccessibleName("Log food");
     await expect(input).toHaveAttribute("data-typewriter-phase", "reduced");
-    await expect(input).toHaveAttribute("placeholder", stableSuggestion ?? "");
+    await expect(input).toHaveAttribute(
+      "placeholder",
+      compact ? stableSuggestion ?? "" : "What did you eat?",
+    );
 
     const description = "My reduced-motion dinner";
     await input.fill(description);
     await expect(input).toHaveValue(description);
-    await page.keyboard.press("Escape");
-    await expect(trigger).toBeVisible();
-    await expect(trigger).toHaveAccessibleName("Log food");
-    await expect(preview).toHaveText(description);
-
-    await trigger.click();
+    await closeAdaptiveFoodComposer(page);
+    if (compact) {
+      await expect(trigger).toHaveAccessibleName("Log food");
+      await expect(preview).toHaveText(description);
+      await openFoodComposer(page);
+    }
     await expect(input).toHaveValue(description);
     const parseRequest = nextParseRequest(page);
     await input.press("Enter");
     await expect(input).toHaveValue("");
     await expect(input).toHaveAccessibleName("Log food");
     await expect(input).toHaveAttribute("data-typewriter-phase", "reduced");
-    await expect(input).toHaveAttribute("placeholder", stableSuggestion ?? "");
+    await expect(input).toHaveAttribute(
+      "placeholder",
+      compact ? stableSuggestion ?? "" : "What did you eat?",
+    );
     await parseRequest;
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
   });
 
   test("submits consecutive entries with Enter and restores composer focus", async ({
@@ -189,21 +273,26 @@ test.describe("Keyboard-fast food composer", () => {
     expect(secondBody.defaultLogDay).toBe(firstBody.defaultLogDay);
     expect(secondBody.defaultMealType).toBe(firstBody.defaultMealType);
 
-    const activity = page.getByRole("button", {
-      name: "Logging activity · 2 groups logged · 2 foods",
-      exact: true,
-    });
     await expect(input).toBeFocused();
-    await expect(activity).toHaveAttribute("aria-expanded", "false");
-    await activity.click();
-    await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
+    if (usesDesktopWorkspace(page)) {
+      await expect(desktopLoggingStatus(page)).toContainText("Added 1 food");
+      await expect(page.getByRole("button", { name: "Logging activity · 2 groups logged · 2 foods" })).toHaveCount(0);
+    } else {
+      const activity = page.getByRole("button", {
+        name: "Logging activity · 2 groups logged · 2 foods",
+        exact: true,
+      });
+      await expect(activity).toHaveAttribute("aria-expanded", "false");
+      await activity.click();
+      await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
+    }
 
     await page.reload();
-    await mealButton(page, firstBody.defaultMealType).click();
+    await openMeal(page, firstBody.defaultMealType);
     await expect(
-      mealSection(page, firstBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ }),
+      savedFood(page, firstBody.defaultMealType, /^E2E oatmeal\b/),
     ).toHaveCount(2);
-    await expect(mealButton(page, firstBody.defaultMealType, 640)).toBeVisible();
+    await expectMealCalories(page, firstBody.defaultMealType, 640);
   });
 
   test("shows parsing and saving rows in the target meal", async ({
@@ -220,10 +309,8 @@ test.describe("Keyboard-fast food composer", () => {
     const parseRequest = await parseRequestPromise;
     const parseBody = parseRequest.postDataJSON() as ParseFoodRequestBody;
     await expectOnlyComposerCopyExposed(page, "pending target-meal oatmeal");
-    await page.keyboard.press("Escape");
-    await expect(page.locator("#food-log-sheet")).toBeHidden();
-
-    await expect(page.getByRole("button", { name: /Log food/ })).toBeVisible();
+    await closeAdaptiveFoodComposer(page);
+    if (!usesDesktopWorkspace(page)) await expect(page.locator("#food-log-sheet")).toBeHidden();
     await expect(
       mealSection(page, parseBody.defaultMealType).getByText(
         "pending target-meal oatmeal",
@@ -252,7 +339,7 @@ test.describe("Keyboard-fast food composer", () => {
 
     const batchResponse = await batchResponsePromise;
     expect(batchResponse.status()).toBe(201);
-    await expect(mealButton(page, parseBody.defaultMealType, 320)).toBeVisible();
+    await expectMealCalories(page, parseBody.defaultMealType, 320);
     expect(
       await page.evaluate(
         () => (window as Window & { __e2eSawSavingRow?: boolean }).__e2eSawSavingRow,
@@ -260,9 +347,9 @@ test.describe("Keyboard-fast food composer", () => {
     ).toBe(true);
 
     await page.reload();
-    await mealButton(page, parseBody.defaultMealType).click();
+    await openMeal(page, parseBody.defaultMealType);
     await expect(
-      mealSection(page, parseBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ }),
+      savedFood(page, parseBody.defaultMealType, /^E2E oatmeal\b/),
     ).toBeVisible();
   });
 
@@ -286,14 +373,12 @@ test.describe("Keyboard-fast food composer", () => {
     const parseRetryRequest = nextParseRequest(page);
     await page.getByRole("button", { name: "Retry", exact: true }).click();
     const retryBody = (await parseRetryRequest).postDataJSON() as ParseFoodRequestBody;
-    await expect(page.getByText("Added 1", { exact: true })).toHaveCount(1);
+    await expectLoggingSuccess(page, 1);
 
     await e2eControls.failNextBatchSave();
     await input.fill(saveFailureText);
     await input.press("Enter");
-    await expect(
-      page.locator("#food-log-sheet").getByText(saveFailureText, { exact: true }),
-    ).toBeVisible();
+    await expect(failedSubmissionCopy(page, saveFailureText)).toBeVisible();
     await expect(page.getByRole("alert")).toContainText("Request failed");
     await expect(input).toHaveValue("");
 
@@ -304,22 +389,26 @@ test.describe("Keyboard-fast food composer", () => {
     };
     page.on("request", countParseRequests);
     await page.getByRole("button", { name: "Retry", exact: true }).click();
-    const activity = page.getByRole("button", {
-      name: "Logging activity · 2 groups logged · 2 foods",
-      exact: true,
-    });
-    await expect(activity).toHaveAttribute("aria-expanded", "false");
-    await activity.click();
-    await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
+    if (usesDesktopWorkspace(page)) {
+      await expect(desktopLoggingStatus(page)).toContainText("Added 1 food");
+    } else {
+      const activity = page.getByRole("button", {
+        name: "Logging activity · 2 groups logged · 2 foods",
+        exact: true,
+      });
+      await expect(activity).toHaveAttribute("aria-expanded", "false");
+      await activity.click();
+      await expect(page.getByText("Added 1", { exact: true })).toHaveCount(2);
+    }
     page.off("request", countParseRequests);
     expect(retryParseRequests).toBe(0);
 
     await page.reload();
-    await mealButton(page, retryBody.defaultMealType).click();
+    await openMeal(page, retryBody.defaultMealType);
     await expect(
-      mealSection(page, retryBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ }),
+      savedFood(page, retryBody.defaultMealType, /^E2E oatmeal\b/),
     ).toHaveCount(2);
-    await expect(mealButton(page, retryBody.defaultMealType, 640)).toBeVisible();
+    await expectMealCalories(page, retryBody.defaultMealType, 640);
   });
 
   test("edits and resubmits a failed description as a new parse attempt", async ({
@@ -351,15 +440,15 @@ test.describe("Keyboard-fast food composer", () => {
     await input.press("Enter");
     const parseBody = (await parseRequestPromise).postDataJSON() as ParseFoodRequestBody;
     expect(parseBody.text).toBe(editedText);
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
-    await expect(page.locator("#food-log-sheet").getByText(originalText, { exact: true })).toHaveCount(0);
+    await expectLoggingSuccess(page, 1);
+    await expect(failedSubmissionCopy(page, originalText)).toHaveCount(0);
     await expect(page.getByRole("alert")).toHaveCount(0);
     await expect(input).toBeFocused();
 
     await page.reload();
-    await mealButton(page, parseBody.defaultMealType).click();
+    await openMeal(page, parseBody.defaultMealType);
     await expect(
-      mealSection(page, parseBody.defaultMealType).getByRole("button", { name: /^E2E oatmeal\b/ }),
+      savedFood(page, parseBody.defaultMealType, /^E2E oatmeal\b/),
     ).toHaveCount(1);
   });
 
@@ -383,7 +472,7 @@ test.describe("Keyboard-fast food composer", () => {
     await page.getByRole("button", { name: "Cancel edit", exact: true }).click();
     await expect(input).toBeFocused();
     await expect(input).toHaveValue(unrelatedDraft);
-    await expect(page.locator("#food-log-sheet").getByText(failedText, { exact: true })).toHaveCount(1);
+    await expect(failedSubmissionCopy(page, failedText)).toHaveCount(1);
     await expect(page.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
 
     await e2eControls.setAiMode({ parseFood: "success" });
@@ -392,12 +481,12 @@ test.describe("Keyboard-fast food composer", () => {
     expect(((await unrelatedParseRequest).postDataJSON() as ParseFoodRequestBody).text).toBe(
       unrelatedDraft,
     );
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
-    await expect(page.locator("#food-log-sheet").getByText(failedText, { exact: true })).toHaveCount(1);
+    await expectLoggingSuccess(page, 1);
+    await expect(failedSubmissionCopy(page, failedText)).toHaveCount(1);
 
     await page.reload();
     await openFoodComposer(page);
-    await expect(page.locator("#food-log-sheet").getByText(failedText, { exact: true })).toHaveCount(1);
+    await expect(failedSubmissionCopy(page, failedText)).toHaveCount(1);
     await expect(page.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Edit description", exact: true })).toBeVisible();
   });
@@ -418,9 +507,11 @@ test.describe("Keyboard-fast food composer", () => {
     }) as MealType;
 
     const input = await openFoodComposer(page);
-    await expect(page.getByRole("combobox", { name: "Meal", exact: true })).toHaveText(
-      MEAL_LABELS[expectedMeal],
-    );
+    if (!usesDesktopWorkspace(page)) {
+      await expect(page.getByRole("combobox", { name: "Meal", exact: true })).toHaveText(
+        MEAL_LABELS[expectedMeal],
+      );
+    }
     const parseRequestPromise = nextParseRequest(page);
     await input.fill("clock-target oatmeal");
     await input.press("Enter");
@@ -428,7 +519,7 @@ test.describe("Keyboard-fast food composer", () => {
 
     expect(parseBody.defaultLogDay).toBe(selectedDay);
     expect(parseBody.defaultMealType).toBe(expectedMeal);
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
   });
 
   test("changes the composer meal target for AI and historical logging", async ({
@@ -453,7 +544,7 @@ test.describe("Keyboard-fast food composer", () => {
     expect(aiBatch.entries).toEqual([
       expect.objectContaining({ day: selectedDay, mealType: "dinner", name: "E2E oatmeal" }),
     ]);
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
 
     await input.fill("E2E oat");
     const option = page.getByRole("listbox", { name: "Previous entries" })
@@ -476,10 +567,15 @@ test.describe("Keyboard-fast food composer", () => {
     expect(historicalBatch.entries).toEqual([
       expect.objectContaining({ day: selectedDay, mealType: "dinner", name: "E2E oatmeal" }),
     ]);
-    await expect(page.getByRole("button", {
-      name: "Logging activity · 2 groups logged · 2 foods",
-      exact: true,
-    })).toBeVisible();
+    if (usesDesktopWorkspace(page)) {
+      await expect(desktopLoggingStatus(page)).toContainText("Added 1 food");
+      await expect(savedFood(page, "dinner", /^E2E oatmeal\b/)).toHaveCount(2);
+    } else {
+      await expect(page.getByRole("button", {
+        name: "Logging activity · 2 groups logged · 2 foods",
+        exact: true,
+      })).toBeVisible();
+    }
   });
 
   test("lets explicit natural-language meal intent override the selected default", async ({
@@ -501,7 +597,7 @@ test.describe("Keyboard-fast food composer", () => {
 
     expect(parseBody.defaultMealType).toBe("breakfast");
     expect(batchBody.entries).toEqual([expect.objectContaining({ mealType: "dinner" })]);
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
     await expect(page.getByRole("button", { name: /Log all|Confirm|Clarify/i })).toHaveCount(0);
   });
 
@@ -525,11 +621,15 @@ test.describe("Keyboard-fast food composer", () => {
     }
 
     expect(parseBodies.map((body) => body.defaultMealType)).toEqual(["snack", "snack"]);
-    await expect(page.getByRole("combobox", { name: "Meal", exact: true })).toHaveText("Snack");
-    await expect(page.getByRole("button", {
-      name: "Logging activity · 2 groups logged · 2 foods",
-      exact: true,
-    })).toBeVisible();
+    if (usesDesktopWorkspace(page)) {
+      await expect(desktopLoggingStatus(page)).toContainText("Added 1 food");
+    } else {
+      await expect(page.getByRole("combobox", { name: "Meal", exact: true })).toHaveText("Snack");
+      await expect(page.getByRole("button", {
+        name: "Logging activity · 2 groups logged · 2 foods",
+        exact: true,
+      })).toBeVisible();
+    }
   });
 
   test("keeps a long logging burst compact while suggestions and every receipt remain reachable", async ({
@@ -544,17 +644,40 @@ test.describe("Keyboard-fast food composer", () => {
       await input.fill(explicitNutritionDescription(`Burst food ${index}`, 200 + index));
       await input.press("Enter");
       expect((await responsePromise).status()).toBe(201);
-      const groupLabel = index === 1 ? "1 group" : `${index} groups`;
-      const foodLabel = index === 1 ? "1 food" : `${index} foods`;
-      await expect(page.getByRole("button", {
-        name: `Logging activity · ${groupLabel} logged · ${foodLabel}`,
-        exact: true,
-      })).toBeVisible();
+      if (!usesDesktopWorkspace(page)) {
+        const groupLabel = index === 1 ? "1 group" : `${index} groups`;
+        const foodLabel = index === 1 ? "1 food" : `${index} foods`;
+        await expect(page.getByRole("button", {
+          name: `Logging activity · ${groupLabel} logged · ${foodLabel}`,
+          exact: true,
+        })).toBeVisible();
+      }
     }
 
     await input.fill("Burst food 10");
     const suggestions = page.getByRole("listbox", { name: "Previous entries" });
     await expect(suggestions.getByRole("option", { name: /Burst food 10/ })).toBeVisible();
+    if (usesDesktopWorkspace(page)) {
+      const geometry = await suggestions.evaluate((list) => {
+        const inputElement = document.querySelector<HTMLInputElement>('input[aria-label="Log food"]');
+        const listBox = list.getBoundingClientRect();
+        const inputBox = inputElement?.getBoundingClientRect();
+        return { inputBottom: inputBox?.bottom ?? 0, listTop: listBox.top };
+      });
+      expect(geometry.listTop).toBeGreaterThanOrEqual(geometry.inputBottom);
+      const burstMeal = await page.evaluate(() => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 11) return "breakfast";
+        if (hour >= 11 && hour < 16) return "lunch";
+        if (hour >= 16 && hour < 22) return "dinner";
+        return "snack";
+      }) as MealType;
+      await expect(savedFood(page, burstMeal, /^Burst food /)).toHaveCount(10);
+      await expect(desktopLoggingStatus(page)).toContainText("Added 1 food");
+      await expect(page.getByRole("button", { name: "Undo added group: Burst food 10", exact: true })).toBeVisible();
+      return;
+    }
+
     const activity = page.getByRole("button", {
       name: "Logging activity · 10 groups logged · 10 foods",
       exact: true,
@@ -618,6 +741,29 @@ test.describe("Keyboard-fast food composer", () => {
       expect((await responsePromise).status()).toBe(201);
     }
 
+    if (usesDesktopWorkspace(page)) {
+      const receiptMeal = await page.evaluate(() => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 11) return "breakfast";
+        if (hour >= 11 && hour < 16) return "lunch";
+        if (hour >= 16 && hour < 22) return "dinner";
+        return "snack";
+      }) as MealType;
+      const section = await openMeal(page, receiptMeal);
+      await section.getByRole("row", { name: /^Receipt beta\b/ }).click();
+      const editor = page.getByRole("form", { name: "Edit Receipt beta", exact: true });
+      await expect(editor).toBeVisible();
+      await editor.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(editor).toBeHidden();
+
+      await page.getByRole("button", { name: /^Next day,/ }).click();
+      await page.getByRole("button", { name: "Undo added group: Receipt beta", exact: true }).click();
+      await page.getByRole("button", { name: /^Previous day,/ }).click();
+      await expect(section.getByRole("row", { name: /^Receipt alpha\b/ })).toBeVisible();
+      await expect(section.getByRole("row", { name: /^Receipt beta\b/ })).toHaveCount(0);
+      return;
+    }
+
     await page.keyboard.press("Escape");
     await expect(page.locator("#food-log-sheet")).toBeHidden();
     await page.getByRole("button", { name: /^Next day,/ }).click();
@@ -670,15 +816,34 @@ test.describe("Keyboard-fast food composer", () => {
     await input.press("Enter");
     const parseBody = (await parseRequestPromise).postDataJSON() as ParseFoodRequestBody;
     expect(parseBody.text).toBe(explicitDescription);
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expectLoggingSuccess(page, 1);
 
     await page.reload();
-    await mealButton(page, parseBody.defaultMealType).click();
-    const savedEntry = mealSection(page, parseBody.defaultMealType).getByRole("button", {
-      name: /^E2E trail mix 913\s+kcal • P: 17\s+g • C: 23\s+g • F: 29\s+g • Fi: 31\s+g$/,
-    });
+    await openMeal(page, parseBody.defaultMealType);
+    const savedEntry = savedFood(
+      page,
+      parseBody.defaultMealType,
+      usesDesktopWorkspace(page)
+        ? /^E2E trail mix\b/
+        : /^E2E trail mix 913\s+kcal • P: 17\s+g • C: 23\s+g • F: 29\s+g • Fi: 31\s+g$/,
+    );
     await expect(savedEntry).toBeVisible();
     await savedEntry.click();
+
+    if (usesDesktopWorkspace(page)) {
+      const editor = page.getByRole("form", { name: "Edit E2E trail mix", exact: true });
+      await expect(editor).toBeVisible();
+      await expect(editor.getByLabel("Name", { exact: true })).toHaveValue("E2E trail mix");
+      await expect(editor.getByLabel("Portion", { exact: true })).toHaveValue("37 g");
+      await expect(editor.getByLabel("Calories", { exact: true })).toHaveValue("913");
+      await expect(editor.getByLabel("Protein", { exact: true })).toHaveValue("17");
+      await expect(editor.getByLabel("Carbohydrates", { exact: true })).toHaveValue("23");
+      await expect(editor.getByLabel("Fat", { exact: true })).toHaveValue("29");
+      await expect(editor.getByLabel("Fiber", { exact: true })).toHaveValue("31");
+      await editor.getByRole("button", { name: "Cancel", exact: true }).click();
+      await expect(editor).toBeHidden();
+      return;
+    }
 
     await expect(page.getByRole("dialog", { name: "E2E trail mix" })).toBeVisible();
 

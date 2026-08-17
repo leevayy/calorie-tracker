@@ -6,7 +6,9 @@
 
 **Priority:** P0
 
-**Status:** ready-for-agent
+**Status:** needs-info
+
+**State:** open
 
 - [x] Playwright starts or connects to the production-shaped frontend and real backend, uses a dedicated test database, and drives supported desktop and mobile browser projects without mocking application HTTP APIs.
 - [x] Test setup creates or resets an isolated test user through a documented seed/setup mechanism; tests do not depend on a developer's personal account, production data, test ordering, or leftovers from an earlier run.
@@ -41,3 +43,18 @@
   75 mobile WebKit), exactly 150 unique video attachments/files, and both automatic
   and standalone artifact verification clean. Live AI remains unrun because the
   provider credentials and explicit paid-call enablement are not configured.
+- 2026-08-16: Revalidated the final hardened runner on the consolidated tree.
+  Tooling passed 22/22, backend passed 84/84, frontend passed 118/118, backend
+  type-check and the production frontend build passed, and the complete
+  deterministic matrix passed 152/152 with zero skipped, unexpected, or flaky
+  results (76 desktop Chromium and 76 mobile WebKit). Exactly 152 separate,
+  hash-distinct primary videos were retained; no failure traces/screenshots were
+  produced, and automatic plus standalone artifact verification passed. The
+  ticket remains open and `needs-info` only for the unchecked real-provider
+  smoke, which requires configured ignored provider credentials and explicit
+  authorization for the paid call.
+- 2026-08-16: Rechecked the live gate without exposing configuration or making a
+  paid request. `npm run e2e:live -- --list` failed fast before service startup
+  because `E2E_LIVE_AI`, the provider key, and the provider folder id are not
+  configured. The live criterion therefore remains explicitly unmet rather than
+  being inferred from deterministic coverage.

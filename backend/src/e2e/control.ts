@@ -20,7 +20,7 @@ export type E2ESeedEntry = {
   fats: number;
   fiber: number;
   portion?: string;
-  mealSlug?: string;
+  mealSlug?: string | null;
 };
 
 export type E2ESeedUser = {

@@ -18,7 +18,7 @@ const SeedEntrySchema = z
     fats: z.number().finite().nonnegative(),
     fiber: z.number().finite().nonnegative(),
     portion: z.string().trim().min(1).max(100).optional(),
-    mealSlug: z.string().trim().min(1).max(60).optional(),
+    mealSlug: z.string().trim().min(1).max(60).nullable().optional(),
   })
   .strict();
 

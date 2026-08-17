@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] Submitting a valid food description parses and logs the complete result without a separate review step.
 - [x] The result uses the currently selected meal and day.
 - [x] A compact confirmation identifies what was added and exposes working Edit and Undo actions.
@@ -15,3 +17,4 @@
 ## Comments
 
 - 2026-08-15: Replaced suggestion review with automatic atomic persistence. Added grouped receipts with per-entry Edit and transaction-backed Undo for the complete submission.
+- 2026-08-16: Closed after automatic atomic logging, grouped receipt, Edit, and transaction-backed Undo coverage passed within the consolidated validation: backend 84/84, frontend 118/118, and deterministic Playwright 152/152 (76 desktop Chromium and 76 mobile WebKit), with zero skips, unexpected results, or flaky results, 152 separate videos, and clean artifact verification.

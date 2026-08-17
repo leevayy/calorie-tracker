@@ -6,6 +6,7 @@ import {
   loginThroughSetup,
   test,
 } from "./support/fixtures";
+import { openAdaptiveFoodComposer, usesDesktopWorkspace } from "./support/adaptiveComposer";
 
 const MEAL_LABELS = {
   breakfast: "Breakfast",
@@ -68,11 +69,41 @@ function allEntries(day: ApiDayLog): ApiFoodEntry[] {
   return Object.values(day.meals).flat();
 }
 
-async function openFoodComposer(page: Page) {
-  await page.getByRole("button", { name: /Log food/ }).click();
-  const input = page.getByRole("combobox", { name: "Log food" });
-  await expect(input).toBeVisible();
-  return input;
+const openFoodComposer = openAdaptiveFoodComposer;
+
+function mealSection(page: Page, mealType: MealType) {
+  if (usesDesktopWorkspace(page)) {
+    return page.getByRole("region", { name: MEAL_LABELS[mealType], exact: true });
+  }
+  return page.getByRole("button", { name: new RegExp(`^${MEAL_LABELS[mealType]}\\b`) }).locator("..");
+}
+
+async function openMeal(page: Page, mealType: MealType) {
+  const button = usesDesktopWorkspace(page)
+    ? mealSection(page, mealType).getByRole("button", { name: MEAL_LABELS[mealType], exact: true })
+    : page.getByRole("button", { name: new RegExp(`^${MEAL_LABELS[mealType]}\\b`) });
+  if ((await button.getAttribute("aria-expanded")) === "false") await button.click();
+}
+
+function savedFood(page: Page, mealType: MealType, name: RegExp) {
+  const section = mealSection(page, mealType);
+  return usesDesktopWorkspace(page)
+    ? section.getByRole("row", { name })
+    : section.getByRole("button", { name });
+}
+
+function desktopLoggingStatus(page: Page) {
+  return page.getByRole("status").filter({ hasText: /^Added \d+ foods?/ });
+}
+
+async function expectLoggingSuccess(page: Page, foodCount: number) {
+  if (usesDesktopWorkspace(page)) {
+    await expect(desktopLoggingStatus(page)).toContainText(
+      `Added ${foodCount} ${foodCount === 1 ? "food" : "foods"}`,
+    );
+    return;
+  }
+  await expect(page.getByText(`Added ${foodCount}`, { exact: true })).toBeVisible();
 }
 
 async function expandEditorSchedule(dialog: Locator): Promise<void> {
@@ -96,8 +127,12 @@ test.describe("Live AI smoke journeys", () => {
     );
     await input.press("Enter");
 
-    await expect(page.getByText("Added 2", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Edit / })).toHaveCount(2);
+    await expectLoggingSuccess(page, 2);
+    if (usesDesktopWorkspace(page)) {
+      await expect(page.getByRole("row", { name: /banana|egg/i })).toHaveCount(2);
+    } else {
+      await expect(page.getByRole("button", { name: /^Edit / })).toHaveCount(2);
+    }
 
     await page.reload();
     await expect(page).toHaveURL(/\/app$/);
@@ -111,14 +146,10 @@ test.describe("Live AI smoke journeys", () => {
     for (const mealType of Object.keys(MEAL_LABELS) as MealType[]) {
       const entries = persistedDay.meals[mealType] ?? [];
       if (entries.length === 0) continue;
-      await page
-        .getByRole("button", { name: new RegExp(`^${MEAL_LABELS[mealType]}\\b`) })
-        .click();
+      await openMeal(page, mealType);
       for (const entry of entries) {
         await expect(
-          page.getByRole("button", {
-            name: new RegExp(`^${escapeRegExp(entry.name)}(?:\\s|$)`),
-          }),
+          savedFood(page, mealType, new RegExp(`^${escapeRegExp(entry.name)}(?:\\s|$)`)),
         ).toBeVisible();
       }
     }
@@ -149,10 +180,39 @@ test.describe("Live AI smoke journeys", () => {
     });
     await e2eControls.reset([user]);
     await loginThroughSetup(page, user);
-    await page.getByRole("button", { name: /^Lunch\b/ }).click();
-    await page
-      .getByRole("button", { name: new RegExp(`^${escapeRegExp(seedName)}\\b`) })
-      .click();
+    await openMeal(page, "lunch");
+    await savedFood(page, "lunch", new RegExp(`^${escapeRegExp(seedName)}\\b`)).click();
+
+    if (usesDesktopWorkspace(page)) {
+      const editor = page.getByRole("form", { name: `Edit ${seedName}`, exact: true });
+      await expect(editor).toBeVisible();
+      await editor
+        .getByLabel("What should change?")
+        .fill("Make the saved serving exactly twice as large and double every nutrition value.");
+      await editor.getByRole("button", { name: "Send & save", exact: true }).click();
+      await expect(editor).toBeHidden();
+
+      await page.reload();
+      const persistedDay = await readDayThroughSession(page, day);
+      expect(persistedDay.meals.lunch).toHaveLength(1);
+      const persisted = persistedDay.meals.lunch[0];
+      expect(persisted.name).toBe(seedName);
+      expect(persisted.calories).toBeGreaterThan(300);
+      expect(persisted.protein).toBeGreaterThan(20);
+      expect(persisted.carbs).toBeGreaterThan(30);
+      expect(persisted.fats).toBeGreaterThan(10);
+      expect(persisted.fiber).toBeGreaterThan(5);
+      await openMeal(page, "lunch");
+      await expect(
+        savedFood(
+          page,
+          "lunch",
+          new RegExp(`^${escapeRegExp(seedName)}\\b.*${persisted.calories}\\s*kcal`),
+        ),
+      ).toBeVisible();
+      return;
+    }
+
     const dialog = page.getByRole("dialog");
     await expect(dialog).toHaveAccessibleName(seedName);
 
@@ -203,12 +263,12 @@ test.describe("Live AI smoke journeys", () => {
       fiber: proposedFiber,
     });
 
-    await expect(page.getByRole("button", { name: /^Lunch\b/ })).toContainText(
+    await expect(mealSection(page, "lunch").getByRole("button", { name: /^Lunch\b/ })).toContainText(
       new RegExp(`${proposedCalories}\\s*kcal\\b`),
     );
-    await page.getByRole("button", { name: /^Lunch\b/ }).click();
+    await openMeal(page, "lunch");
     await expect(
-      page.getByRole("button", { name: new RegExp(`^${escapeRegExp(seedName)}\\b`) }),
+      savedFood(page, "lunch", new RegExp(`^${escapeRegExp(seedName)}\\b`)),
     ).toBeVisible();
   });
 });

@@ -11,7 +11,11 @@ import {
   resolveManagedArtifactLayout,
   sensitiveArtifactValues,
 } from "./e2e-artifacts.mjs";
-import { createOnceAsync, createSignalShutdown } from "./e2e-lifecycle.mjs";
+import {
+  createManagedResourceLifecycle,
+  createOnceAsync,
+  createSignalShutdown,
+} from "./e2e-lifecycle.mjs";
 import {
   assertManagedPostgresDataPath,
   assertNoSymlinkAncestry,
@@ -182,6 +186,84 @@ test("quarantines plain and compressed artifacts containing a credential", async
   await assert.rejects(readFile(trace), { code: "ENOENT" });
 });
 
+test("streams large artifact files in bounded chunks and matches across chunk boundaries", async () => {
+  const root = await mkdtemp(join(tmpdir(), "calorie-e2e-artifacts-"));
+  const safe = join(root, "large-safe.webm");
+  const unsafe = join(root, "large-unsafe.webm");
+  const canary = "credential-canary-crossing-a-boundary";
+  const prefix = Buffer.alloc(4_095, "a");
+  await writeFile(safe, Buffer.alloc(256 * 1024, 0x5a));
+  await writeFile(
+    unsafe,
+    Buffer.concat([prefix, Buffer.from(canary), Buffer.alloc(256 * 1024, "b")]),
+  );
+  const observedChunks = [];
+
+  const result = await quarantineSensitiveArtifacts(root, [canary], {
+    readChunkBytes: 4_096,
+    observeReadChunk: (size) => observedChunks.push(size),
+  });
+
+  assert.deepEqual(result.quarantined, [unsafe]);
+  assert.ok(observedChunks.length > 2);
+  assert.ok(observedChunks.every((size) => size <= 4_096));
+  assert.equal((await readFile(safe)).byteLength, 256 * 1024);
+});
+
+test("detects a derived JWT that spans many small streaming chunks", async () => {
+  const root = await mkdtemp(join(tmpdir(), "calorie-e2e-artifacts-"));
+  const tokenArtifact = join(root, "large-derived-token.log");
+  const header = Buffer.from(
+    JSON.stringify({ alg: "HS256", padding: "h".repeat(24_548) }),
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({ sub: "x", padding: "p".repeat(24_548) }),
+  ).toString("base64url");
+  const jwt = `${header}.${payload}.${"s".repeat(20_000)}`;
+  assert.ok(header.length <= 32 * 1024);
+  assert.ok(payload.length <= 32 * 1024);
+  assert.ok(header.length + payload.length + 2 + 8 > 64 * 1024);
+  await writeFile(tokenArtifact, `prefix:${jwt}:suffix`);
+
+  const result = await quarantineSensitiveArtifacts(root, [], {
+    readChunkBytes: 4_096,
+  });
+
+  assert.deepEqual(result.quarantined, [tokenArtifact]);
+  await assert.rejects(readFile(tokenArtifact), { code: "ENOENT" });
+});
+
+test("fails closed on an oversized dotted token component without buffering it whole", async () => {
+  const root = await mkdtemp(join(tmpdir(), "calorie-e2e-artifacts-"));
+  const tokenArtifact = join(root, "oversized-token.log");
+  await writeFile(
+    tokenArtifact,
+    `headerpart.${"a".repeat(256 * 1024)}.signaturepart`,
+  );
+
+  const result = await quarantineSensitiveArtifacts(root, [], {
+    readChunkBytes: 4_096,
+  });
+
+  assert.deepEqual(result.quarantined, [tokenArtifact]);
+  await assert.rejects(readFile(tokenArtifact), { code: "ENOENT" });
+});
+
+test("quarantines a ZIP whose declared entry exceeds the bounded inspection policy", async () => {
+  const root = await mkdtemp(join(tmpdir(), "calorie-e2e-artifacts-"));
+  const oversizedTrace = join(root, "oversized-trace.zip");
+  await writeZip(oversizedTrace, {
+    "trace.network": "ordinary synthetic trace data".repeat(128),
+  });
+
+  const result = await quarantineSensitiveArtifacts(root, [], {
+    maxZipEntryBytes: 1_024,
+  });
+
+  assert.deepEqual(result.quarantined, [oversizedTrace]);
+  await assert.rejects(readFile(oversizedTrace), { code: "ENOENT" });
+});
+
 test("quarantines credentials in relative paths and ZIP entry names", async () => {
   const root = await mkdtemp(join(tmpdir(), "calorie-e2e-artifacts-"));
   const credentialDirectory = join(root, "credential-canary-123");
@@ -299,4 +381,53 @@ test("signal shutdown shares one cleanup and verification finalizer", async () =
   assert.equal(verificationCalls, 1);
   assert.deepEqual(errors, []);
   assert.deepEqual(exits, [143]);
+});
+
+test("managed resource cleanup remains owned while its start command is interrupted", async () => {
+  let releaseStart;
+  const startGate = new Promise((_, reject) => {
+    releaseStart = () => reject(new Error("start command interrupted"));
+  });
+  let stopCalls = 0;
+  const lifecycle = createManagedResourceLifecycle({
+    stop: async () => {
+      stopCalls += 1;
+    },
+  });
+
+  const starting = lifecycle.start(() => startGate);
+  const startFailure = assert.rejects(starting, /start command interrupted/);
+  const stopping = lifecycle.stop();
+  await new Promise((resolvePromise) => setImmediate(resolvePromise));
+  assert.equal(stopCalls, 0, "cleanup waits for the in-flight start command to settle");
+
+  releaseStart();
+  await Promise.all([startFailure, stopping]);
+  assert.equal(stopCalls, 1, "cleanup still stops a resource claimed before start completed");
+  await lifecycle.start(async () => {});
+  await lifecycle.stop();
+  assert.equal(stopCalls, 2, "a successfully stopped lifecycle can own a later cycle");
+});
+
+test("managed resource ownership survives a failed stop and permits a cleanup retry", async () => {
+  let stopCalls = 0;
+  const lifecycle = createManagedResourceLifecycle({
+    stop: async () => {
+      stopCalls += 1;
+      if (stopCalls === 1) throw new Error("stop failed");
+    },
+  });
+
+  await lifecycle.start(async () => {});
+  await assert.rejects(lifecycle.stop(), /stop failed/);
+  assert.throws(
+    () => lifecycle.start(async () => {}),
+    /Managed resource has already been claimed/,
+  );
+  await lifecycle.stop();
+  assert.equal(stopCalls, 2);
+
+  await lifecycle.start(async () => {});
+  await lifecycle.stop();
+  assert.equal(stopCalls, 3);
 });

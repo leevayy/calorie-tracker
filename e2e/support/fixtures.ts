@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   expect,
   test as base,
@@ -22,7 +23,7 @@ export type E2ESeedEntry = {
   fats: number;
   fiber: number;
   portion?: string;
-  mealSlug?: string;
+  mealSlug?: string | null;
 };
 
 export type E2ETestUser = {
@@ -87,6 +88,38 @@ function requiredEnvironment(
   return value;
 }
 
+function assertBrowserSafeValue(value: string, label: string): void {
+  const salt = process.env.E2E_BROWSER_GUARD_SALT;
+  const serializedHashes = process.env.E2E_BROWSER_FORBIDDEN_VALUE_HASHES;
+  if (!salt || !serializedHashes) {
+    throw new Error("The E2E browser-value guard must be installed by scripts/e2e.mjs");
+  }
+  let hashes: unknown;
+  try {
+    hashes = JSON.parse(serializedHashes);
+  } catch {
+    throw new Error("The E2E browser-value guard is invalid");
+  }
+  if (!Array.isArray(hashes) || !hashes.every((hash) => typeof hash === "string")) {
+    throw new Error("The E2E browser-value guard is invalid");
+  }
+  const candidateHash = createHash("sha256")
+    .update(salt)
+    .update("\0")
+    .update(value)
+    .digest("hex");
+  if (hashes.includes(candidateHash)) {
+    throw new Error(`${label} is a configured sensitive value and cannot enter browser state`);
+  }
+}
+
+function assertPublicSyntheticEmail(email: string): void {
+  assertBrowserSafeValue(email, "E2E email");
+  if (!/^[^@\s]+@example\.invalid$/i.test(email)) {
+    throw new Error("Browser-visible E2E users must use the public example.invalid domain");
+  }
+}
+
 function controlUrl(pathname: string): string {
   const origin = process.env.E2E_API_URL?.trim() || requiredEnvironment("E2E_BASE_URL");
   return new URL(pathname, `${origin.replace(/\/$/, "")}/`).toString();
@@ -144,11 +177,23 @@ export function isolatedTestUser(overrides: Partial<E2ETestUser> = {}): E2ETestU
   };
 }
 
+export async function fillVisibleAuthFields(
+  page: Page,
+  user: Pick<E2ETestUser, "email" | "password">,
+): Promise<void> {
+  assertPublicSyntheticEmail(user.email);
+  assertBrowserSafeValue(user.password, "E2E password");
+  const emailInput = page.getByLabel("Email");
+  const passwordInput = page.getByLabel("Password");
+  await expect(passwordInput).toHaveAttribute("type", "password");
+  await emailInput.fill(user.email);
+  await passwordInput.fill(user.password);
+}
+
 export async function loginThroughVisibleUi(page: Page, user: E2ETestUser): Promise<void> {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
-  await page.getByLabel("Email").fill(user.email);
-  await page.getByLabel("Password").fill(user.password);
+  await fillVisibleAuthFields(page, user);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(page.locator('button[aria-current="page"]')).toHaveCount(1);
@@ -185,6 +230,8 @@ export async function loginThroughSetup(
   page: Page,
   user: E2ETestUser,
 ): Promise<E2ESetupSession> {
+  assertPublicSyntheticEmail(user.email);
+  assertBrowserSafeValue(user.password, "E2E password");
   const response = await fetch(controlUrl("/api/v1/auth/login"), {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -200,6 +247,7 @@ export async function loginThroughSetup(
   ) {
     throw new Error("E2E setup refused to pass secret auth tokens into browser artifacts");
   }
+  assertPublicSyntheticEmail(auth.user.email);
   const storedSession = JSON.stringify(auth);
   // Use a same-origin static document so an earlier app session cannot race this
   // setup by clearing the freshly seeded credentials during a repeated login.

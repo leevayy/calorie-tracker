@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] Individual-entry editing and whole-meal duplication render the same shared Date input and Meal input components rather than locally reimplementing them.
 - [x] Labels, field order, dimensions, icons, meal options, date formatting, disabled states, validation, and error presentation are consistent in both journeys.
 - [x] The shared components have one typed value/change contract and do not contain mutation-specific save logic.
@@ -18,3 +20,7 @@
 ## Comments
 
 - 2026-08-16: Extracted typed, controlled `DateInput`, `MealInput`, and `ScheduleInputs` components and reused the combined control in entry correction and meal duplication without mutation logic. The 112/112 frontend run covers the shared contract and error/disabled states; mapped desktop/mobile Playwright coverage exercises valid and invalid moves/duplication, 44-pixel targets, field order, and all five supported locales without overflow in the running complete matrix.
+- 2026-08-16: Closed with consolidated verification: backend 84/84,
+  frontend 118/118, production build and backend check green, and deterministic
+  Playwright 152/152 (76 desktop + 76 mobile) with zero skipped, unexpected, or
+  flaky results, 152 separate videos, and clean artifact verification.

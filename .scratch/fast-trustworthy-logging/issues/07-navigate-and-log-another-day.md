@@ -6,6 +6,8 @@
 
 **Status:** ready-for-human
 
+**State:** closed
+
 - [x] The dashboard clearly displays the selected calendar date and provides previous-day and next-day navigation.
 - [x] The currently selected day loads its own meals and totals without losing navigation context.
 - [x] AI submissions and historical-food suggestions are saved to the selected day.
@@ -19,3 +21,7 @@
   journey in both supported projects as part of the 75/75 desktop and 75/75 mobile
   matrix, including persistence, direct selection, boundaries, focus, Today, and
   selected-day AI/historical logging.
+- 2026-08-16: Closed after consolidated verification passed 84/84 backend tests,
+  118/118 frontend tests, and 152/152 deterministic Playwright checks (76 desktop
+  and 76 mobile), with zero skipped, unexpected, or flaky results, 152 separate
+  videos, and clean artifact verification.

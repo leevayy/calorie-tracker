@@ -165,11 +165,20 @@ export async function registerFoodLogRoutes(
         parsed.data.query,
         parsed.data.limit,
       );
+      const seenMealSlugs = new Set<string>();
+      // The repository returns best-to-worst rank. Preserve that order and keep the first
+      // (highest-ranked) exact configuration for each populated slug; slugless rows stay unique.
+      const mergedItems = items.filter((item) => {
+        if (!item.mealSlug) return true;
+        if (seenMealSlugs.has(item.mealSlug)) return false;
+        seenMealSlugs.add(item.mealSlug);
+        return true;
+      });
       return reply.status(200).send(HistoricalFoodSuggestionsResponseSchema.parse({
-        items: items.map((item) => ({
+        items: mergedItems.map((item) => ({
           ...item,
           portion: item.portion ?? undefined,
-          mealSlug: item.mealSlug ?? undefined,
+          mealSlug: item.mealSlug || undefined,
         })),
       }));
     },

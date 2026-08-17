@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] Selecting a history day opens that calendar day's itemized meals and totals.
 - [x] The opened day supports the established edit, move, delete, and undo interactions.
 - [x] Corrections immediately update both the day detail and aggregate history values.
@@ -18,3 +20,7 @@
   move, soft-delete/Undo, aggregate reconciliation, and scroll-context behavior.
   Unit coverage passes and the final desktop/mobile Playwright matrix passed
   110/110, including all four history-detail scenarios in both projects.
+- 2026-08-16: Closed after consolidated verification passed 84/84 backend tests,
+  118/118 frontend tests, and 152/152 deterministic Playwright checks (76 desktop
+  and 76 mobile), with zero skipped, unexpected, or flaky results, 152 separate
+  videos, and clean artifact verification.

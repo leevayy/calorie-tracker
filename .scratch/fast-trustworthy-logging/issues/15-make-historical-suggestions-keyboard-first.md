@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] Arrow Down and Arrow Up move a visible active option through the current suggestion list without moving focus away from the composer input.
 - [x] Enter immediately logs the active stored configuration without an AI parse request; when no option is active, Enter retains the established natural-language submission behavior.
 - [x] Escape dismisses the suggestion list without clearing the user's input.
@@ -23,3 +25,7 @@
   verified the complete keyboard/pointer/reuse/stale-response set in the final
   75/75 desktop and 75/75 mobile deterministic matrix. The frontend suite now
   passes 118/118.
+- 2026-08-16: Closed with consolidated verification: backend 84/84,
+  frontend 118/118, production build and backend check green, and deterministic
+  Playwright 152/152 (76 desktop + 76 mobile) with zero skipped, unexpected, or
+  flaky results, 152 separate videos, and clean artifact verification.

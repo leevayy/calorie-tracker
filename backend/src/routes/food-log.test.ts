@@ -253,15 +253,22 @@ afterEach(async () => {
 });
 
 describe("food log routes", () => {
-  test("matches and ranks exact historical configurations without merging portions", async () => {
+  test("keeps materially different historical configurations distinct when their slugs differ", async () => {
     const entries = [
-      entry({ day: "2026-08-01", name: "Greek yogurt", portion: "100 g", calories: 90 }),
+      entry({
+        day: "2026-08-01",
+        name: "Greek yogurt",
+        portion: "100 g",
+        calories: 90,
+        mealSlug: "greek-yogurt-100g",
+      }),
       entry({
         id: "10000000-0000-4000-8000-000000000002",
         day: "2026-08-12",
         name: "Greek yogurt",
         portion: "100 g",
         calories: 90,
+        mealSlug: "greek-yogurt-100g",
       }),
       entry({
         id: "10000000-0000-4000-8000-000000000003",
@@ -269,11 +276,13 @@ describe("food log routes", () => {
         name: "Greek yogurt",
         portion: "200 g",
         calories: 180,
+        mealSlug: "greek-yogurt-200g",
       }),
       entry({
         id: "10000000-0000-4000-8000-000000000004",
         day: "2026-08-15",
         name: "Vanilla Greek yogurt",
+        mealSlug: "vanilla-greek-yogurt",
       }),
       entry({
         id: "10000000-0000-4000-8000-000000000005",
@@ -301,6 +310,153 @@ describe("food log routes", () => {
         { name: "Vanilla Greek yogurt", usageCount: 1, lastUsedDay: "2026-08-15" },
       ],
     });
+  });
+
+  test("keeps the highest-ranked configuration per non-empty slug while null slugs stay unique", async () => {
+    const entries = [
+      entry({
+        day: "2026-08-01",
+        name: "Fried eggs",
+        portion: "1 egg",
+        calories: 100,
+        mealSlug: "fried-eggs",
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000002",
+        day: "2026-08-10",
+        name: "Fried eggs",
+        portion: "2 eggs",
+        calories: 200,
+        mealSlug: "fried-eggs",
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000003",
+        day: "2026-08-12",
+        name: "Fried eggs",
+        portion: "2 eggs",
+        calories: 200,
+        mealSlug: "fried-eggs",
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000004",
+        day: "2026-08-15",
+        name: "Fried eggs with spinach",
+        mealSlug: null,
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000005",
+        day: "2026-08-14",
+        name: "Fried eggs with tomato",
+        mealSlug: null,
+      }),
+    ];
+    const app = await buildTestApp(new MemoryFoodLogRepository(entries));
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/food-suggestions?query=fried%20eggs&limit=8",
+    });
+
+    expect(response.json().items.map((item: Record<string, unknown>) => ({
+      name: item.name,
+      portion: item.portion,
+      mealSlug: item.mealSlug,
+      usageCount: item.usageCount,
+      lastUsedDay: item.lastUsedDay,
+    }))).toEqual([
+      {
+        name: "Fried eggs",
+        portion: "2 eggs",
+        mealSlug: "fried-eggs",
+        usageCount: 2,
+        lastUsedDay: "2026-08-12",
+      },
+      {
+        name: "Fried eggs with spinach",
+        portion: "1 bowl",
+        mealSlug: undefined,
+        usageCount: 1,
+        lastUsedDay: "2026-08-15",
+      },
+      {
+        name: "Fried eggs with tomato",
+        portion: "1 bowl",
+        mealSlug: undefined,
+        usageCount: 1,
+        lastUsedDay: "2026-08-14",
+      },
+    ]);
+  });
+
+  test("treats empty slugs as missing and keeps those suggestions individually unique", async () => {
+    const app = await buildTestApp(new MemoryFoodLogRepository([
+      entry({ name: "Fried tofu", mealSlug: "" }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000002",
+        day: "2026-08-14",
+        name: "Fried tempeh",
+        mealSlug: "",
+      }),
+    ]));
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/food-suggestions?query=fried&limit=8",
+    });
+
+    expect({
+      statusCode: response.statusCode,
+      items: response.statusCode === 200
+        ? response.json().items.map((item: Record<string, unknown>) => ({
+            name: item.name,
+            mealSlug: item.mealSlug,
+          }))
+        : response.json(),
+    }).toEqual({
+      statusCode: 200,
+      items: [
+        { name: "Fried tofu", mealSlug: undefined },
+        { name: "Fried tempeh", mealSlug: undefined },
+      ],
+    });
+  });
+
+  test("filters only the requested ranked candidate set without backfilling after a slug merge", async () => {
+    const app = await buildTestApp(new MemoryFoodLogRepository([
+      entry({
+        day: "2026-08-15",
+        name: "Apple",
+        calories: 80,
+        mealSlug: "apple",
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000002",
+        day: "2026-08-14",
+        name: "Apple",
+        calories: 95,
+        mealSlug: "apple",
+      }),
+      entry({
+        id: "10000000-0000-4000-8000-000000000003",
+        day: "2026-08-13",
+        name: "Apple slices",
+        calories: 70,
+        mealSlug: "apple-slices",
+      }),
+    ]));
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/food-suggestions?query=apple&limit=2",
+    });
+
+    expect(response.json().items.map((item: Record<string, unknown>) => ({
+      name: item.name,
+      calories: item.calories,
+      mealSlug: item.mealSlug,
+    }))).toEqual([
+      { name: "Apple", calories: 80, mealSlug: "apple" },
+    ]);
   });
 
   test("creates a recognized group across days and meals in one batch", async () => {

@@ -7,6 +7,10 @@ import {
   loginThroughSetup,
   test,
 } from "./support/fixtures";
+import {
+  openAdaptiveFoodComposer,
+  usesDesktopWorkspace,
+} from "./support/adaptiveComposer";
 
 const MIN_PRIMARY_TARGET_PX = 44;
 const GEOMETRY_TOLERANCE_PX = 1;
@@ -15,6 +19,7 @@ type UiLocale = {
   code: "en" | "ru";
   testTitle: string;
   appTitle: string;
+  desktopHome: string;
   settings: string;
   account: string;
   home: string;
@@ -24,6 +29,7 @@ type UiLocale = {
   previousDay: string;
   nextDay: string;
   logFoodPlaceholder: string;
+  desktopFoodPrompt: string;
   logFoodSuggestions: readonly string[];
   foodLogTitle: string;
   lunch: string;
@@ -78,6 +84,7 @@ const LOCALES: readonly UiLocale[] = [
     code: "en",
     testTitle: "keeps English core screens contained and typographically consistent",
     appTitle: "Calorie Tracker",
+    desktopHome: "Today",
     settings: "Settings",
     account: "Account",
     home: "Calorie Tracker",
@@ -87,6 +94,7 @@ const LOCALES: readonly UiLocale[] = [
     previousDay: "Previous day",
     nextDay: "Next day",
     logFoodPlaceholder: "Log food",
+    desktopFoodPrompt: "What did you eat?",
     logFoodSuggestions: [
       "Chicken with mushrooms",
       "Ham sandwich",
@@ -147,6 +155,7 @@ const LOCALES: readonly UiLocale[] = [
     code: "ru",
     testTitle: "keeps Russian core screens contained and typographically consistent",
     appTitle: "Трекер калорий",
+    desktopHome: "Сегодня",
     settings: "Настройки",
     account: "Аккаунт",
     home: "Трекер калорий",
@@ -156,6 +165,7 @@ const LOCALES: readonly UiLocale[] = [
     previousDay: "Предыдущий день",
     nextDay: "Следующий день",
     logFoodPlaceholder: "Записать еду",
+    desktopFoodPrompt: "Что вы ели?",
     logFoodSuggestions: [
       "Курица с грибами",
       "Сэндвич с ветчиной",
@@ -230,7 +240,7 @@ async function expectLocaleDocument(page: Page, locale: UiLocale): Promise<void>
   await expect(page).toHaveTitle(locale.appTitle);
 }
 
-/** The tab carousel intentionally overflows internally; only the document may not overflow. */
+/** Mobile carousel overflow stays internal; the desktop rail and document must remain contained. */
 async function expectNoDocumentOverflow(page: Page): Promise<void> {
   const geometry = await page.evaluate(() => {
     const root = document.documentElement;
@@ -360,6 +370,111 @@ async function expectScreenInvariant(page: Page, locale: UiLocale): Promise<void
   await expectNoEnglishUnitLeaks(page, locale);
 }
 
+async function expectDesktopJournalHome(page: Page, locale: UiLocale): Promise<void> {
+  const homeDestination = page.getByRole("button", {
+    name: locale.desktopHome,
+    exact: true,
+  });
+  const historyDestination = page.getByRole("button", { name: locale.history, exact: true });
+  const settingsDestination = page.getByRole("button", { name: locale.settings, exact: true });
+  const account = page.getByRole("button", { name: locale.account, exact: true });
+  const previousDay = page.getByRole("button", {
+    name: new RegExp(`^${escapeRegExp(locale.previousDay)}(?:,|:)`),
+  });
+  const nextDay = page.getByRole("button", {
+    name: new RegExp(`^${escapeRegExp(locale.nextDay)}(?:,|:)`),
+  });
+  const header = page.getByTestId("desktop-journal-header");
+  const composer = await openAdaptiveFoodComposer(page, locale.logFoodPlaceholder);
+  const lunch = page.getByRole("region", { name: locale.lunch, exact: true });
+  const entryRow = lunch.getByRole("row").filter({ hasText: locale.homeEntryName });
+
+  await expect(homeDestination).toHaveAttribute("aria-current", "page");
+  await expect(historyDestination).not.toHaveAttribute("aria-current", "page");
+  await expect(settingsDestination).not.toHaveAttribute("aria-current", "page");
+  await expect(account).toBeVisible();
+  await expect(header).toContainText("640");
+  for (const macro of locale.editorHeaderMacros) {
+    await expect(header.getByText(macro, { exact: true })).toBeVisible();
+  }
+  await expect(entryRow).toBeVisible();
+  await expect(entryRow).toContainText(locale.homePortion);
+  await expect(entryRow).toContainText(`640\u00a0${locale.historyUnit}`);
+  await expectScreenInvariant(page, locale);
+  await expectSharedFontFamily(page, [homeDestination, composer, entryRow]);
+  for (const target of [homeDestination, historyDestination, settingsDestination, account, previousDay, nextDay, composer]) {
+    await expectMinimumTarget(target);
+    await expectHorizontallyContained(page, target);
+  }
+
+  const headerBox = await header.boundingBox();
+  const previousBox = await previousDay.boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(previousBox).not.toBeNull();
+  if (headerBox && previousBox) {
+    expect(previousBox.y).toBeGreaterThanOrEqual(headerBox.y);
+    expect(previousBox.y + previousBox.height).toBeLessThanOrEqual(
+      headerBox.y + headerBox.height + GEOMETRY_TOLERANCE_PX,
+    );
+  }
+
+  const placeholder = await composer.getAttribute("placeholder");
+  const suggestion = await composer.getAttribute("data-suggestion");
+  expect(placeholder).toBe(locale.desktopFoodPrompt);
+  expect(locale.logFoodSuggestions).toContain(suggestion);
+
+  await entryRow.click();
+  const editor = page.getByRole("form", {
+    name: new RegExp(`${escapeRegExp(locale.homeEntryName)}$`),
+  });
+  await expect(editor).toBeVisible();
+  const instruction = editor.getByLabel(locale.editorInstruction, { exact: true });
+  const name = editor.getByLabel(locale.editorName, { exact: true });
+  const portion = editor.getByLabel(locale.editorPortion, { exact: true });
+  const calories = editor.getByLabel(locale.calories, { exact: true });
+  const protein = editor.getByLabel(locale.editorProtein, { exact: true });
+  const carbs = editor.getByLabel(locale.editorCarbs, { exact: true });
+  const fats = editor.getByLabel(locale.editorFats, { exact: true });
+  const fiber = editor.getByLabel(locale.editorFiber, { exact: true });
+  const date = editor.getByLabel(locale.editorDate, { exact: true });
+  const meal = editor.getByRole("combobox", { name: locale.editorMeal, exact: true });
+  const save = editor.locator('button[type="submit"]');
+
+  await expect(name).toHaveValue(locale.homeEntryName);
+  await expect(portion).toHaveValue(locale.homePortion);
+  await expect(calories).toHaveValue("640");
+  await expect(protein).toHaveValue("48");
+  await expect(carbs).toHaveValue("72");
+  await expect(fats).toHaveValue("18");
+  await expect(fiber).toHaveValue("7");
+  await expect(date).toHaveValue(HOME_DAY);
+  await expect(meal).toHaveText(locale.lunch);
+  await expect(save).toHaveCount(1);
+  await expect(save).toBeVisible();
+  for (const field of [instruction, name, portion, calories, protein, carbs, fats, fiber, date, meal]) {
+    await expectHorizontallyContained(page, field);
+  }
+  await expectHorizontallyContained(page, editor);
+  await expectSharedFontFamily(page, [instruction, name, meal, save]);
+  await expectScreenInvariant(page, locale);
+
+  await instruction.fill(locale.editorCorrectionInstruction);
+  await expect(save).toHaveText(locale.code === "ru" ? "Отправить и сохранить" : "Send & save");
+  const clearInstruction = editor.getByRole("button", {
+    name: locale.code === "ru" ? "Очистить инструкцию" : "Clear instruction",
+    exact: true,
+  });
+  await expect(clearInstruction).toBeVisible();
+  await clearInstruction.click();
+  await expect(instruction).toHaveValue("");
+  await expect(save).toHaveText(locale.editorSave);
+  await editor.getByRole("button", {
+    name: locale.code === "ru" ? "Отмена" : "Cancel",
+    exact: true,
+  }).click();
+  await expect(editor).toBeHidden();
+}
+
 test.describe("Cross-locale UI consistency", () => {
   for (const locale of LOCALES) {
     test(locale.testTitle, async ({ page, e2eControls }) => {
@@ -402,6 +517,10 @@ test.describe("Cross-locale UI consistency", () => {
       await loginThroughSetup(page, user);
 
       await test.step("Home, composer, and editor", async () => {
+        if (usesDesktopWorkspace(page)) {
+          await expectDesktopJournalHome(page, locale);
+          return;
+        }
         const heading = page.getByRole("heading", { name: locale.home, exact: true });
         const settingsTab = page.getByRole("button", { name: locale.settings, exact: true });
         const homeTab = page.getByRole("button", { name: locale.home, exact: true });

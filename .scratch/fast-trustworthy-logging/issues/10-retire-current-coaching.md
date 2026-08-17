@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] The dashboard no longer displays, loads, or regenerates daily advice.
 - [x] Settings no longer expose tip-vibe controls or a user-facing AI model selector.
 - [x] Food parsing continues to use a server-selected model without requiring a user preference.
@@ -18,3 +20,7 @@
   retired copy; food parsing now resolves its model on the server. Backend and
   frontend suites pass, and the five retirement/settings scenarios plus the
   unaffected auth/logging/history journeys pass on desktop and mobile (110/110).
+- 2026-08-16: Closed after consolidated verification passed 84/84 backend tests,
+  118/118 frontend tests, and 152/152 deterministic Playwright checks (76 desktop
+  and 76 mobile), with zero skipped, unexpected, or flaky results, 152 separate
+  videos, and clean artifact verification.

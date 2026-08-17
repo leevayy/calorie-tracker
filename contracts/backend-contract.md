@@ -65,7 +65,7 @@ This document mirrors the TypeScript + Zod definitions in `src/contracts/`. Impl
 
 ### `GET /food-suggestions?query=&limit=`
 
-Searches the authenticated user's active food-entry history by name. Results keep distinct portions and nutrition configurations separate and are ranked by text relevance, usage count, then recency.
+Searches the authenticated user's active food-entry history by name. Exact configurations are ranked by text relevance, usage count, then recency. Within the requested, at-most-`limit` ranked candidate set, the response keeps the first (highest-ranked) configuration for each non-empty `mealSlug`; configurations with different slugs or no slug remain distinct. A merge does not aggregate usage metadata or backfill from candidates beyond that ranked set, so the response may contain fewer than `limit` items.
 
 **Response:** `200` `HistoricalFoodSuggestionsResponse` — reusable stored food fields plus `usageCount` and `lastUsedDay`. Supplying the returned `mealSlug` when creating the copied entry avoids another AI slug-resolution request.
 

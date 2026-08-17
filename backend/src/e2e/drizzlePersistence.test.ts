@@ -116,4 +116,36 @@ describe("E2E database reset and seed", () => {
       },
     ]);
   });
+
+  test("preserves an explicit null meal slug while defaulting an omitted fixture slug", async () => {
+    const persistence = createDrizzleE2EControlPersistence(
+      "postgresql://user:pass@localhost/calorie_tracker_e2e",
+    );
+    const baseEntry = {
+      day: "2026-08-14",
+      mealType: "breakfast" as const,
+      calories: 300,
+      protein: 10,
+      carbs: 50,
+      fats: 7,
+      fiber: 6,
+    };
+
+    await persistence.resetAndSeed({
+      users: [{
+        email: "legacy@example.test",
+        password: "password-legacy",
+        entries: [
+          { ...baseEntry, name: "Legacy oats", mealSlug: null },
+          { ...baseEntry, name: "Fresh oats" },
+        ],
+      }],
+    });
+
+    const entries = insertedBatches[1] as Array<Record<string, unknown>>;
+    expect(entries.map(({ name, mealSlug }) => ({ name, mealSlug }))).toEqual([
+      { name: "Legacy oats", mealSlug: null },
+      { name: "Fresh oats", mealSlug: "e2e-2" },
+    ]);
+  });
 });

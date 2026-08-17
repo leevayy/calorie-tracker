@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] The legacy Android application and Android-only local nutrition behavior are removed from the maintained repository.
 - [x] Project documentation, development instructions, and automation no longer imply that Android is supported.
 - [x] Shared backend and web contracts retain only behavior used by the maintained product or another documented consumer.
@@ -25,3 +27,9 @@
   backend TypeScript check, 11/11 E2E-tool tests, 79/79 backend tests, 118/118
   frontend tests, the frontend production build, reference scans, and
   `git diff --check`.
+- 2026-08-16: Closed with the Android directory, workflow, source, resources, and
+  Android-only contracts removed. Consolidated verification passed 84/84 backend
+  tests, 118/118 frontend tests, the frontend production build, reference scans,
+  and 152/152 deterministic Playwright checks (76 desktop and 76 mobile), with
+  zero skipped, unexpected, or flaky results, 152 separate videos, clean artifact
+  verification, and a clean diff check.

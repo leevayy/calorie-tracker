@@ -1,7 +1,11 @@
 import jwt from "@fastify/jwt";
 import Fastify, { type FastifyInstance } from "fastify";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createE2EControlRuntime, type E2EControlPersistence } from "../e2e/control.ts";
+import {
+  createE2EControlRuntime,
+  type E2EControlPersistence,
+  type E2ESeedRequest,
+} from "../e2e/control.ts";
 import { sendUnauthorized } from "../lib/http.ts";
 import type { FoodEntryRecord } from "../services/foodLogRepository.ts";
 import { registerE2EControlRoutes } from "./e2e-control.ts";
@@ -103,6 +107,40 @@ describe("E2E control routes", () => {
     expect(response.statusCode).toBe(200);
     expect(resetAndSeed).toHaveBeenCalledWith(payload);
     expect(response.json()).toEqual(await resetAndSeed.mock.results[0]?.value);
+  });
+
+  test("accepts explicit null meal slugs for legacy suggestion fixtures", async () => {
+    const resetAndSeed = vi.fn(async (_input: E2ESeedRequest) => ({ users: [] }));
+    const { app } = await buildTestApp({ resetAndSeed });
+    const payload = {
+      users: [{
+        email: "legacy-slug@example.test",
+        password: "test-password-legacy-slug",
+        entries: [{
+          day: "2026-08-14",
+          mealType: "breakfast",
+          name: "Legacy oats",
+          calories: 300,
+          protein: 10,
+          carbs: 50,
+          fats: 7,
+          fiber: 6,
+          mealSlug: null,
+        }],
+      }],
+    };
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/__e2e/reset",
+      headers: { "x-e2e-control-secret": SECRET },
+      payload,
+    });
+
+    expect({
+      statusCode: response.statusCode,
+      seeded: resetAndSeed.mock.calls[0]?.[0],
+    }).toEqual({ statusCode: 200, seeded: payload });
   });
 
   test("accepts a 1,001-entry performance fixture while keeping seed payloads bounded", async () => {

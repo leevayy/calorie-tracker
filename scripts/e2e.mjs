@@ -12,8 +12,19 @@ import {
   resolveManagedArtifactLayout,
   sensitiveArtifactValues,
 } from "./e2e-artifacts.mjs";
-import { createOnceAsync, createSignalShutdown } from "./e2e-lifecycle.mjs";
+import {
+  createBrowserTestEnvironment,
+  PUBLIC_E2E_CONTROL_HANDLE,
+  PUBLIC_E2E_TEST_EMAIL,
+  PUBLIC_E2E_TEST_PASSWORD,
+} from "./e2e-environment.mjs";
+import {
+  createManagedResourceLifecycle,
+  createOnceAsync,
+  createSignalShutdown,
+} from "./e2e-lifecycle.mjs";
 import { assertManagedPostgresDataPath } from "./e2e-path-safety.mjs";
+import { pipeProcessOutputToWritable } from "./e2e-process.mjs";
 
 const root = resolve(fileURLToPath(new URL("../", import.meta.url)));
 const envFile = join(root, ".env.e2e");
@@ -29,7 +40,7 @@ const logDir = join(artifactRoot, "service-logs");
 const browserPath = resolve(root, process.env.PLAYWRIGHT_BROWSERS_PATH ?? ".cache/playwright-browsers");
 const apiUrl = process.env.E2E_API_URL ?? "http://127.0.0.1:3000";
 const baseUrl = process.env.E2E_BASE_URL ?? "http://127.0.0.1:4173";
-const controlSecret = process.env.E2E_CONTROL_SECRET;
+const controlSecret = PUBLIC_E2E_CONTROL_HANDLE;
 const pgPort = Number(process.env.E2E_POSTGRES_PORT ?? "55432");
 const pgDatabase = process.env.E2E_POSTGRES_DB ?? "calorie_tracker_e2e";
 const pgData = resolve(root, process.env.E2E_POSTGRES_DATA ?? ".cache/e2e-postgres");
@@ -39,8 +50,8 @@ let artifactDatabaseUrl = process.env.DATABASE_URL ?? managedDatabaseUrl;
 
 let backendProcess;
 let frontendProcess;
-let managedPostgres = false;
 const commandProcesses = new Set();
+const serviceLogSettlements = new Set();
 
 function childEnv(extra = {}) {
   return {
@@ -54,12 +65,31 @@ function childEnv(extra = {}) {
   };
 }
 
-function artifactCanaries(databaseUrl = process.env.DATABASE_URL ?? managedDatabaseUrl) {
-  return sensitiveArtifactValues({
-    ...process.env,
-    DATABASE_URL: databaseUrl,
-    JWT_SECRET: process.env.JWT_SECRET ?? defaultJwtSecret,
+function browserTestEnv(extra = {}) {
+  return createBrowserTestEnvironment(childEnv(extra));
+}
+
+function browserInstallEnv(extra = {}) {
+  return createBrowserTestEnvironment(childEnv(extra), {
+    allowInstallNetworkConfiguration: true,
   });
+}
+
+function artifactCanaries(databaseUrl = process.env.DATABASE_URL ?? managedDatabaseUrl) {
+  return [
+    ...new Set([
+      ...sensitiveArtifactValues({
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+        JWT_SECRET: process.env.JWT_SECRET ?? defaultJwtSecret,
+      }),
+      ...sensitiveArtifactValues({
+        E2E_CONTROL_SECRET: PUBLIC_E2E_CONTROL_HANDLE,
+        E2E_TEST_EMAIL: PUBLIC_E2E_TEST_EMAIL,
+        E2E_TEST_PASSWORD: PUBLIC_E2E_TEST_PASSWORD,
+      }),
+    ]),
+  ];
 }
 
 function executable(name, extraCandidates = []) {
@@ -99,6 +129,14 @@ async function run(file, args, options = {}) {
   });
 }
 
+const managedPostgresLifecycle = createManagedResourceLifecycle({
+  stop: async () => {
+    const pgBin = process.env.E2E_POSTGRES_BIN;
+    const pgCtl = executable("pg_ctl", pgBin ? [join(pgBin, "pg_ctl")] : []);
+    await run(pgCtl, ["-D", pgData, "-m", "fast", "-w", "stop"]);
+  },
+});
+
 function assertDisposableDatabase(databaseUrl) {
   let parsed;
   try {
@@ -128,17 +166,18 @@ async function prepareDatabase() {
     await mkdir(pgData, { recursive: true });
     await mkdir(logDir, { recursive: true });
     await run(initdb, ["-D", pgData, "--username=postgres", "--auth=trust", "--no-locale"]);
-    await run(pgCtl, [
-      "-D",
-      pgData,
-      "-l",
-      join(logDir, "postgres.log"),
-      "-o",
-      `-p ${pgPort} -h 127.0.0.1`,
-      "-w",
-      "start",
-    ]);
-    managedPostgres = true;
+    await managedPostgresLifecycle.start(() =>
+      run(pgCtl, [
+        "-D",
+        pgData,
+        "-l",
+        join(logDir, "postgres.log"),
+        "-o",
+        `-p ${pgPort} -h 127.0.0.1`,
+        "-w",
+        "start",
+      ]),
+    );
     await run(createdb, ["--host=127.0.0.1", `--port=${pgPort}`, "--username=postgres", pgDatabase]);
     databaseUrl = managedDatabaseUrl;
   }
@@ -176,9 +215,10 @@ function backendEnv(databaseUrl) {
 function startLoggedService(file, args, { cwd, env, logName }) {
   const log = createWriteStream(join(logDir, logName), { flags: "a" });
   const child = spawn(file, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
-  child.stdout.pipe(log);
-  child.stderr.pipe(log);
-  child.once("exit", () => log.end());
+  const logSettlement = pipeProcessOutputToWritable(child, log);
+  serviceLogSettlements.add(logSettlement);
+  // Cleanup owns the rejection and reports it before artifact verification.
+  void logSettlement.catch(() => {});
   return child;
 }
 
@@ -205,7 +245,7 @@ async function buildAndStartServices(databaseUrl) {
   await mkdir(logDir, { recursive: true });
   await run(join(root, "frontend/node_modules/.bin/vite"), ["build"], {
     cwd: join(root, "frontend"),
-    env: childEnv({ VITE_API_BASE_URL: apiUrl }),
+    env: browserTestEnv({ VITE_API_BASE_URL: apiUrl }),
   });
 
   backendProcess = startLoggedService(
@@ -224,7 +264,7 @@ async function buildAndStartServices(databaseUrl) {
     ["preview", "--host", "127.0.0.1", "--port", new URL(baseUrl).port || "4173", "--strictPort"],
     {
       cwd: join(root, "frontend"),
-      env: childEnv(),
+      env: browserTestEnv(),
       logName: "frontend.log",
     },
   );
@@ -262,15 +302,36 @@ async function stopChild(child) {
 }
 
 async function cleanup() {
-  await stopChild(frontendProcess);
-  await stopChild(backendProcess);
-  await Promise.all([...commandProcesses].map((child) => stopChild(child)));
-  if (managedPostgres) {
-    const pgBin = process.env.E2E_POSTGRES_BIN;
-    const pgCtl = executable("pg_ctl", pgBin ? [join(pgBin, "pg_ctl")] : []);
-    await run(pgCtl, ["-D", pgData, "-m", "fast", "-w", "stop"]);
-    managedPostgres = false;
-  }
+  const failures = [];
+  const capture = async (operation) => {
+    try {
+      await operation();
+    } catch (error) {
+      failures.push(error);
+    }
+  };
+
+  await capture(() => stopChild(frontendProcess));
+  await capture(() => stopChild(backendProcess));
+  const commandResults = await Promise.allSettled(
+    [...commandProcesses].map((child) => stopChild(child)),
+  );
+  failures.push(
+    ...commandResults
+      .filter((result) => result.status === "rejected")
+      .map((result) => result.reason),
+  );
+  const logResults = await Promise.allSettled([...serviceLogSettlements]);
+  serviceLogSettlements.clear();
+  failures.push(
+    ...logResults
+      .filter((result) => result.status === "rejected")
+      .map((result) => result.reason),
+  );
+  await capture(() => managedPostgresLifecycle.stop());
+
+  if (failures.length === 1) throw failures[0];
+  if (failures.length > 1) throw new AggregateError(failures, "E2E cleanup failed");
 }
 
 const cleanupOnce = createOnceAsync(cleanup);
@@ -298,7 +359,7 @@ async function runPlaywright(extraArgs = []) {
     await buildAndStartServices(databaseUrl);
     await resetControlState();
     await run(join(root, "node_modules/.bin/playwright"), ["test", ...extraArgs], {
-      env: childEnv(),
+      env: browserTestEnv(),
     });
   } catch (error) {
     runFailure = error;
@@ -339,7 +400,7 @@ async function main() {
         "webkit",
       ];
       await run(join(root, "node_modules/.bin/playwright"), installArgs, {
-        env: childEnv(),
+        env: browserInstallEnv(),
       });
       return;
     }
@@ -348,9 +409,11 @@ async function main() {
       return;
     }
     if (command === "list") {
-      await run(join(root, "node_modules/.bin/playwright"), ["test", "--list"], {
-        env: childEnv(),
-      });
+      await run(
+        join(root, "node_modules/.bin/playwright"),
+        ["test", "--list", "--reporter=line"],
+        { env: browserTestEnv() },
+      );
       return;
     }
     throw new Error(`Unknown E2E command: ${command}`);

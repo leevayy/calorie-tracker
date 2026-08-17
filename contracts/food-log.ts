@@ -97,7 +97,11 @@ export const FrequentFoodsResponseSchema = z.object({
 });
 export type FrequentFoodsResponse = z.infer<typeof FrequentFoodsResponseSchema>;
 
-/** `GET /food-suggestions?query=&limit=` — exact historical configurations ranked for reuse. */
+/**
+ * `GET /food-suggestions?query=&limit=` — ranked historical configurations for reuse.
+ * The response keeps only the highest-ranked candidate for each populated meal slug;
+ * candidates without a slug remain individually unique.
+ */
 export const HistoricalFoodSuggestionsQuerySchema = z.object({
   query: z.string().trim().min(1).max(200),
   limit: z.coerce.number().int().min(1).max(20).optional().default(8),

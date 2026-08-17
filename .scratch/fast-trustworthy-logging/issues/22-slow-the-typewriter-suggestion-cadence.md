@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] The animated typing and deleting behavior remains, and the set of food examples is not removed or replaced with a static placeholder.
 - [x] A completed example remains fully visible for at least four seconds and a different example does not begin more frequently than once every seven seconds.
 - [x] The longer cadence is expressed through named timing constants and deterministic fake-timer tests rather than timing-sensitive browser assertions.
@@ -18,3 +20,7 @@
 ## Comments
 
 - 2026-08-16: The typewriter still types, holds, deletes, and rotates the localized examples, now with a named 7,000 ms completed hold. Fake-timer tests prove the four/seven-second bounds and stable reduced-motion output; the deterministic composer scenario covers user text across close/reopen/submit, the fixed accessible label, and reduced motion in both configured browser projects. The frontend suite is 112/112 and the desktop composer spec is 14/14.
+- 2026-08-16: Closed with consolidated verification: backend 84/84,
+  frontend 118/118, production build and backend check green, and deterministic
+  Playwright 152/152 (76 desktop + 76 mobile) with zero skipped, unexpected, or
+  flaky results, 152 separate videos, and clean artifact verification.

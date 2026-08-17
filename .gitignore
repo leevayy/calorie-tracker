@@ -3,6 +3,8 @@
 .env.local
 .env.*.local
 frontend/.env.production
+tmp
+output
 
 # Docker Compose local overrides (see docker-compose.override.example.yml)
 docker-compose.override.yml

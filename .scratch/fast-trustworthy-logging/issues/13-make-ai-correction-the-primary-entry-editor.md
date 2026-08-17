@@ -8,6 +8,8 @@
 
 **Status:** ready-for-agent
 
+**State:** closed
+
 - [x] Tapping a saved food opens the AI correction mode by default, with a clearly visible instruction input for describing what should change.
 - [x] The current saved entry is supplied to the correction flow as structured context; the AI does not have to reconstruct the entry from display text.
 - [x] AI output is schema-validated and produces a complete editable draft before anything is persisted. The user can inspect the proposed result and use the existing Save action to commit it.
@@ -30,3 +32,7 @@
   browser projects within the final 110/110 run.
 - 2026-08-16: Product review kept the existing move flow and lowered the remaining cleanup to P2. The editor should stop presenting date and meal twice and should consume the same shared controls as whole-meal duplication.
 - 2026-08-16: `FoodEntryEditor` now renders one collapsed schedule disclosure outside the AI/fields branch and delegates its only Date/Meal pair to the shared `ScheduleInputs`. Component tests plus deterministic correction, shared-schedule, aggregate, failure, and ownership scenarios cover the complete acceptance matrix in both configured browser projects; the frontend suite is 112/112.
+- 2026-08-16: Closed with consolidated verification: backend 84/84,
+  frontend 118/118, production build and backend check green, and deterministic
+  Playwright 152/152 (76 desktop + 76 mobile) with zero skipped, unexpected, or
+  flaky results, 152 separate videos, and clean artifact verification.

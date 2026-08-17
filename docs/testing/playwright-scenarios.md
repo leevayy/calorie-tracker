@@ -23,7 +23,7 @@ controls.
 
 | Area | Planned spec and exact test title | D | M | L |
 | --- | --- | :---: | :---: | :---: |
-| Authentication lifecycle | `e2e/auth.spec.ts` — `signs up, signs in, persists the session, and signs out` | Yes | Yes | — |
+| Authentication lifecycle and visual-secret prevention | `e2e/auth.spec.ts` — `signs up, signs in, persists the session, and signs out` uses the public synthetic identity and proves password controls are masked before filling | Yes | Yes | — |
 | Authentication validation | `e2e/auth.spec.ts` — `shows validation and rejects invalid credentials without losing input` | Yes | Yes | — |
 | Supported profile/settings | `e2e/settings.spec.ts` — `updates supported profile fields and language after reload` | Yes | Yes | — |
 | Concise English UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent` | Yes | Yes | — |
@@ -87,7 +87,7 @@ controls.
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
 | --- | --- | --- | :---: | :---: | :---: |
 | 06.1 | Typing shows historical matches with name, portion, calories, and usage context. | `e2e/suggestions.spec.ts` — `suggests historical foods with nutrition and usage context` | Yes | Yes | — |
-| 06.2 | Same-name foods with materially different configurations remain visibly distinct, including macro-only differences. | `e2e/suggestions.spec.ts` — `keeps same-name historical configurations distinct` | Yes | Yes | — |
+| 06.2 | Same-name foods with materially different configurations remain visibly distinct, including macro-only differences, when their slugs differ or are absent; shared non-empty slugs merge under Issue 23. | `e2e/suggestions.spec.ts` — `keeps same-name historical configurations distinct when their slugs differ`; Issue 23 coverage below | Yes | Yes | — |
 | 06.3 | Ranking reflects relevance, frequency, and recency. | `e2e/suggestions.spec.ts` — `ranks historical suggestions by relevance frequency and recency` | Yes | Yes | — |
 | 06.4 | Selecting a result logs stored values to selected meal/day without AI. | `e2e/suggestions.spec.ts` — `reuses a stored suggestion on the selected day without an AI request` | Yes | Yes | — |
 | 06.5 | Search stays responsive as history grows and matching/ranking are covered. | `e2e/suggestions.spec.ts` — `shows a matching large-history result within the user-visible latency budget`; `debounces a large history and ignores stale suggestion responses` forces the older response to arrive after the newer response through a one-shot backend delay | Yes | Yes | — |
@@ -143,12 +143,12 @@ controls.
 | 12.5 | Separately tagged live-provider journeys remain opt-in and do not make the deterministic suite paid or flaky. | `e2e/live-ai.live.spec.ts` — both `@live-ai` journeys; the `live-ai-chromium` project gate | — | — | Yes |
 | 12.6 | Assertions prove persistence by reload/revisit rather than immediate DOM state alone. | Persistence scenarios mapped throughout issues 01–09, 13, and 18 | Yes | Yes | Yes |
 | 12.7 | Reproducible commands install browsers, prepare the stack, run deterministic/live suites, and retain one video per result plus failure diagnostics. | `package.json`; `playwright.config.ts`; `scripts/e2e.mjs` | Yes | Yes | Yes |
-| 12.8 | Ignored credentials and retained artifacts are demonstrably safe before upload. | `scripts/e2e-artifacts.test.mjs` — `quarantines plain and compressed artifacts containing a credential`; `quarantines derived and opaque tokens while preserving public E2E handles`; `scans and removes unsafe managed output despite test and cleanup failures`; `.github/workflows/e2e.yml` standalone gated verification | Yes | Yes | Yes |
+| 12.8 | Ignored credentials and retained artifacts are demonstrably safe before upload. | `scripts/e2e-runner.test.mjs` — `keeps configured secrets out of the browser test environment`; `scripts/e2e-artifacts.test.mjs` — `quarantines plain and compressed artifacts containing a credential`; `streams large artifact files in bounded chunks and matches across chunk boundaries`; `detects a derived JWT that spans many small streaming chunks`; `fails closed on an oversized dotted token component without buffering it whole`; `quarantines a ZIP whose declared entry exceeds the bounded inspection policy`; `quarantines derived and opaque tokens while preserving public E2E handles`; `scans and removes unsafe managed output despite test and cleanup failures`; `.github/workflows/e2e.yml` standalone gated verification | Yes | Yes | Yes |
 | 12.9 | Agent rules require inventory and deterministic coverage for user-visible behavior and honest run reporting. | `AGENTS.md` Playwright system-test rules | Yes | Yes | — |
 | 12.10 | CI starts clean deterministic projects, retains verified failure artifacts, and gates live AI explicitly. | `.github/workflows/e2e.yml` deterministic and live-AI jobs | Yes | Yes | Yes |
 | 12.11 | Setup and troubleshooting documentation is reproducible for contributors and agents. | `docs/testing/playwright.md` | Yes | Yes | Yes |
 | 12.12 | Complete deterministic projects retain exactly one independently reportable video per result. | `playwright.config.ts` (`video: "on"`); `scripts/e2e-artifacts.test.mjs` — `resets every managed result target without deleting artifact-root siblings` | Yes | Yes | — |
-| 12.13 | Only the active tab/dialog state is exposed, modal background dashboard/navigation controls leave the accessibility tree, and composer status is not exposed twice. | `frontend/src/app/layout/AppTabShell.test.ts` — `exposes only the route's active tab panel`; `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; `shows parsing and saving rows in the target meal`; `edits and resubmits a failed description as a new parse attempt`; `e2e/logging.spec.ts` — `shows the grouped receipt and repairs an addition with Edit and Undo` | Yes | Yes | — |
+| 12.13 | Only the active tab/dialog state is exposed, focus enters and remains cyclically contained in the dialog, modal background dashboard/navigation controls leave the accessibility tree, and composer status is not exposed twice. | `frontend/src/app/layout/AppTabShell.test.ts` — `exposes only the route's active tab panel`; `frontend/src/app/components/FoodEntryEditor.test.ts` — `uses a mobile sheet, focuses a non-text control, and progressively reveals the schedule`; `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; `shows parsing and saving rows in the target meal`; `edits and resubmits a failed description as a new parse attempt`; `e2e/logging.spec.ts` — `shows the grouped receipt and repairs an addition with Edit and Undo` | Yes | Yes | — |
 
 ## Issue 13 — AI correction is the primary entry editor
 
@@ -221,6 +221,30 @@ controls.
 | 18.5 | Keyboard/touch/assistive interactions remain focused and do not block unrelated submissions. | Both new issue-18 `e2e/composer.spec.ts` scenarios above | Yes | Yes | — |
 | 18.6 | Desktop/mobile cover parse/save retry, edit success, cancellation, exact text, focus, and reload persistence. | The existing retry scenario and both new issue-18 scenarios above | Yes | Yes | — |
 
+## Issue 20 — Implement the approved adaptive desktop UI
+
+The Issue 20 scenarios below exercise the implemented adaptive workspace. The
+required responsive matrix is
+390×844 compact mobile, 900×1024 tablet, 1280×720 desktop, and 1440×900 wide
+desktop. Each scenario must run in the applicable deterministic desktop/mobile
+projects against the running frontend, backend, and isolated PostgreSQL database,
+without mocked application HTTP APIs in the browser.
+
+Breakpoint proof additionally exercises the compact/desktop transition at
+`767/768`. The resize journey must preserve route, selected date and meal,
+draft, suggestions, pending/failure work, receipts, editor draft/selection,
+History selection/scroll/duplication context, and Undo while asserting that the
+resize-only window makes no day, history, parse, suggestion, or save request.
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 20.1 | Production layout, components, and responsive state follow the approved issue 19 architecture without introducing a second desktop-only implementation of core journeys. | `e2e/adaptive-workspace.spec.ts` — `preserves the logging session while crossing the compact and continuous-ledger workspace` crosses `767/768` in both browser projects, preserving the selected day, selected meal, draft, and sole semantic composer surface while asserting zero resize-caused application requests. | Yes | Yes | — |
+| 20.2 | Desktop uses available width intentionally and keeps the nutrition summary useful while the composer is active. | `e2e/adaptive-workspace.spec.ts` — `renders one desktop header row with the visible composer and continuous ledger` verifies the compact kcal/protein/carbs/fat/fiber summary and date navigator occupy one contained physical row with no document overflow, the composer is already visible, all four ledger meals expose Add, and the compact sheet is absent. | Yes | Yes | — |
+| 20.3 | Composer, suggestions, compact receipt summary, pending/failure feedback, meal rows, editor, date navigation, History, and whole-meal duplication remain coherent at every supported breakpoint. | `e2e/adaptive-workspace.spec.ts` — `keeps concurrent pending descriptions ordered and supports the newest group's snackbar Undo` verifies desktop submission order, in-place saved rows, the newest four-second acknowledgement, hover pause, and group-specific Undo. Canonical coverage remains in `ai-correction.spec.ts`, `history.spec.ts`, `meal-duplication.spec.ts`, `suggestions.spec.ts`, and `date-navigation.spec.ts` in both projects. | Yes | Yes | — |
+| 20.4 | Existing mobile journeys retain their established action counts, focus behavior, keyboard-safe layout, and touch targets unless an approved design explicitly improves them. | `e2e/adaptive-workspace.spec.ts` — `preserves the compact mobile composer sheet and meal presentation` verifies the desktop header is absent, the established Log food trigger opens the focused compact sheet, Escape closes it, and mobile meal presentation remains. It extends the existing canonical composer, suggestion, and shared-schedule journeys. | Yes | Yes | — |
+| 20.5 | Loading, empty, success, failure, retry, Edit, Delete, Undo, and long localized content states have no clipping, overlap, or inaccessible off-screen controls. | `e2e/adaptive-workspace.spec.ts` — `keeps a failed description in its desktop ledger row with recovery actions`; concurrent pending/snackbar scenario above; `ai-correction.spec.ts` desktop inline-editor journeys; `composer.spec.ts` long-burst/retry journeys; and `date-navigation.spec.ts` — `fits localized dates in the one-row desktop journal header`. | Yes | Yes | — |
+| 20.6 | The scenario inventory is updated and deterministic Playwright coverage exercises every affected journey at representative desktop and mobile sizes; the complete suite passes. | The five `e2e/adaptive-workspace.spec.ts` scenarios, the localized desktop-header scenario, and the canonical cross-journey specs run against the real frontend, backend, and isolated PostgreSQL stack. Completion evidence is recorded in issue 20 after the final frozen-tree run and artifact verification. | Yes | Yes | — |
+
 ## Issue 21 — Redesign dashboard date navigation
 
 | AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
@@ -230,7 +254,7 @@ controls.
 | 21.3 | Today is exposed only off today, returns in one action, and its reserved slot prevents layout shift. | `e2e/date-navigation.spec.ts` — `keeps keyboard focus, announces one selected day, and returns to Today without shifting`; `returns directly to today from another date` | Yes | Yes | — |
 | 21.4 | Activating the selected date opens the shared Date input for direct navigation. | `e2e/date-navigation.spec.ts` — `directly selects a date across a month and year boundary with destination labels`; `frontend/src/app/components/DateNavigator.test.ts` — `opens the shared date input from the selected date for direct navigation`; `keeps direct navigation open and reports an invalid cleared date` | Yes | Yes | — |
 | 21.5 | Previous and Next names include destination dates, and one polite live region announces the selected day. | `e2e/date-navigation.spec.ts` — `directly selects a date across a month and year boundary with destination labels`; `keeps keyboard focus, announces one selected day, and returns to Today without shifting` | Yes | Yes | — |
-| 21.6 | Long Russian, Polish, and Tatar dates remain contained at 320, 390, and 430 CSS pixels. | `e2e/date-navigation.spec.ts` — `contains long Russian Polish and Tatar dates at 320 390 and 430 pixels` | Yes | Yes | — |
+| 21.6 | Long Russian, Polish, and Tatar dates remain contained at 320, 390, and 430 CSS pixels and fit the approved desktop layout without clipping or excessive empty space. | `e2e/date-navigation.spec.ts` — `contains long Russian Polish and Tatar dates at 320 390 and 430 pixels`; `fits localized dates in the one-row desktop journal header` verifies 768×900, 900×1024, 1280×720, and 1440×900 with nutrition before the right-aligned navigator, inline off-today action, one-row geometry, containment, and no duplicate summary. | Yes | Yes | — |
 | 21.7 | Today, adjacent navigation, direct selection, month/year boundaries, locale widths, keyboard focus, announcements, and one-action return are deterministic on desktop and mobile. | All Issue 21 `e2e/date-navigation.spec.ts` scenarios above | Yes | Yes | — |
 
 ## Issue 22 — Slow the typewriter suggestion cadence
@@ -243,6 +267,16 @@ controls.
 | 22.4 | User text wins immediately, and opening, closing, and submitting do not reveal stale characters. | `e2e/composer.spec.ts` — `keeps the label stable and the placeholder coherent with reduced motion` | Yes | Yes | — |
 | 22.5 | Reduced motion renders one complete stable example while the accessible input label stays fixed. | `frontend/src/app/hooks/useTypewriterPlaceholder.test.ts` — `shows one complete suggestion without animation when motion is reduced`; `e2e/composer.spec.ts` — `keeps the label stable and the placeholder coherent with reduced motion` | Yes | Yes | — |
 | 22.6 | Desktop and mobile cover the stable label and reduced-motion behavior. | `e2e/composer.spec.ts` — `keeps the label stable and the placeholder coherent with reduced motion` | Yes | Yes | — |
+
+## Issue 23 — Merge historical suggestions by meal slug
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| 23.1 | Suggestions sharing the same non-empty meal slug appear once. | `e2e/suggestions.spec.ts` — `merges shared-slug suggestions and keeps the highest-ranked representative`; `backend/src/routes/food-log.test.ts` — `keeps the highest-ranked configuration per non-empty slug while null slugs stay unique` | Yes | Yes | — |
+| 23.2 | The first, highest-ranked exact configuration remains the representative in candidate order, preserving its stored values and usage metadata without aggregation. | `e2e/suggestions.spec.ts` — `merges shared-slug suggestions and keeps the highest-ranked representative`; `backend/src/routes/food-log.test.ts` — `keeps the highest-ranked configuration per non-empty slug while null slugs stay unique` | Yes | Yes | — |
+| 23.3 | Null- and empty-slug candidates remain individually unique, and empty stored slugs are omitted from the response. | `e2e/suggestions.spec.ts` — `merges shared-slug suggestions and keeps the highest-ranked representative` covers distinct null-slug results; `backend/src/routes/food-log.test.ts` — `keeps the highest-ranked configuration per non-empty slug while null slugs stay unique`; `treats empty slugs as missing and keeps those suggestions individually unique` | Yes | Yes | — |
+| 23.4 | Filtering is limited to the repository's requested ranked candidate set, with no backfill beyond `limit`, so merging may return fewer items. | `backend/src/routes/food-log.test.ts` — `filters only the requested ranked candidate set without backfilling after a slug merge` | Yes | Yes | — |
+| 23.5 | Contracts and deterministic backend plus desktop/mobile browser coverage document and verify the rule, including Issue 23's supersession of Issue 06 only for shared non-empty slugs. | `contracts/food-log.ts` historical-suggestion contract documentation; all three Issue 23 `backend/src/routes/food-log.test.ts` scenarios above; `e2e/suggestions.spec.ts` — `merges shared-slug suggestions and keeps the highest-ranked representative`; Issue 06.2 inventory coverage above | Yes | Yes | — |
 
 ## Required state-shape coverage
 

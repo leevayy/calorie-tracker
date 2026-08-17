@@ -9,6 +9,7 @@ import {
   type E2ESetupSession,
   type E2ETestUser,
 } from "./support/fixtures";
+import { usesDesktopWorkspace } from "./support/adaptiveComposer";
 
 type ApiFoodEntry = {
   id: string;
@@ -163,11 +164,20 @@ test.describe("Authorization boundaries", () => {
 
     await signOutThroughVisibleUi(page);
     session = await loginThroughSetup(page, owner);
-    await expect(page.getByRole("button", { name: /^Breakfast\b/ })).toContainText(
-      "410\u00a0kcal",
-    );
-    await page.getByRole("button", { name: /^Breakfast\b/ }).click();
-    await expect(page.getByRole("button", { name: new RegExp(`^${ownerName}\\b`) })).toBeVisible();
+    if (usesDesktopWorkspace(page)) {
+      const breakfast = page.getByRole("region", { name: "Breakfast", exact: true });
+      const ownerRow = breakfast.getByRole("row").filter({ hasText: ownerName });
+      await expect(ownerRow).toContainText(
+        "410\u00a0kcal",
+      );
+      await expect(ownerRow).toBeVisible();
+    } else {
+      await expect(page.getByRole("button", { name: /^Breakfast\b/ })).toContainText(
+        "410\u00a0kcal",
+      );
+      await page.getByRole("button", { name: /^Breakfast\b/ }).click();
+      await expect(page.getByRole("button", { name: new RegExp(`^${ownerName}\\b`) })).toBeVisible();
+    }
 
     const ownerDay = await requestThroughSession<ApiDayLog>(session, "GET", `/api/v1/days/${day}`);
     expect(ownerDay.status).toBe(200);

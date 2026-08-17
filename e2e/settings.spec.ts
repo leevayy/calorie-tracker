@@ -3,6 +3,10 @@ import {
   openSettingsThroughVisibleUi,
   test,
 } from "./support/fixtures";
+import {
+  openAdaptiveFoodComposer,
+  usesDesktopWorkspace,
+} from "./support/adaptiveComposer";
 
 test.describe("Supported profile settings", () => {
   test("updates supported profile fields and language after reload", async ({
@@ -38,7 +42,10 @@ test.describe("Supported profile settings", () => {
     await expect(page.getByRole("combobox", { name: /assistant model/i })).toHaveCount(0);
     await expect(page.getByText(/tip vibe/i)).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Calorie Tracker" }).click();
+    await page.getByRole("button", {
+      name: usesDesktopWorkspace(page) ? "Today" : "Calorie Tracker",
+      exact: true,
+    }).click();
     await expect(page).toHaveURL(/\/app$/);
     await page.reload();
     await expect(page.getByText(/^Tip$/i)).toHaveCount(0);
@@ -54,7 +61,10 @@ test.describe("Supported profile settings", () => {
     });
 
     await page.reload();
-    await expect(page.getByRole("button", { name: "Calorie Tracker" })).toHaveAttribute(
+    await expect(page.getByRole("button", {
+      name: usesDesktopWorkspace(page) ? "Today" : "Calorie Tracker",
+      exact: true,
+    })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -66,17 +76,24 @@ test.describe("Supported profile settings", () => {
   test("keeps auth logging totals and history working without coaching", async ({
     authenticatedPage: page,
   }) => {
-    await page.getByRole("button", { name: "Log food" }).click();
-    const composer = page.getByRole("combobox", { name: "Log food" });
+    const composer = await openAdaptiveFoodComposer(page);
     await composer.fill("A deterministic oatmeal bowl");
     await composer.press("Enter");
-    await expect(page.getByText("Added 1", { exact: true })).toBeVisible();
+    await expect(page.getByText(usesDesktopWorkspace(page) ? "Added 1 food" : "Added 1", {
+      exact: true,
+    })).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(
-      page.getByRole("button", {
-        name: /^(Breakfast|Lunch|Dinner|Snack)\b.*320\s+kcal/,
-      }),
-    ).toBeVisible();
+    if (usesDesktopWorkspace(page)) {
+      await expect(page.getByRole("row").filter({ hasText: "E2E oatmeal" })).toContainText(
+        "320\u00a0kcal",
+      );
+    } else {
+      await expect(
+        page.getByRole("button", {
+          name: /^(Breakfast|Lunch|Dinner|Snack)\b.*320\s+kcal/,
+        }),
+      ).toBeVisible();
+    }
 
     await page.getByRole("button", { name: "History" }).click();
     await expect(page).toHaveURL(/\/history$/);
@@ -93,7 +110,10 @@ test.describe("Supported profile settings", () => {
     const settingsText = await page.locator("body").innerText();
     expect(settingsText).not.toMatch(/tip vibe|daily advice|assistant model|ai model/i);
 
-    await page.getByRole("button", { name: "Calorie Tracker" }).click();
+    await page.getByRole("button", {
+      name: usesDesktopWorkspace(page) ? "Today" : "Calorie Tracker",
+      exact: true,
+    }).click();
     await expect(page).toHaveURL(/\/app$/);
     const dashboardText = await page.locator("body").innerText();
     expect(dashboardText).not.toMatch(/tip vibe|daily advice|generate a new tip|assistant model/i);

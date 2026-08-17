@@ -1,10 +1,12 @@
 import {
   expect,
+  fillVisibleAuthFields,
   isolatedTestUser,
   loginThroughVisibleUi,
   openSettingsThroughVisibleUi,
   test,
 } from "./support/fixtures";
+import { usesDesktopWorkspace } from "./support/adaptiveComposer";
 
 test.describe("Authentication", () => {
   test("signs up, signs in, persists the session, and signs out", async ({
@@ -16,16 +18,19 @@ test.describe("Authentication", () => {
 
     await page.goto("/");
     await page.getByRole("button", { name: "Don't have an account? Sign up" }).click();
-    await page.getByLabel("Email").fill(user.email);
-    await page.getByLabel("Password").fill(user.password);
+    await fillVisibleAuthFields(page, user);
     await page.getByRole("button", { name: "Sign up" }).click();
     await expect(page).toHaveURL(/\/app$/);
 
     await page.reload();
     await expect(page).toHaveURL(/\/app$/);
     await expect(
-      page.getByRole("button", { name: "Calorie Tracker" }),
+      page.getByRole("button", { name: usesDesktopWorkspace(page) ? "Today" : "Calorie Tracker" }),
     ).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("button", { name: "Account", exact: true })).toHaveAttribute(
+      "title",
+      user.email,
+    );
 
     await openSettingsThroughVisibleUi(page);
     await page.getByRole("button", { name: "Sign out" }).click();
@@ -50,8 +55,7 @@ test.describe("Authentication", () => {
 
     const emailInput = page.getByLabel("Email");
     const passwordInput = page.getByLabel("Password");
-    await emailInput.fill(isolatedUser.email);
-    await passwordInput.fill("short");
+    await fillVisibleAuthFields(page, { email: isolatedUser.email, password: "short" });
     await page.getByRole("button", { name: "Sign up" }).click();
 
     expect(
@@ -62,6 +66,7 @@ test.describe("Authentication", () => {
     await expect(page).toHaveURL(/\/$/);
 
     await page.getByRole("button", { name: "Already have an account? Sign in" }).click();
+    await expect(passwordInput).toHaveAttribute("type", "password");
     await passwordInput.fill("definitely-wrong-password");
     await page.getByRole("button", { name: "Sign in" }).click();
 

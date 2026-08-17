@@ -43,7 +43,11 @@ function entryRecord(
     fats: input.fats,
     fiber: input.fiber,
     portion: input.portion ?? null,
-    mealSlug: input.mealSlug ? (sanitizeMealSlug(input.mealSlug) ?? fallbackSlug) : fallbackSlug,
+    mealSlug: input.mealSlug === null
+      ? null
+      : input.mealSlug
+        ? (sanitizeMealSlug(input.mealSlug) ?? fallbackSlug)
+        : fallbackSlug,
     createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, entryIndex)),
     deletedAt: null,
   };
