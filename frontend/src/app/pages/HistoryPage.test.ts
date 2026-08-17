@@ -247,6 +247,12 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("HistoryPage day detail", () => {
+  it("leaves responsive width ownership to the application shell", () => {
+    const { container } = render(createElement(HistoryPage));
+
+    expect(container.firstElementChild?.className).not.toContain("max-w-md");
+  });
+
   it("opens an itemized day, edits an entry, and shows the reconciled history aggregate", async () => {
     render(createElement(HistoryPage));
 

@@ -219,4 +219,29 @@ test.describe("Approved adaptive food journal", () => {
     await expect(sheet).toBeHidden();
     await expect(page.getByRole("button", { name: /^Breakfast\b/ })).toBeVisible();
   });
+
+  test("lets History use the desktop workspace while the mobile shell stays compact", async ({
+    authenticatedPage: page,
+  }) => {
+    await page.getByRole("button", { name: "History", exact: true }).click();
+    await expect(page).toHaveURL(/\/history$/);
+
+    const historyPage = page.getByTestId("history-page");
+    await expect(historyPage).toBeVisible();
+    const geometry = await historyPage.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        width: rect.width,
+        viewportWidth: document.documentElement.clientWidth,
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    });
+
+    expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+    if (usesDesktopWorkspace(page)) {
+      expect(geometry.width).toBeGreaterThan(448);
+    } else {
+      expect(geometry.width).toBeLessThanOrEqual(448);
+    }
+  });
 });

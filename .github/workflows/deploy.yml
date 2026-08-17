@@ -94,16 +94,23 @@ jobs:
           script: |
             set -euo pipefail
             cd "${VM_DEPLOY_PATH:-/opt/calorie-tracker}"
-            # Ensure `git pull` works in non-interactive CI by authenticating to GitHub over HTTPS.
-            # Without this, the VM may have `origin` set to https://... which requires username/password.
-            ORIGIN_URL="$(git remote get-url origin || true)"
+            # Authenticate only for the fetch, then restore the server's original remote even on failure.
+            ORIGIN_URL="$(git remote get-url origin)"
+            SYNC_SCRIPT=""
+            restore_deploy_remote() {
+              if [ -n "${SYNC_SCRIPT}" ]; then rm -f "${SYNC_SCRIPT}"; fi
+              git remote set-url origin "${ORIGIN_URL}" >/dev/null 2>&1 || true
+            }
+            trap restore_deploy_remote EXIT
             git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
             git fetch origin main
-            git checkout main
-            git pull origin main
-            if [ -n "${ORIGIN_URL}" ]; then
-              git remote set-url origin "${ORIGIN_URL}"
-            fi
+            # Deploy exactly the pushed release. Preserve unexpected VM edits in a stash and
+            # preserve divergent VM commits on a deploy-backup/* branch before resetting main.
+            SYNC_SCRIPT="$(mktemp)"
+            git show origin/main:scripts/deploy-checkout-sync.sh > "${SYNC_SCRIPT}"
+            sh "${SYNC_SCRIPT}" origin/main
+            restore_deploy_remote
+            trap - EXIT
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
             # Wait for api entrypoint (db:migrate + server) so fiber column exists before backfill.
             sleep 15

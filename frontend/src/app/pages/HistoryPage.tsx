@@ -72,7 +72,10 @@ const HistoryPage = observer(function HistoryPage() {
   const isEmptySuccess = history.fetchState === "success" && chartData.length === 0;
 
   return (
-    <div className="relative mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
+    <div
+      data-testid="history-page"
+      className="relative mx-auto flex min-h-0 w-full flex-1 flex-col bg-background"
+    >
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <AsyncSection
           fetchState={history.fetchState}
