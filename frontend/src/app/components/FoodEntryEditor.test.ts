@@ -43,7 +43,7 @@ function openSchedule() {
 }
 
 describe("FoodEntryEditor", () => {
-  it("uses a mobile sheet, leaves focus alone, and progressively reveals the schedule", async () => {
+  it("uses a mobile sheet, focuses a non-text control, and progressively reveals the schedule", async () => {
     render(
       createElement(FoodEntryEditor, {
         entry,
@@ -59,6 +59,7 @@ describe("FoodEntryEditor", () => {
     const scheduleTrigger = screen.getByRole("button", {
       name: "entryEditor.day · entryEditor.meal",
     });
+    const editFields = screen.getByRole("button", { name: "entryEditor.editFields" });
 
     expect(dialog.className).toContain("bottom-0");
     expect(dialog.className).toContain("env(safe-area-inset-top,0px)");
@@ -68,6 +69,8 @@ describe("FoodEntryEditor", () => {
       dialog.querySelector('[data-slot="dialog-description"]')?.textContent,
     ).toContain("220\u00a0history.calShort");
     expect(instruction.parentElement?.className).toContain("space-y-2");
+    await waitFor(() => expect(document.activeElement).toBe(editFields));
+    expect(document.activeElement).not.toBe(instruction);
     expect(scheduleTrigger.getAttribute("aria-label")).toBe(
       "entryEditor.day · entryEditor.meal",
     );

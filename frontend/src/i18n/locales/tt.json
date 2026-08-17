@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Баш тарту"
+  },
   "auth": {
     "title": "Калорияләр исәбе",
     "signInSubtitle": "Хисабыгызга керегез",
@@ -81,6 +84,10 @@
       "berryYogurt": "Җиләкле йогурт"
     },
     "addToMeal": "Өстәргә",
+    "addFood": "Өстәү",
+    "addMealPrefix": "{{meal}} өчен ашаганым: ",
+    "desktopFoodPrompt": "Нәрсә ашадыгыз?",
+    "foodAndPortion": "Азык / порция",
     "parsingFood": "Текстны анализлыйбыз…",
     "recentLogged": "Әлеге атнада иң еш",
     "historicalSuggestions": "Элек язылган",
@@ -103,6 +110,10 @@
     "editingFailedSubmission": "Хаталы тасвирламаны үзгәртү",
     "cancelFailedSubmissionEdit": "Үзгәртүдән баш тарту",
     "addedReceipt": "Өстәлде: {{count}}",
+    "desktopAddedFoods_one": "{{count}} ризык өстәлде",
+    "desktopAddedFoods_few": "{{count}} ризык өстәлде",
+    "desktopAddedFoods_many": "{{count}} ризык өстәлде",
+    "desktopAddedFoods_other": "{{count}} ризык өстәлде",
     "loggingActivitySummary_one": "Теркәү активлыгы · {{count}} төркем теркәлде · {{foods}}",
     "loggingActivitySummary_few": "Теркәү активлыгы · {{count}} төркем теркәлде · {{foods}}",
     "loggingActivitySummary_many": "Теркәү активлыгы · {{count}} төркем теркәлде · {{foods}}",
@@ -121,6 +132,9 @@
     "backToAi": "ЯИгә кайту",
     "instruction": "Нәрсәне үзгәртергә?",
     "instructionPlaceholder": "Мәсәлән: калорияләрне икеләтә арттыр",
+    "clearInstruction": "Күрсәтмәне чистарту",
+    "sendAndSave": "Җибәрү һәм саклау",
+    "editEntry": "{{name}} үзгәртү",
     "previewCorrection": "Төзәтүне карау",
     "proposedResult": "Тәкъдим ителгән нәтиҗә",
     "currentResult": "Хәзерге кыйммәтләр",

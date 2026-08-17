@@ -1,5 +1,5 @@
 import { createElement, useState } from "react";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import i18next from "i18next";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -24,6 +24,7 @@ async function renderNavigator(
   language = "en",
   initialSelectedDay = "2026-08-15",
   today = "2026-08-15",
+  variant: "default" | "compact" = "default",
 ) {
   const i18n = i18next.createInstance();
   await i18n.init({ resources, lng: language, fallbackLng: "en" });
@@ -34,6 +35,7 @@ async function renderNavigator(
     return createElement(DateNavigator, {
       selectedDay,
       today,
+      variant,
       onChange: (day: string) => {
         onChange(day);
         setSelectedDay(day);
@@ -157,6 +159,78 @@ describe("DateNavigator", () => {
     expect(screen.getByRole("status").textContent).toBe(
       "Selected date: Sunday, August 16, 2026",
     );
+  });
+
+  it("renders the compact variant in one row with a localized Today label", async () => {
+    await renderNavigator("ru", "2026-08-15", "2026-08-15", "compact");
+
+    const navigation = screen.getByRole("group", { name: "Дата записи" });
+    const selected = within(navigation).getByRole("button", {
+      name: "Выбрать дату, сейчас Суббота, 15 августа 2026 г.",
+    });
+
+    expect(selected.textContent).toBe("Сегодня");
+    expect(navigation.parentElement?.className).toContain("items-stretch");
+    expect(navigation.parentElement?.className).not.toContain("flex-col");
+    expect(document.querySelector('[data-slot="date-navigator-today"]')).toBeNull();
+  });
+
+  it("returns to today from the compact row in one action", async () => {
+    const { onChange } = await renderNavigator(
+      "en",
+      "2026-08-14",
+      "2026-08-15",
+      "compact",
+    );
+
+    const todayAction = screen.getByRole("button", { name: "Today", exact: true });
+    expect(todayAction.closest('[data-slot="date-navigator-today"]')).toBeTruthy();
+    fireEvent.click(todayAction);
+
+    expect(onChange).toHaveBeenLastCalledWith("2026-08-15");
+    expect(screen.queryByRole("button", { name: "Today", exact: true })).toBeNull();
+  });
+
+  it("restores keyboard focus to a compact arrow after its controlled date change", async () => {
+    await renderNavigator("en", "2039-12-31", "2026-08-15", "compact");
+    const navigation = screen.getByRole("group", { name: "Log date" });
+    const next = within(navigation).getByRole("button", {
+      name: "Next day, Sunday, January 1, 2040",
+    });
+
+    next.focus();
+    fireEvent.click(next);
+
+    await waitFor(() => expect(document.activeElement).toBe(
+      within(navigation).getByRole("button", {
+        name: "Next day, Monday, January 2, 2040",
+      }),
+    ));
+  });
+
+  it("keeps compact previous, next, and direct-date navigation working", async () => {
+    const { onChange } = await renderNavigator(
+      "en",
+      "2026-08-14",
+      "2026-08-15",
+      "compact",
+    );
+    const navigation = screen.getByRole("group", { name: "Log date" });
+    const selected = within(navigation).getByRole("button", {
+      name: "Choose date, currently Friday, August 14, 2026",
+    });
+
+    expect(selected.textContent).toBe("Yesterday");
+    expect(selected.className).toContain("whitespace-nowrap");
+    fireEvent.click(within(navigation).getByRole("button", {
+      name: "Next day, Saturday, August 15, 2026",
+    }));
+    expect(onChange).toHaveBeenLastCalledWith("2026-08-15");
+    expect(selected.textContent).toBe("Today");
+
+    fireEvent.click(selected);
+    const dateInput = screen.getByLabelText("Date") as HTMLInputElement;
+    expect(dateInput.value).toBe("2026-08-15");
   });
 
   it.each([

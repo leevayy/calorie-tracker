@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Бас тарту"
+  },
   "auth": {
     "title": "Калория трекері",
     "signInSubtitle": "Есептік жазбаңызға кіріңіз",
@@ -81,6 +84,10 @@
       "berryYogurt": "Жидекті йогурт"
     },
     "addToMeal": "Қосу",
+    "addFood": "Қосу",
+    "addMealPrefix": "{{meal}} үшін жегенім: ",
+    "desktopFoodPrompt": "Не жедіңіз?",
+    "foodAndPortion": "Тағам / порция",
     "parsingFood": "Тамақты түсінеміз…",
     "recentLogged": "Осы аптада жиі жазылған",
     "historicalSuggestions": "Бұрын жазылған",
@@ -103,6 +110,10 @@
     "editingFailedSubmission": "Сәтсіз сипаттама өңделуде",
     "cancelFailedSubmissionEdit": "Өңдеуден бас тарту",
     "addedReceipt": "Қосылды: {{count}}",
+    "desktopAddedFoods_one": "{{count}} өнім қосылды",
+    "desktopAddedFoods_few": "{{count}} өнім қосылды",
+    "desktopAddedFoods_many": "{{count}} өнім қосылды",
+    "desktopAddedFoods_other": "{{count}} өнім қосылды",
     "loggingActivitySummary_one": "Жазу белсенділігі · {{count}} топ жазылды · {{foods}}",
     "loggingActivitySummary_few": "Жазу белсенділігі · {{count}} топ жазылды · {{foods}}",
     "loggingActivitySummary_many": "Жазу белсенділігі · {{count}} топ жазылды · {{foods}}",
@@ -121,6 +132,9 @@
     "backToAi": "ЖИ-ге оралу",
     "instruction": "Нені өзгерту керек?",
     "instructionPlaceholder": "Мысалы: калорияны екі есе арттыр",
+    "clearInstruction": "Нұсқауды тазалау",
+    "sendAndSave": "Жіберу және сақтау",
+    "editEntry": "{{name}} өңдеу",
     "previewCorrection": "Түзетуді алдын ала көру",
     "proposedResult": "Ұсынылған нәтиже",
     "currentResult": "Ағымдағы мәндер",

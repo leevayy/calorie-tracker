@@ -55,6 +55,7 @@ export function MealSection({
     >
       <button
         type="button"
+        aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
         className={cn(
           "flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-2 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

@@ -1,6 +1,6 @@
 import type { FoodEntryResponse, UpdateFoodEntryBody } from "@contracts/food-log";
 import type { FormEvent, KeyboardEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PencilLine, Sparkles } from "lucide-react";
 import { apiCorrectFoodEntry } from "@/api/aiFood";
@@ -164,6 +164,7 @@ export function FoodEntryEditor({
   const [hasProposal, setHasProposal] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const initialFocusRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!entry) return;
@@ -288,7 +289,17 @@ export function FoodEntryEditor({
     <Dialog open={entry != null} onOpenChange={(open) => !open && !editorBusy && onClose()}>
       <DialogContent
         className="bottom-0 left-0 top-auto flex max-h-[calc(100dvh-max(0.5rem,env(safe-area-inset-top,0px)))] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-b-none rounded-t-2xl p-0 sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl"
-        onOpenAutoFocus={(event) => event.preventDefault()}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          const preferredTarget = initialFocusRef.current;
+          const target =
+            preferredTarget && !preferredTarget.disabled
+              ? preferredTarget
+              : preferredTarget
+                  ?.closest('[role="dialog"]')
+                  ?.querySelector<HTMLButtonElement>('[data-slot="dialog-close"]');
+          target?.focus({ preventScroll: true });
+        }}
       >
         <DialogHeader className="shrink-0 gap-1 px-4 pb-1 pt-4 pr-14 sm:px-5 sm:pb-2 sm:pt-5 sm:pr-14">
           <DialogTitle className="line-clamp-2 break-words leading-snug">
@@ -303,6 +314,7 @@ export function FoodEntryEditor({
             ))}
           </DialogDescription>
           <Button
+            ref={initialFocusRef}
             type="button"
             size="sm"
             variant="ghost"

@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Anuluj"
+  },
   "auth": {
     "title": "Licznik kalorii",
     "signInSubtitle": "Zaloguj się na konto",
@@ -81,6 +84,10 @@
       "berryYogurt": "Jogurt z owocami"
     },
     "addToMeal": "Dodaj do",
+    "addFood": "Dodaj",
+    "addMealPrefix": "Na {{meal}} zjadłem(-am) ",
+    "desktopFoodPrompt": "Co zjadłeś(-aś)?",
+    "foodAndPortion": "Jedzenie / porcja",
     "parsingFood": "Analizujemy opis…",
     "recentLogged": "Najczęściej w tym tygodniu",
     "historicalSuggestions": "Poprzednio zapisane",
@@ -103,6 +110,10 @@
     "editingFailedSubmission": "Edycja nieudanego opisu",
     "cancelFailedSubmissionEdit": "Anuluj edycję",
     "addedReceipt": "Dodano: {{count}}",
+    "desktopAddedFoods_one": "Dodano {{count}} produkt",
+    "desktopAddedFoods_few": "Dodano {{count}} produkty",
+    "desktopAddedFoods_many": "Dodano {{count}} produktów",
+    "desktopAddedFoods_other": "Dodano {{count}} produktu",
     "loggingActivitySummary_one": "Aktywność zapisywania · Zapisano {{count}} grupę · {{foods}}",
     "loggingActivitySummary_few": "Aktywność zapisywania · Zapisano {{count}} grupy · {{foods}}",
     "loggingActivitySummary_many": "Aktywność zapisywania · Zapisano {{count}} grup · {{foods}}",
@@ -121,6 +132,9 @@
     "backToAi": "Wróć do AI",
     "instruction": "Co należy zmienić?",
     "instructionPlaceholder": "Na przykład: podwój kalorie",
+    "clearInstruction": "Wyczyść polecenie",
+    "sendAndSave": "Wyślij i zapisz",
+    "editEntry": "Edytuj {{name}}",
     "previewCorrection": "Podejrzyj korektę",
     "proposedResult": "Proponowany wynik",
     "currentResult": "Obecne wartości",

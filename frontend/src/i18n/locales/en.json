@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Cancel"
+  },
   "auth": {
     "title": "Calorie Tracker",
     "signInSubtitle": "Sign in to your account",
@@ -81,6 +84,10 @@
       "berryYogurt": "Yogurt with berries"
     },
     "addToMeal": "Add to",
+    "addFood": "Add",
+    "addMealPrefix": "For {{meal}} I ate ",
+    "desktopFoodPrompt": "What did you eat?",
+    "foodAndPortion": "Food / portion",
     "parsingFood": "Understanding your food…",
     "recentLogged": "Frequent this week",
     "historicalSuggestions": "Previous entries",
@@ -103,6 +110,10 @@
     "editingFailedSubmission": "Editing failed description",
     "cancelFailedSubmissionEdit": "Cancel edit",
     "addedReceipt": "Added {{count}}",
+    "desktopAddedFoods_one": "Added {{count}} food",
+    "desktopAddedFoods_few": "Added {{count}} foods",
+    "desktopAddedFoods_many": "Added {{count}} foods",
+    "desktopAddedFoods_other": "Added {{count}} foods",
     "loggingActivitySummary_one": "Logging activity · {{count}} group logged · {{foods}}",
     "loggingActivitySummary_few": "Logging activity · {{count}} groups logged · {{foods}}",
     "loggingActivitySummary_many": "Logging activity · {{count}} groups logged · {{foods}}",
@@ -121,6 +132,9 @@
     "backToAi": "Back to AI",
     "instruction": "What should change?",
     "instructionPlaceholder": "e.g. double the calories",
+    "clearInstruction": "Clear instruction",
+    "sendAndSave": "Send & save",
+    "editEntry": "Edit {{name}}",
     "previewCorrection": "Preview",
     "proposedResult": "Result",
     "currentResult": "Current saved values",

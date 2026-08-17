@@ -112,9 +112,25 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("MainPage reuse and dates", () => {
+  it("mounts only the desktop journal surface at the desktop breakpoint", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }) as unknown as MediaQueryList));
+
+    renderMainPage();
+
+    expect(screen.getByTestId("desktop-journal-header")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "main.previousDayTo" })).toHaveLength(1);
+    expect(screen.getByRole("combobox", { name: "main.logFoodPlaceholder" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "main.logFoodPlaceholder" })).toBeNull();
+  });
+
   it("shows the shared meal target with a clock-derived default", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 7, 15, 8, 30));

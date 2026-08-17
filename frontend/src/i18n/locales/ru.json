@@ -1,4 +1,7 @@
 {
+  "common": {
+    "cancel": "Отмена"
+  },
   "auth": {
     "title": "Трекер калорий",
     "signInSubtitle": "Войдите в аккаунт",
@@ -81,6 +84,10 @@
       "berryYogurt": "Йогурт с ягодами"
     },
     "addToMeal": "Добавить в",
+    "addFood": "Добавить",
+    "addMealPrefix": "На {{meal}} я съел(а) ",
+    "desktopFoodPrompt": "Что вы ели?",
+    "foodAndPortion": "Еда / порция",
     "parsingFood": "Разбираем описание…",
     "recentLogged": "Часто на этой неделе",
     "historicalSuggestions": "Из прошлых записей",
@@ -103,6 +110,10 @@
     "editingFailedSubmission": "Редактирование неудачного описания",
     "cancelFailedSubmissionEdit": "Отменить изменения",
     "addedReceipt": "Добавлено: {{count}}",
+    "desktopAddedFoods_one": "Добавлен {{count}} продукт",
+    "desktopAddedFoods_few": "Добавлено {{count}} продукта",
+    "desktopAddedFoods_many": "Добавлено {{count}} продуктов",
+    "desktopAddedFoods_other": "Добавлено {{count}} продукта",
     "loggingActivitySummary_one": "Активность записи · Записана {{count}} группа · {{foods}}",
     "loggingActivitySummary_few": "Активность записи · Записано {{count}} группы · {{foods}}",
     "loggingActivitySummary_many": "Активность записи · Записано {{count}} групп · {{foods}}",
@@ -121,6 +132,9 @@
     "backToAi": "Вернуться к ИИ",
     "instruction": "Что изменить?",
     "instructionPlaceholder": "Например: удвоить калории",
+    "clearInstruction": "Очистить инструкцию",
+    "sendAndSave": "Отправить и сохранить",
+    "editEntry": "Изменить {{name}}",
     "previewCorrection": "Превью",
     "proposedResult": "Результат",
     "currentResult": "Текущие значения",

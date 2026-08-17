@@ -16,11 +16,15 @@ import { AsyncSection } from "../components/AsyncSection";
 import { CaloriePieChart } from "../components/CaloriePieChart";
 import { DayMacrosLabels } from "../components/DayMacrosLabels";
 import { DateNavigator } from "../components/DateNavigator";
+import { DesktopFoodEntryEditor } from "../components/DesktopFoodEntryEditor";
+import { DesktopLoggingSnackbar } from "../components/DesktopLoggingSnackbar";
+import { DesktopLedgerHeader, DesktopMealSection } from "../components/DesktopMealSection";
 import { FoodEntryEditor } from "../components/FoodEntryEditor";
 import { MealSection } from "../components/MealSection";
 import { MealInput } from "../components/ScheduleInputs";
 import { useRequireAuth } from "../hooks/useRequireAuth";
 import { useTypewriterPlaceholder } from "../hooks/useTypewriterPlaceholder";
+import { useDesktopLayout } from "../hooks/useDesktopLayout";
 import { useAppTabChat } from "../context/AppTabChatContext";
 import { useBehavioralToday } from "./main/mainPageHooks";
 import {
@@ -51,6 +55,7 @@ import { coercePreferredLanguage } from "@/utils/preferredLanguage";
 import {
   formatLocalizedEnergy,
   formatLocalizedGrams,
+  formatLocalizedNumber,
   formatStandaloneCalendarDate,
 } from "@/utils/localeFormat";
 
@@ -136,6 +141,8 @@ const MainPage = observer(function MainPage() {
   }, [today]);
 
   const { chatOpen: chatExpanded, setChatOpen: setChatExpanded } = useAppTabChat();
+  const desktop = useDesktopLayout();
+  const mobileChatExpanded = !desktop && chatExpanded;
   const [chatInput, setChatInput] = useState("");
   const [composerMealTarget, setComposerMealTarget] = useState<MealType>(() =>
     defaultMealTypeForLocalTime(),
@@ -155,6 +162,7 @@ const MainPage = observer(function MainPage() {
     })),
   );
   const [loggingReceipts, setLoggingReceipts] = useState<LoggingReceipt[]>([]);
+  const [desktopSnackbarReceiptId, setDesktopSnackbarReceiptId] = useState<string | null>(null);
   const [receiptActivityOpen, setReceiptActivityOpen] = useState(true);
   const previousReceiptCountRef = useRef(0);
   const submissionIdRef = useRef(
@@ -183,6 +191,15 @@ const MainPage = observer(function MainPage() {
   const focusChatInput = useCallback(() => {
     expandedInputRef.current?.focus({ preventScroll: true });
   }, []);
+
+  const addForMeal = useCallback((mealType: MealType, mealLabel: string) => {
+    setComposerMealTarget(mealType);
+    composerMealTargetOverriddenRef.current = true;
+    setChatInput((current) => current.trim() ? current : t("main.addMealPrefix", {
+      meal: mealLabel.toLocaleLowerCase(language),
+    }));
+    window.setTimeout(focusChatInput, 0);
+  }, [focusChatInput, language, t]);
 
   useEffect(() => {
     void foodLog.dayRead.loadDay(selectedDay);
@@ -238,6 +255,7 @@ const MainPage = observer(function MainPage() {
       { id: submission.id, entries: result.entries },
       ...current,
     ]);
+    setDesktopSnackbarReceiptId(submission.id);
     focusChatInput();
   };
 
@@ -377,6 +395,14 @@ const MainPage = observer(function MainPage() {
     focusChatInput();
   };
 
+  const clearFailedSubmission = (submission: LoggingSubmission) => {
+    setLoggingSubmissions((current) =>
+      current.filter((candidate) => candidate.id !== submission.id),
+    );
+    if (failedSubmissionEdit?.submissionId === submission.id) cancelFailedSubmissionEdit();
+    focusChatInput();
+  };
+
   const cancelFailedSubmissionEdit = () => {
     if (!failedSubmissionEdit) return;
     handleChatInputChange(failedSubmissionEdit.previousInput);
@@ -495,6 +521,7 @@ const MainPage = observer(function MainPage() {
       setLoggingReceipts((current) =>
         current.filter((candidate) => candidate.id !== receipt.id),
       );
+      if (desktopSnackbarReceiptId === receipt.id) setDesktopSnackbarReceiptId(null);
     } finally {
       setUndoingReceiptId(null);
     }
@@ -561,6 +588,49 @@ const MainPage = observer(function MainPage() {
       );
     });
 
+  const desktopSubmissionRowsForMeal = (mealType: MealType) =>
+    loggingSubmissions.slice().reverse().flatMap((submission) => {
+      if (submission.phase === "failed") {
+        if (
+          submission.timing.defaultLogDay !== selectedDay ||
+          submission.timing.defaultMealType !== mealType
+        ) return [];
+        return [{
+          id: submission.id,
+          label: submission.text,
+          phase: "failed" as const,
+          errorLabel: t(submission.errorKey ?? "errors.unknown"),
+          onRetry: () => handleRetrySubmission(submission),
+          onEdit: () => beginFailedSubmissionEdit(submission),
+          onClear: () => clearFailedSubmission(submission),
+        }];
+      }
+      if (submission.phase === "parsing") {
+        if (
+          submission.timing.defaultLogDay !== selectedDay ||
+          submission.timing.defaultMealType !== mealType
+        ) return [];
+        return [{
+          id: submission.id,
+          label: submission.text,
+          phase: "parsing" as const,
+        }];
+      }
+      return submission.foods.flatMap((food, index) =>
+        food.day === selectedDay && food.mealType === mealType
+          ? [{
+              id: `${submission.id}-${index}`,
+              label: food.name,
+              phase: "saving" as const,
+            }]
+          : [],
+      );
+    });
+
+  const desktopSnackbarReceipt = desktopSnackbarReceiptId
+    ? loggingReceipts.find((receipt) => receipt.id === desktopSnackbarReceiptId) ?? null
+    : null;
+
   useEffect(() => {
     const { from, to } = weekRangeEndingOn(selectedDay);
     void foodLog.frequentWeekRead.load({ from, to, limit: CHAT_SUGGESTION_LIMIT });
@@ -600,8 +670,8 @@ const MainPage = observer(function MainPage() {
   return (
     <div
       className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background"
-      aria-hidden={chatExpanded || undefined}
-      inert={chatExpanded || undefined}
+      aria-hidden={mobileChatExpanded || undefined}
+      inert={mobileChatExpanded || undefined}
     >
       {profile.read.fetchState === "error" && profile.read.errorKey ? (
         <div className="px-4 pt-2">
@@ -624,14 +694,39 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4">
-        <div className="mb-4">
-          <DateNavigator
-            selectedDay={selectedDay}
-            today={today}
-            onChange={setSelectedDay}
-          />
-        </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4 md:px-8 md:pb-12 lg:px-10">
+        {!desktop ? (
+          <div className="mb-4">
+            <DateNavigator
+              selectedDay={selectedDay}
+              today={today}
+              onChange={setSelectedDay}
+            />
+          </div>
+        ) : null}
+        {desktop ? (
+          <header
+            className="flex min-h-16 items-center justify-between gap-2 border-b border-border/60"
+            data-testid="desktop-journal-header"
+          >
+            <div className="flex h-11 min-w-0 flex-nowrap items-center gap-3 whitespace-nowrap text-xs tabular-nums xl:gap-4">
+              {dayData ? (
+                <>
+                  <strong className="text-sm">
+                    {formatLocalizedNumber(dayData.totalCalories, language, { useGrouping: true })} / {formatLocalizedNumber(dayData.calorieGoal, language, { useGrouping: true })} {t("history.calShort")}
+                  </strong>
+                  {(() => {
+                    const totals = sumDayMacros(dayData);
+                    return <><span>{t("macros.proteinLetter")} <strong>{formatLocalizedGrams(totals.protein, language)}</strong></span><span>{t("macros.carbsLetter")} <strong>{formatLocalizedGrams(totals.carbs, language)}</strong></span><span>{t("macros.fatsLetter")} <strong>{formatLocalizedGrams(totals.fats, language)}</strong></span><span>{t("macros.fiberLetter")} <strong>{formatLocalizedGrams(totals.fiber, language)}</strong></span></>;
+                  })()}
+                </>
+              ) : (
+                <span className="text-muted-foreground" aria-hidden="true">—</span>
+              )}
+            </div>
+            <DateNavigator selectedDay={selectedDay} today={today} onChange={setSelectedDay} variant="compact" />
+          </header>
+        ) : null}
         <AsyncSection
           fetchState={dayFetch}
           errorKey={foodLog.dayRead.errorKey}
@@ -639,6 +734,71 @@ const MainPage = observer(function MainPage() {
         >
           {dayData ? (
             <>
+              {desktop ? (
+              <div className="mb-8">
+                <form onSubmit={(e) => void handleChatSubmit(e)} className="mt-2 flex min-w-0 gap-2">
+                  <Input
+                    ref={setExpandedInputRef}
+                    role="combobox"
+                    aria-label={t("main.logFoodPlaceholder")}
+                    aria-autocomplete="list"
+                    aria-expanded={historicalSuggestionsVisible}
+                    aria-controls={historicalSuggestionsVisible ? HISTORICAL_SUGGESTION_LIST_ID : undefined}
+                    aria-activedescendant={activeHistoricalSuggestion ? `${HISTORICAL_SUGGESTION_LIST_ID}-option-${activeHistoricalSuggestionIndex}` : undefined}
+                    placeholder={t("main.desktopFoodPrompt")}
+                    data-suggestion={foodPlaceholder.suggestion}
+                    data-typewriter-phase={foodPlaceholder.phase}
+                    value={chatInput}
+                    onChange={(e) => handleChatInputChange(e.target.value)}
+                    onKeyDown={handleChatInputKeyDown}
+                    className="min-w-0 flex-1"
+                  />
+                  <Button type="submit" size="icon" aria-label={t("main.sendFood")} disabled={!chatInput.trim()}><Send className="h-4 w-4" /></Button>
+                </form>
+                {failedSubmissionEdit ? (
+                  <div className="mt-2 flex min-h-10 items-center justify-between gap-3 rounded-xl bg-muted/35 px-3">
+                    <Text size="sm" variant="muted">{t("main.editingFailedSubmission")}</Text>
+                    <Button type="button" size="sm" variant="ghost" onClick={cancelFailedSubmissionEdit}>
+                      {t("main.cancelFailedSubmissionEdit")}
+                    </Button>
+                  </div>
+                ) : null}
+                {historicalSuggestionsVisible ? (
+                  <ul
+                    id={HISTORICAL_SUGGESTION_LIST_ID}
+                    role="listbox"
+                    aria-label={t("main.historicalSuggestions")}
+                    className="mt-2 overflow-hidden rounded-xl bg-muted/35"
+                    onPointerLeave={() => setActiveHistoricalSuggestionIndex(-1)}
+                  >
+                    {foodLog.historicalSuggestions.items.map((item, index) => (
+                      <li key={`${historicalSuggestionIdentity(item)}|desktop|${index}`}>
+                        <button
+                          id={`${HISTORICAL_SUGGESTION_LIST_ID}-option-${index}`}
+                          type="button"
+                          role="option"
+                          aria-selected={activeHistoricalSuggestionIndex === index}
+                          className="flex min-h-11 w-full items-center justify-between gap-4 px-4 text-left hover:bg-accent/70 aria-selected:bg-accent/70"
+                          onPointerMove={() => setActiveHistoricalSuggestionIndex(index)}
+                          onFocus={() => setActiveHistoricalSuggestionIndex(index)}
+                          onClick={() => handleHistoricalSuggestion(item)}
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate">{item.name}<span className="text-muted-foreground"> · {item.portion ?? t("main.portionNotRecorded")} · {formatLocalizedEnergy(item.calories, language, t("history.calShort"))}</span></span>
+                            <span className="block truncate text-xs tabular-nums text-muted-foreground">
+                              {t("macros.proteinLetter")} {formatLocalizedGrams(item.protein, language)} · {t("macros.carbsLetter")} {formatLocalizedGrams(item.carbs, language)} · {t("macros.fatsLetter")} {formatLocalizedGrams(item.fats, language)} · {t("macros.fiberLetter")} {formatLocalizedGrams(item.fiber, language)}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-right text-xs text-muted-foreground">
+                            {t("main.usedCount", { count: item.usageCount })}<br />{formatLogDayLabel(item.lastUsedDay, localIsoDate(), language)}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+              ) : (
               <div className="mb-5 flex flex-col gap-4">
                 <div className="grid min-h-0 grid-cols-2 gap-4">
                   <CaloriePieChart
@@ -659,7 +819,9 @@ const MainPage = observer(function MainPage() {
                   </Card>
                 </div>
               </div>
+              )}
 
+              {!desktop ? (
               <div className="space-y-2">
                 <MealSection
                   title={t("meals.breakfast")}
@@ -690,6 +852,32 @@ const MainPage = observer(function MainPage() {
                   pendingFoods={pendingFoodsForMeal("snack")}
                 />
               </div>
+              ) : (
+              <div className="space-y-4 overflow-x-auto">
+                <DesktopLedgerHeader />
+                {(["breakfast", "lunch", "dinner", "snack"] as const).map((meal) => (
+                  <DesktopMealSection
+                    key={meal}
+                    title={t(`meals.${meal}`)}
+                    foods={dayData.meals[meal] ?? []}
+                    emptyLabel={t("states.emptyMeals")}
+                    pendingFoods={desktopSubmissionRowsForMeal(meal)}
+                    onEdit={openEntryEditor}
+                    onAdd={() => addForMeal(meal, t(`meals.${meal}`))}
+                    renderEditor={(food) => selectedEntry?.id === food.id ? (
+                      <DesktopFoodEntryEditor
+                        entry={selectedEntry}
+                        busy={mutationBusy}
+                        errorKey={editorErrorKey}
+                        onClose={() => setSelectedEntry(null)}
+                        onSave={handleSaveEntry}
+                        onDelete={handleDeleteEntry}
+                      />
+                    ) : null}
+                  />
+                ))}
+              </div>
+              )}
             </>
           ) : (
             <Text variant="muted" align="center" className="py-8">
@@ -699,7 +887,7 @@ const MainPage = observer(function MainPage() {
         </AsyncSection>
       </div>
 
-      {!chatExpanded ? (
+      {!desktop && !chatExpanded ? (
         // Keep tab chrome inside Home: sibling carousel tabs stay mounted and a
         // viewport-fixed composer would otherwise intercept their controls.
         <div className="absolute bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md bg-background/95 p-3 shadow-[0_-8px_28px_rgba(15,23,42,0.12)] backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -750,7 +938,7 @@ const MainPage = observer(function MainPage() {
       ) : null}
 
       {/* Vaul's own repositioner can double-lift the sheet when iOS reports offsetTop. */}
-      <Drawer.Root
+      {!desktop ? <Drawer.Root
         open={chatExpanded}
         onOpenChange={onFoodLogSheetOpenChange}
         shouldScaleBackground={false}
@@ -1064,10 +1252,20 @@ const MainPage = observer(function MainPage() {
             </div>
           </Drawer.Content>
         </Drawer.Portal>
-      </Drawer.Root>
+      </Drawer.Root> : null}
+
+      {desktop && desktopSnackbarReceipt ? (
+        <DesktopLoggingSnackbar
+          receiptId={desktopSnackbarReceipt.id}
+          entries={desktopSnackbarReceipt.entries}
+          busy={undoingReceiptId === desktopSnackbarReceipt.id}
+          onDismiss={() => setDesktopSnackbarReceiptId(null)}
+          onUndo={() => void handleUndoReceipt(desktopSnackbarReceipt)}
+        />
+      ) : null}
 
       <FoodEntryEditor
-        entry={selectedEntry}
+        entry={desktop ? null : selectedEntry}
         busy={mutationBusy}
         errorKey={editorErrorKey}
         onClose={() => setSelectedEntry(null)}
