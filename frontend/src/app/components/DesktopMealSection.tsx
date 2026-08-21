@@ -31,7 +31,7 @@ const ledgerColumns = "grid-cols-[minmax(12rem,1fr)_4rem_repeat(4,3.25rem)]";
 export function DesktopLedgerHeader() {
   const { t } = useTranslation();
   return (
-    <div className={cn("grid min-w-[36rem] items-center gap-2 px-3 py-1 text-xs text-muted-foreground", ledgerColumns)}>
+    <div data-slot="desktop-ledger-header" className={cn("grid min-w-[36rem] items-center gap-2 px-3 py-1 text-xs text-muted-foreground", ledgerColumns)}>
       <span>{t("main.foodAndPortion")}</span>
       <span className="text-right">{t("history.calShort")}</span>
       <span className="text-right">{t("macros.proteinLetter")}</span>
@@ -59,8 +59,8 @@ export function DesktopMealSection({
   const metric = (value: number) => formatLocalizedGrams(value, language);
 
   return (
-    <section aria-label={title} className="space-y-1">
-      <div className="flex min-h-11 items-center gap-2 rounded-xl bg-muted/40 px-3">
+    <section data-slot="desktop-meal-section" data-expanded={expanded || undefined} aria-label={title} className="space-y-1">
+      <div data-slot="desktop-meal-header" className="flex min-h-11 items-center gap-2 rounded-xl bg-muted/40 px-3">
         <button
           type="button"
           aria-expanded={expanded}
@@ -87,10 +87,11 @@ export function DesktopMealSection({
       </div>
 
       {expanded ? (
-        <div role="table" aria-label={`${title} foods`} className="min-w-[36rem]">
+        <div data-slot="desktop-meal-table" role="table" aria-label={`${title} foods`} className="min-w-[36rem]">
           {pendingFoods.map((pending) => pending.phase === "failed" ? (
             <div
               role="row"
+              data-state="failed"
               key={pending.id}
               className={cn(
                 "grid min-h-11 items-center gap-2 rounded-lg bg-destructive/10 px-3 py-1.5",
@@ -133,6 +134,7 @@ export function DesktopMealSection({
           ) : (
             <div
               role="row"
+              data-state="pending"
               key={pending.id}
               aria-live="polite"
               className={cn("grid min-h-11 items-center gap-2 rounded-lg bg-muted/30 px-3", ledgerColumns)}
@@ -155,6 +157,7 @@ export function DesktopMealSection({
                 <button
                   type="button"
                   role="row"
+                  data-state="saved"
                   aria-expanded={editor ? true : undefined}
                   onClick={() => onEdit(food)}
                   className={cn(

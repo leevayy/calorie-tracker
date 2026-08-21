@@ -5,6 +5,11 @@ import { APP_TAB_NAV_TITLE_KEYS, APP_TAB_SEGMENTS } from "../navigation/appTabs"
 
 /** Order must match `APP_TAB_SEGMENTS` in `appTabs.ts`. */
 const ICONS = [Settings, Home, History] as const;
+const AERO_ICON_CLASSES = [
+  "aero-nav-icon--settings",
+  "aero-nav-icon--today",
+  "aero-nav-icon--history",
+] as const;
 
 /** Circle center ↔ tab center distance in px must be ≤ this to use primary-foreground. */
 const INTERSECT_PX = 24;
@@ -59,13 +64,14 @@ export default function AppTabNav({ progress, onSelectTab, activeTabIndex }: App
   }, []);
 
   return (
-    <div className="px-4 pb-1">
-      <div ref={trackRef} className="relative grid grid-cols-3">
+    <div data-slot="app-tab-nav" className="px-4 pb-1">
+      <div ref={trackRef} data-slot="app-tab-nav-track" className="relative grid grid-cols-3">
         <div
           className="pointer-events-none absolute left-0 top-1/2 h-11 w-full -translate-y-1/2"
           aria-hidden
         >
           <div
+            data-slot="app-tab-nav-indicator"
             className="absolute top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary"
             style={{ left: `${leftPct}%` }}
           />
@@ -83,7 +89,12 @@ export default function AppTabNav({ progress, onSelectTab, activeTabIndex }: App
               aria-current={activeTabIndex === index ? "page" : undefined}
               aria-label={t(APP_TAB_NAV_TITLE_KEYS[index])}
             >
-              <Icon className="h-5 w-5" />
+              <Icon data-slot="standard-nav-icon" className="h-5 w-5" />
+              <span
+                aria-hidden="true"
+                data-slot="aero-nav-icon"
+                className={`aero-nav-icon ${AERO_ICON_CLASSES[index]}`}
+              />
             </button>
           </div>
         ))}

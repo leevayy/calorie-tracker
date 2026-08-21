@@ -64,6 +64,7 @@ const Text = React.forwardRef<HTMLElement, TextProps>(
     const semanticDefaults = semanticTextDefaults[Component];
     return (
       <Component
+        data-aero-component="text"
         className={cn(
           textVariants({
             variant,

@@ -81,9 +81,10 @@ export function formatLocalizedNumber(
 ): string {
   const safeValue = Number.isFinite(value) ? value : 0;
   return new Intl.NumberFormat(coercePreferredLanguage(language), {
-    maximumFractionDigits: 1,
     useGrouping: false,
     ...options,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(safeValue);
 }
 
@@ -93,7 +94,8 @@ export function formatLocalizedGrams(value: number, language: string | undefined
     style: "unit",
     unit: "gram",
     unitDisplay: "short",
-    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).formatToParts(safeValue);
 
   return parts

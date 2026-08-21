@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { Moon, Sun, LogOut } from "lucide-react";
+import { Leaf, LogOut, Moon, Sun } from "lucide-react";
 import { AsyncSection } from "../components/AsyncSection";
 import { Card } from "../components/ds/Card";
 import { Button } from "../components/ds/Button";
@@ -17,16 +17,17 @@ import { NUTRITION_GOAL_OPTIONS, coerceNutritionGoal } from "@/utils/nutritionGo
 import { PREFERRED_LANGUAGE_OPTIONS } from "@/utils/preferredLanguage";
 
 const SETTINGS_SELECT_CLASS_NAME =
-  "mt-2 h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-base text-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
+  "aero-native-select mt-2 h-11 w-full rounded-[var(--radius)] border border-input bg-input-background px-3 py-2 text-base text-foreground transition-colors focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
 
 const SettingsPage = observer(function SettingsPage() {
   useRequireAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { appearance, theme, toggleAppearance, toggleTheme } = useTheme();
   const { session, profile } = useRootStore();
 
   const darkMode = theme === "dark";
+  const aeroMode = appearance === "aero";
 
   const [dailyGoal, setDailyGoal] = useState(2000);
   const [weight, setWeight] = useState<string>("");
@@ -63,9 +64,12 @@ const SettingsPage = observer(function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
+    <div className="aero-settings-page mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col bg-background">
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <Card>
+        <Text className="aero-settings-atmosphere" size="sm" weight="semibold">
+          {t("aero.settingsAtmosphere")}
+        </Text>
+        <Card className="aero-settings-card">
           <Text as="h3" className="mb-4">
             {t("settings.language")}
           </Text>
@@ -89,7 +93,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Text>
         </Card>
 
-        <Card>
+        <Card className="aero-settings-card">
           <Text as="h3" className="mb-4">
             {t("settings.goal")}
           </Text>
@@ -113,11 +117,11 @@ const SettingsPage = observer(function SettingsPage() {
           </Text>
         </Card>
 
-        <Card>
+        <Card className="aero-settings-card">
           <Text as="h3" className="mb-4">
             {t("settings.appearance")}
           </Text>
-          <div className="flex items-center justify-between">
+          <div className="aero-settings-switch-row flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               {darkMode ? (
                 <Moon className="h-5 w-5 text-primary" />
@@ -137,6 +141,7 @@ const SettingsPage = observer(function SettingsPage() {
               aria-checked={darkMode}
               aria-label={t("settings.darkMode")}
               onClick={toggleTheme}
+              data-aero-toggle="color-mode"
               className="inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <span
@@ -154,6 +159,49 @@ const SettingsPage = observer(function SettingsPage() {
               </span>
             </button>
           </div>
+          <div className="aero-settings-switch-row flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Leaf className="h-5 w-5 shrink-0 text-success-ink" aria-hidden="true" />
+              <div className="min-w-0">
+                <Text>
+                  {t("settings.aeroMode", { defaultValue: "Frutiger Aero" })}
+                </Text>
+                <Text variant="muted" size="sm">
+                  {aeroMode
+                    ? t("settings.aeroModeEnabled", { defaultValue: "Glossy landscape enabled" })
+                    : t("settings.aeroModeDisabled", { defaultValue: "Standard appearance" })}
+                </Text>
+                <Text variant="muted" size="xs" className="mt-0.5">
+                  {t("settings.aeroModeHint", {
+                    defaultValue: "Adds glass, gel controls, and an optimistic outdoor world.",
+                  })}
+                </Text>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={aeroMode}
+              aria-label={t("settings.aeroMode", { defaultValue: "Frutiger Aero" })}
+              onClick={toggleAppearance}
+              data-aero-toggle="appearance"
+              className="inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <span
+                className={`relative h-7 w-12 rounded-full transition-colors ${
+                  aeroMode ? "bg-success" : "bg-muted-foreground/35"
+                }`}
+              >
+                <span
+                  className={`absolute left-1 top-1 h-5 w-5 rounded-full shadow-sm transition-[transform,background-color] ${
+                    aeroMode
+                      ? "translate-x-5 bg-success-foreground"
+                      : "translate-x-0 bg-background"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
         </Card>
 
         <AsyncSection
@@ -161,7 +209,7 @@ const SettingsPage = observer(function SettingsPage() {
           errorKey={profile.read.errorKey}
           onRetry={() => void profile.read.load()}
         >
-          <Card>
+          <Card className="aero-settings-card">
             <Text as="h3" className="mb-4">
               {t("settings.dailyGoals")}
             </Text>
@@ -185,7 +233,7 @@ const SettingsPage = observer(function SettingsPage() {
             </div>
           </Card>
 
-          <Card>
+          <Card className="aero-settings-card">
             <Text as="h3" className="mb-4">
               {t("settings.profile")}
             </Text>
@@ -237,7 +285,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Card>
         </AsyncSection>
 
-        <Card>
+        <Card className="aero-settings-card">
           <Text as="h3" className="mb-4">
             {t("settings.account")}
           </Text>
@@ -247,7 +295,7 @@ const SettingsPage = observer(function SettingsPage() {
           </Button>
         </Card>
 
-        <Card>
+        <Card className="aero-settings-card">
           <Text as="h3" className="mb-2">
             {t("settings.about")}
           </Text>

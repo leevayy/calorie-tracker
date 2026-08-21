@@ -176,6 +176,8 @@
     "calPerDay": "kcal / dzień",
     "dailyBreakdown": "Dzień po dniu",
     "calShort": "kcal",
+    "chartCalories": "Kalorie",
+    "chartGoal": "Cel",
     "openDay": "Otwórz dziennik z {{date}}",
     "backToHistory": "Wróć do historii",
     "dayDetail": "Szczegółowy dziennik dnia",
@@ -204,6 +206,10 @@
     "goalHint": "Wpływa na szacowanie niejednoznacznych produktów przez AI (wraz z celem kalorii).",
     "appearance": "Wygląd",
     "darkMode": "Tryb ciemny",
+    "aeroMode": "Frutiger Aero",
+    "aeroModeHint": "Otwarte krajobrazy i połyskujące ekologiczne technologie.",
+    "aeroModeEnabled": "Wygląd Aero jest włączony",
+    "aeroModeDisabled": "Wygląd Aero jest wyłączony",
     "enabled": "Włączony",
     "disabled": "Wyłączony",
     "dailyGoals": "Cele dzienne",
@@ -218,5 +224,12 @@
     "about": "O aplikacji",
     "version": "Licznik kalorii v1.0.0",
     "aboutBody": "Aplikacja do liczenia kalorii z pomocą AI przy wpisywaniu posiłków."
+  },
+  "aero": {
+    "tagline": "Jaśniejsze spojrzenie na każdy dzień",
+    "authAtmosphere": "Zacznij pod otwartym niebem.",
+    "todayAtmosphere": "Dziś masz więcej przestrzeni na własne wybory.",
+    "historyAtmosphere": "Spójrz szerzej na swoje postępy.",
+    "settingsAtmosphere": "Dopasuj tę przestrzeń do siebie."
   }
 }

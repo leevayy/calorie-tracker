@@ -16,6 +16,7 @@ import {
   formatLocalizedGrams,
   formatLocalizedNumber,
 } from "@/utils/localeFormat";
+import "../../styles/aero/history.css";
 
 const HistoryPage = observer(function HistoryPage() {
   useRequireAuth();
@@ -74,35 +75,39 @@ const HistoryPage = observer(function HistoryPage() {
   return (
     <div
       data-testid="history-page"
+      data-slot="history-workspace"
       className="relative mx-auto flex min-h-0 w-full flex-1 flex-col bg-background"
     >
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div
+        data-slot="history-scroll"
+        className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      >
         <AsyncSection
           fetchState={history.fetchState}
           errorKey={history.errorKey}
           onRetry={() => void history.loadRange(from, to, today)}
           empty={isEmptySuccess}
           emptyContent={
-            <Card className="px-0 py-8">
+            <Card data-slot="history-state-card" className="px-0 py-8">
               <Text variant="muted" align="center">
                 {t("states.emptyHistory")}
               </Text>
             </Card>
           }
         >
-          <Card>
-            <Text as="h2" className="mb-4">
+          <Card data-slot="history-summary">
+            <Text data-slot="history-panel-title" as="h2" className="mb-4">
               {t("history.weeklySummary")}
             </Text>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
+            <div data-slot="history-summary-metrics" className="grid grid-cols-2 gap-4 mb-4">
+              <div data-slot="history-metric" data-tone="average">
                 <Text variant="muted">{t("history.average")}</Text>
                 <Text size="2xl" weight="semibold" className="tabular-nums leading-tight">
                   {formatWholeNumber(displayAverage)}
                 </Text>
                 <Text variant="muted">{t("history.calPerDay")}</Text>
               </div>
-              <div>
+              <div data-slot="history-metric" data-tone={difference > 0 ? "over" : "under"}>
                 <Text variant="muted">{t("history.vsGoal")}</Text>
                 <div className="flex items-center gap-2">
                   {difference > 0 ? (
@@ -120,7 +125,7 @@ const HistoryPage = observer(function HistoryPage() {
               </div>
             </div>
 
-            <div className="h-48">
+            <div data-slot="history-chart" className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <XAxis dataKey="date" stroke="currentColor" className="text-sm" tickLine={false} />
@@ -164,14 +169,15 @@ const HistoryPage = observer(function HistoryPage() {
             </div>
           </Card>
 
-          <div className="space-y-3">
-            <Text as="h3">
+          <div data-slot="history-breakdown" className="space-y-3">
+            <Text data-slot="history-panel-title" as="h3">
               {t("history.dailyBreakdown")}
             </Text>
             {[...chartData].reverse().map((day) => (
-              <Card key={day.iso}>
+              <Card key={day.iso} data-slot="history-day-card">
                 <button
                   type="button"
+                  data-slot="history-day-button"
                   className="flex w-full items-center justify-between gap-3 rounded-[var(--radius)] py-3 text-left transition-colors hover:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={t("history.openDay", {
                     date: formatInlineCalendarDate(day.iso, language),
@@ -208,8 +214,12 @@ const HistoryPage = observer(function HistoryPage() {
                         {formatWholeNumber(Math.round(day.calories - day.goal))}{" "}
                         {t("history.calShort")}
                       </Text>
-                      <div className="mt-2 h-2 w-24 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        data-slot="history-day-progress"
+                        className="mt-2 h-2 w-24 overflow-hidden rounded-full bg-secondary"
+                      >
                         <div
+                          data-slot="history-day-progress-fill"
                           className="h-full rounded-full bg-primary transition-all"
                           style={{
                             width: `${Math.min((day.calories / (day.goal || 1)) * 100, 100)}%`,

@@ -43,7 +43,12 @@ vi.mock("react-router", () => ({ useNavigate: () => navigate }));
 vi.mock("@/stores/StoreContext", () => ({ useRootStore: () => rootStore }));
 vi.mock("../hooks/useRequireAuth", () => ({ useRequireAuth: () => undefined }));
 vi.mock("../components/ThemeProvider", () => ({
-  useTheme: () => ({ theme: "light", toggleTheme }),
+  useTheme: () => ({
+    appearance: "standard",
+    theme: "light",
+    toggleAppearance: vi.fn(),
+    toggleTheme,
+  }),
 }));
 
 beforeEach(() => vi.clearAllMocks());
@@ -78,6 +83,10 @@ describe("SettingsPage retired coaching settings", () => {
     const themeSwitch = screen.getByRole("switch", { name: "settings.darkMode" });
     expect(themeSwitch.getAttribute("aria-checked")).toBe("false");
     expect(themeSwitch.className).toContain("h-11");
+
+    const appearanceSwitch = screen.getByRole("switch", { name: "settings.aeroMode" });
+    expect(appearanceSwitch.getAttribute("aria-checked")).toBe("false");
+    expect(appearanceSwitch.className).toContain("h-11");
 
     const languageSelect = screen.getByLabelText("settings.languageLabel");
     const goalSelect = screen.getByLabelText("settings.goalLabel");

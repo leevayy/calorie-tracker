@@ -50,6 +50,8 @@ export function DateNavigator({
 
   return (
     <div
+      data-slot="date-navigator"
+      data-variant={variant}
       className={
         compact
           ? "flex min-w-0 items-stretch gap-1"

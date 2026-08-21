@@ -186,7 +186,7 @@
     "itemizedMeals": "Meals",
     "duplicateMeal": "Duplicate {{meal}}",
     "duplicateMealTitle": "Duplicate {{meal}}",
-    "duplicateMealDescription": "Duplicate all entries from {{date}}.",
+    "duplicateMealDescription": "Duplicate all entries ({{count}}) from {{date}}.",
     "duplicateMealForm": "Duplicate {{meal}}",
     "destinationDay": "Date",
     "destinationMeal": "Meal",
@@ -206,6 +206,10 @@
     "goalHint": "Guides AI estimates.",
     "appearance": "Appearance",
     "darkMode": "Dark mode",
+    "aeroMode": "Frutiger Aero",
+    "aeroModeHint": "Open landscapes and glossy eco-tech controls.",
+    "aeroModeEnabled": "Aero appearance enabled",
+    "aeroModeDisabled": "Aero appearance disabled",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "dailyGoals": "Daily goal",
@@ -220,5 +224,12 @@
     "about": "About",
     "version": "Calorie Tracker v1.0.0",
     "aboutBody": "AI-assisted calorie tracking."
+  },
+  "aero": {
+    "tagline": "A brighter way to see your day",
+    "authAtmosphere": "Step into open skies and begin.",
+    "todayAtmosphere": "Fresh air for today's choices.",
+    "historyAtmosphere": "See your progress in a wider view.",
+    "settingsAtmosphere": "Make this space feel like yours."
   }
 }

@@ -288,6 +288,7 @@ export function FoodEntryEditor({
   return (
     <Dialog open={entry != null} onOpenChange={(open) => !open && !editorBusy && onClose()}>
       <DialogContent
+        data-aero-slot="food-entry-editor"
         className="bottom-0 left-0 top-auto flex max-h-[calc(100dvh-max(0.5rem,env(safe-area-inset-top,0px)))] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-b-none rounded-t-2xl p-0 sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-xl"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
@@ -332,6 +333,7 @@ export function FoodEntryEditor({
         </DialogHeader>
 
         <form
+          data-aero-slot="food-entry-editor-form"
           className="flex min-h-0 flex-1 flex-col overflow-hidden"
           onSubmit={(event) => void handleSubmit(event)}
           noValidate

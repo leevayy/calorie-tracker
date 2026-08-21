@@ -71,6 +71,7 @@ export function DesktopLoggingSnackbar({
 
   return (
     <div
+      data-slot="desktop-logging-snackbar"
       role="status"
       aria-live="polite"
       aria-atomic="true"

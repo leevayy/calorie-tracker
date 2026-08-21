@@ -12,6 +12,8 @@ const LinkButton = React.forwardRef<HTMLAnchorElement, LinkButtonProps>(
     return (
       <Link
         ref={ref}
+        data-aero-component="button"
+        data-variant={variant ?? "primary"}
         className={cn(
           buttonVariants({ variant, size }),
           className,

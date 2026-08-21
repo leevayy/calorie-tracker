@@ -7,6 +7,7 @@ import { Button } from "../components/ds/Button";
 import { Input } from "../components/ds/Input";
 import { Text } from "../components/ds/Text";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ds/Card";
+import "../../styles/aero/shell-auth.css";
 
 const AuthPage = observer(function AuthPage() {
   const { t } = useTranslation();
@@ -36,16 +37,25 @@ const AuthPage = observer(function AuthPage() {
   const showError = session.authFetchState === "error" && session.authErrorKey.length > 0;
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-muted/30 px-4 py-8">
-      <Card variant="elevated" className="w-full max-w-sm">
+    <div
+      data-slot="auth-page"
+      className="flex min-h-dvh items-center justify-center bg-muted/30 px-4 py-8"
+    >
+      <div aria-hidden="true" data-slot="aero-auth-clouds" />
+      <div aria-hidden="true" data-slot="aero-auth-bubbles" />
+      <div aria-hidden="true" data-slot="aero-auth-leaves" />
+      <Card data-slot="auth-card" variant="elevated" className="w-full max-w-sm">
+        <div aria-hidden="true" data-slot="aero-auth-brand">
+          <span data-slot="aero-auth-brand-orb" />
+        </div>
         <CardHeader className="pb-5">
           <CardTitle className="text-2xl">{t("auth.title")}</CardTitle>
-          <CardDescription>
+          <CardDescription data-slot="card-description">
             {isLogin ? t("auth.signInSubtitle") : t("auth.signUpSubtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form data-slot="auth-form" onSubmit={handleSubmit} className="space-y-4">
             {showError ? (
               <Text variant="error" role="alert">
                 {t(session.authErrorKey)}
@@ -80,7 +90,12 @@ const AuthPage = observer(function AuthPage() {
                 minLength={isLogin ? 1 : 8}
               />
             </div>
-            <Button type="submit" className="w-full" loading={session.isAuthLoading}>
+            <Button
+              data-slot="auth-submit"
+              type="submit"
+              className="w-full"
+              loading={session.isAuthLoading}
+            >
               {isLogin ? t("auth.signIn") : t("auth.signUp")}
             </Button>
           </form>
@@ -89,6 +104,7 @@ const AuthPage = observer(function AuthPage() {
             <Button
               type="button"
               variant="ghost"
+              data-slot="auth-mode-toggle"
               className="w-full whitespace-normal text-primary-ink"
               onClick={toggleMode}
             >

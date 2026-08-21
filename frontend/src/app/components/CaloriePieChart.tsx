@@ -30,9 +30,9 @@ export function CaloriePieChart({
   const COLORS = ["var(--chart-1)", "var(--secondary)"];
 
   return (
-    <Card className={cn("flex h-full flex-col px-0 py-2", className)}>
+    <Card data-slot="calorie-gauge" className={cn("aero-calorie-gauge flex h-full flex-col px-0 py-2", className)}>
       <div className="flex w-full flex-1 flex-col items-center justify-center">
-        <div className="relative h-[140px] w-full shrink-0">
+        <div data-slot="calorie-gauge-dial" className="relative h-[140px] w-full shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie

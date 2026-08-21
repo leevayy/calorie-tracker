@@ -13,6 +13,7 @@ import AppTabNav from "./AppTabNav";
 import { Text } from "../components/ds/Text";
 import { indexToPath, pathToIndex, pathToTitleKey } from "../navigation/appTabs";
 import { useRootStore } from "@/stores/StoreContext";
+import "../../styles/aero/shell-auth.css";
 
 const AppTabChromeHeader = observer(function AppTabChromeHeader() {
   const { t } = useTranslation();
@@ -22,8 +23,11 @@ const AppTabChromeHeader = observer(function AppTabChromeHeader() {
   const titleKey = pathToTitleKey(location.pathname);
 
   return (
-    <div className="flex items-center justify-between px-4 py-1">
-      <Text as="h1" size="xl" weight="semibold">
+    <div
+      data-slot="app-chrome-header-inner"
+      className="flex items-center justify-between px-4 py-1"
+    >
+      <Text data-slot="app-chrome-title" as="h1" size="xl" weight="semibold">
         {t(titleKey)}
       </Text>
       <button
@@ -31,6 +35,7 @@ const AppTabChromeHeader = observer(function AppTabChromeHeader() {
         title={session.user?.email}
         aria-label={t("settings.account")}
         onClick={() => navigate(indexToPath(0), { replace: true })}
+        data-slot="app-account-button"
         className="inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <User className="h-5 w-5" />
@@ -51,19 +56,32 @@ const DesktopAppRail = observer(function DesktopAppRail() {
       type="button"
       aria-current={activeTabIndex === index ? "page" : undefined}
       onClick={() => navigate(indexToPath(index), { replace: true })}
+      data-slot="desktop-rail-destination"
+      data-tab-index={index}
       className={`flex w-full flex-col items-center gap-1 rounded-xl px-1 py-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         activeTabIndex === index
           ? "bg-primary/15 text-primary"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       }`}
     >
-      {icon}
+      <span data-slot="standard-rail-icon" className="contents">
+        {icon}
+      </span>
+      <span
+        aria-hidden="true"
+        data-slot="aero-rail-icon"
+        className={`aero-rail-icon aero-rail-icon--${index === 1 ? "today" : index === 2 ? "history" : "settings"}`}
+      />
       <span>{label}</span>
     </button>
   );
 
   return (
-    <aside className="flex w-[4.75rem] shrink-0 flex-col border-r border-border/60 bg-muted/15 px-2 py-3">
+    <aside
+      data-slot="desktop-app-rail"
+      className="flex w-[4.75rem] shrink-0 flex-col border-r border-border/60 bg-muted/15 px-2 py-3"
+    >
+      <div aria-hidden="true" data-slot="aero-rail-brand" />
       <nav aria-label={t("main.navigation")} className="space-y-1">
         {destination(1, t("main.returnToToday"), <CalendarDays aria-hidden className="h-5 w-5" />)}
         {destination(2, t("history.title"), <History aria-hidden className="h-5 w-5" />)}
@@ -73,9 +91,17 @@ const DesktopAppRail = observer(function DesktopAppRail() {
           type="button"
           title={session.user?.email}
           onClick={() => navigate(indexToPath(0), { replace: true })}
+          data-slot="desktop-account-destination"
           className="flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <User aria-hidden className="h-5 w-5" />
+          <span data-slot="standard-rail-icon" className="contents">
+            <User aria-hidden className="h-5 w-5" />
+          </span>
+          <span
+            aria-hidden="true"
+            data-slot="aero-rail-icon"
+            className="aero-rail-icon aero-rail-icon--account"
+          />
           <span>{t("settings.account")}</span>
         </button>
         {destination(0, t("settings.title"), <Settings aria-hidden className="h-5 w-5" />)}
@@ -203,6 +229,7 @@ const AppTabShellInner = observer(function AppTabShellInner() {
 
   return (
     <div
+      data-slot="app-tab-shell"
       className={
         desktop
           ? "flex h-dvh min-w-0 overflow-hidden bg-background"
@@ -212,7 +239,11 @@ const AppTabShellInner = observer(function AppTabShellInner() {
       {desktop ? (
         <DesktopAppRail />
       ) : (
-        <header className="z-20 shrink-0 bg-background/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0px)]">
+        <header
+          data-slot="mobile-app-chrome"
+          className="z-20 shrink-0 bg-background/95 backdrop-blur-sm pt-[env(safe-area-inset-top,0px)]"
+        >
+          <div aria-hidden="true" data-slot="aero-mobile-clouds" />
           <AppTabChromeHeader />
           <AppTabNav
             progress={scrollProgress}
@@ -223,6 +254,7 @@ const AppTabShellInner = observer(function AppTabShellInner() {
       )}
       <div
         ref={scrollerRef}
+        data-slot="app-tab-scroller"
         className={
           desktop
             ? "flex min-w-0 flex-1 flex-col overflow-hidden"
@@ -233,6 +265,8 @@ const AppTabShellInner = observer(function AppTabShellInner() {
         style={{ touchAction: !desktop && horizontalLocked ? "pan-y" : undefined }}
       >
         <section
+          data-slot="app-tab-panel"
+          data-tab="settings"
           aria-hidden={activeTabIndex !== 0}
           inert={activeTabIndex !== 0}
           className={
@@ -251,6 +285,8 @@ const AppTabShellInner = observer(function AppTabShellInner() {
           <SettingsPage />
         </section>
         <section
+          data-slot="app-tab-panel"
+          data-tab="today"
           aria-hidden={activeTabIndex !== 1}
           inert={activeTabIndex !== 1}
           className={
@@ -264,6 +300,8 @@ const AppTabShellInner = observer(function AppTabShellInner() {
           <MainPage />
         </section>
         <section
+          data-slot="app-tab-panel"
+          data-tab="history"
           aria-hidden={activeTabIndex !== 2}
           inert={activeTabIndex !== 2}
           className={

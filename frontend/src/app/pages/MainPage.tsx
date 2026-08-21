@@ -58,6 +58,7 @@ import {
   formatLocalizedNumber,
   formatStandaloneCalendarDate,
 } from "@/utils/localeFormat";
+import "../../styles/aero/today.css";
 
 const CHAT_SUGGESTION_LIMIT = 3;
 const HISTORICAL_SUGGESTION_LIST_ID = "historical-food-suggestions";
@@ -669,7 +670,8 @@ const MainPage = observer(function MainPage() {
 
   return (
     <div
-      className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background"
+      data-slot="today-workspace"
+      className="aero-today-page relative flex min-h-0 min-w-0 flex-1 flex-col bg-background"
       aria-hidden={mobileChatExpanded || undefined}
       inert={mobileChatExpanded || undefined}
     >
@@ -694,7 +696,7 @@ const MainPage = observer(function MainPage() {
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4 md:px-8 md:pb-12 lg:px-10">
+      <div data-slot="today-scroll" className="aero-today-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-4 md:px-8 md:pb-12 lg:px-10">
         {!desktop ? (
           <div className="mb-4">
             <DateNavigator
@@ -706,6 +708,7 @@ const MainPage = observer(function MainPage() {
         ) : null}
         {desktop ? (
           <header
+            data-slot="today-desktop-instrument-panel"
             className="flex min-h-16 items-center justify-between gap-2 border-b border-border/60"
             data-testid="desktop-journal-header"
           >
@@ -735,8 +738,8 @@ const MainPage = observer(function MainPage() {
           {dayData ? (
             <>
               {desktop ? (
-              <div className="mb-8">
-                <form onSubmit={(e) => void handleChatSubmit(e)} className="mt-2 flex min-w-0 gap-2">
+              <div data-slot="today-desktop-composer" className="mb-8">
+                <form data-slot="today-composer-form" onSubmit={(e) => void handleChatSubmit(e)} className="mt-2 flex min-w-0 gap-2">
                   <Input
                     ref={setExpandedInputRef}
                     role="combobox"
@@ -807,7 +810,7 @@ const MainPage = observer(function MainPage() {
                     goal={dayData.calorieGoal}
                     caption={t("main.caloriesForDay")}
                   />
-                  <Card className="flex h-full min-h-0 min-w-0 flex-col px-0 py-2">
+                  <Card data-slot="macro-gauge-card" className="aero-macro-gauge-card flex h-full min-h-0 min-w-0 flex-col px-0 py-2">
                     <div className="flex w-full flex-1 flex-col items-center justify-center">
                       <div className="box-border h-[140px] w-full max-w-[140px] shrink-0 px-2.5 py-1.5">
                         <DayMacrosLabels totals={sumDayMacros(dayData)} />
@@ -853,7 +856,7 @@ const MainPage = observer(function MainPage() {
                 />
               </div>
               ) : (
-              <div className="space-y-4 overflow-x-auto">
+              <div data-slot="today-desktop-ledger" className="space-y-4 overflow-x-auto">
                 <DesktopLedgerHeader />
                 {(["breakfast", "lunch", "dinner", "snack"] as const).map((meal) => (
                   <DesktopMealSection
@@ -890,8 +893,8 @@ const MainPage = observer(function MainPage() {
       {!desktop && !chatExpanded ? (
         // Keep tab chrome inside Home: sibling carousel tabs stay mounted and a
         // viewport-fixed composer would otherwise intercept their controls.
-        <div className="absolute bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md bg-background/95 p-3 shadow-[0_-8px_28px_rgba(15,23,42,0.12)] backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <form onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 gap-2">
+        <div data-slot="today-mobile-composer-dock" className="absolute bottom-0 left-0 right-0 z-40 mx-auto w-full max-w-md bg-background/95 p-3 shadow-[0_-8px_28px_rgba(15,23,42,0.12)] backdrop-blur-md pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <form data-slot="today-composer-form" onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 gap-2">
             {/* A text input here would open the keyboard before the drawer field exists. */}
             <button
               type="button"
@@ -945,11 +948,12 @@ const MainPage = observer(function MainPage() {
         repositionInputs={false}
       >
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
+          <Drawer.Overlay data-slot="today-composer-overlay" className="fixed inset-0 z-50 bg-black/50" />
           <Drawer.Content
             id="food-log-sheet"
             aria-describedby={undefined}
-            className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-16px_48px_rgba(15,23,42,0.22)] outline-none"
+            data-slot="today-composer-sheet"
+            className="aero-today-composer-sheet fixed bottom-0 left-0 right-0 z-50 mx-auto flex h-[min(85dvh,85svh)] max-h-[min(85dvh,85svh)] min-h-0 w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-background px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-16px_48px_rgba(15,23,42,0.22)] outline-none"
           >
             <Drawer.Title data-slot="drawer-title" className="sr-only">
               {t("main.foodLogSheetTitle")}
@@ -958,7 +962,7 @@ const MainPage = observer(function MainPage() {
             <div className="shrink-0 pt-2">
               <MealInput value={composerMealTarget} onChange={changeComposerMealTarget} />
             </div>
-            <form onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 shrink-0 gap-2 pt-2">
+            <form data-slot="today-composer-form" onSubmit={(e) => void handleChatSubmit(e)} className="flex min-w-0 shrink-0 gap-2 pt-2">
               <Input
                 ref={setExpandedInputRef}
                 role="combobox"
@@ -1074,7 +1078,7 @@ const MainPage = observer(function MainPage() {
                 ) : null}
 
                 {foodLog.frequentWeekRead.items.length > 0 ? (
-                  <div className="shrink-0 rounded-xl bg-muted/35">
+                  <div data-slot="today-recent-foods" className="shrink-0 rounded-xl bg-muted/35">
                     <Text weight="semibold" className="px-4 pt-3 pb-2">
                       {t("main.recentLogged")}
                     </Text>
@@ -1103,7 +1107,7 @@ const MainPage = observer(function MainPage() {
                 ) : null}
 
                 {loggingSubmissions.some((submission) => submission.phase !== "failed") ? (
-                  <div className="space-y-1" aria-live="polite">
+                  <div data-slot="today-pending-activity" className="space-y-1" aria-live="polite">
                     {loggingSubmissions
                       .filter((submission) => submission.phase !== "failed")
                       .map((submission) => (
@@ -1121,7 +1125,7 @@ const MainPage = observer(function MainPage() {
                 ) : null}
 
                 {loggingSubmissions.some((submission) => submission.phase === "failed") ? (
-                  <div className="space-y-2">
+                  <div data-slot="today-failed-activity" className="space-y-2">
                     {loggingSubmissions
                       .filter((submission) => submission.phase === "failed")
                       .map((submission) => (
@@ -1161,6 +1165,7 @@ const MainPage = observer(function MainPage() {
                   <Collapsible
                     open={receiptActivityOpen}
                     onOpenChange={setReceiptActivityOpen}
+                    data-slot="today-receipt-activity"
                     className="shrink-0 rounded-xl border border-border/70 bg-muted/20"
                   >
                     <CollapsibleTrigger asChild>
@@ -1276,6 +1281,7 @@ const MainPage = observer(function MainPage() {
       {undoEntry ? (
         // This page remains mounted offscreen while another carousel tab is active.
         <div
+          data-slot="today-undo-toast"
           className="absolute bottom-[max(5.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl bg-card px-4 py-3 shadow-lg"
           role="status"
         >

@@ -253,6 +253,22 @@ describe("HistoryPage day detail", () => {
     expect(container.firstElementChild?.className).not.toContain("max-w-md");
   });
 
+  it("keeps the aggregate History context and scroll offset when returning from detail", async () => {
+    const { container } = render(createElement(HistoryPage));
+    const historyScroll = container.querySelector<HTMLElement>("[data-slot='history-scroll']");
+    expect(historyScroll).toBeTruthy();
+    if (!historyScroll) return;
+    historyScroll.scrollTop = 173;
+
+    fireEvent.click(screen.getByRole("button", { name: "history.openDay" }));
+    expect(await screen.findByText("history.dayDetail")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "history.backToHistory" }));
+
+    expect(container.querySelector("[data-slot='history-scroll']")).toBe(historyScroll);
+    expect(historyScroll.scrollTop).toBe(173);
+    expect(screen.getByRole("button", { name: "history.openDay" })).toBeTruthy();
+  });
+
   it("opens an itemized day, edits an entry, and shows the reconciled history aggregate", async () => {
     render(createElement(HistoryPage));
 

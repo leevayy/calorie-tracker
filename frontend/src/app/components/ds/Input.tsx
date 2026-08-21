@@ -35,6 +35,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         type={type}
         className={cn(inputVariants({ variant, size }), className)}
         ref={ref}
+        data-aero-component="input"
+        data-variant={variant ?? "default"}
         {...props}
       />
     );

@@ -1,0 +1,453 @@
+/*
+ * Shared Frutiger Aero material layer. Page scenery lives in each surface's
+ * stylesheet; this file owns only global tokens and reusable controls.
+ */
+:root[data-appearance="aero"] {
+  --aero-display-font: "Comfortaa Aero", "Trebuchet MS", var(--font-family);
+  --aero-body-font: "Trebuchet MS", "Segoe UI", "Noto Sans", Arial, sans-serif;
+
+  --background: #eafaff;
+  --foreground: #123f55;
+  --card: rgb(250 255 255 / 0.78);
+  --card-foreground: #123f55;
+  --popover: rgb(248 255 255 / 0.96);
+  --popover-foreground: #123f55;
+  --primary: #46cbea;
+  --primary-foreground: #06364b;
+  --primary-hover: #77def4;
+  --primary-ink: #00648a;
+  --secondary: #d8f3ff;
+  --secondary-foreground: #17475b;
+  --secondary-hover: #eefbff;
+  --muted: #dff5f6;
+  --muted-foreground: #4b7080;
+  --accent: #d9fbeb;
+  --accent-foreground: #0e5c46;
+  --destructive: #f36e70;
+  --destructive-foreground: #420d18;
+  --destructive-hover: #ff9691;
+  --destructive-ink: #a21f36;
+  --success: #6ed350;
+  --success-foreground: #143e0b;
+  --success-hover: #94e276;
+  --success-ink: #237b2a;
+  --warning: #ffd255;
+  --warning-foreground: #503608;
+  --warning-ink: #8b5d00;
+  --border: #72bdd0;
+  --input: #72bdd0;
+  --input-background: rgb(248 255 255 / 0.82);
+  --ring: #00769d;
+  --chart-1: #008bc1;
+  --chart-2: #49b833;
+  --chart-3: #f5a623;
+  --chart-4: #765bc5;
+  --chart-5: #e34f83;
+  --radius: 1rem;
+
+  color-scheme: light;
+  font-family: var(--aero-body-font);
+}
+
+:root.dark[data-appearance="aero"] {
+  --background: #071f35;
+  --foreground: #e9fbff;
+  --card: rgb(10 49 68 / 0.8);
+  --card-foreground: #effcff;
+  --popover: rgb(8 41 59 / 0.97);
+  --popover-foreground: #effcff;
+  --primary: #55d9f3;
+  --primary-foreground: #042e3d;
+  --primary-hover: #8ceafb;
+  --primary-ink: #87eafa;
+  --secondary: #183d58;
+  --secondary-foreground: #e7faff;
+  --secondary-hover: #245373;
+  --muted: #12384e;
+  --muted-foreground: #acd0dc;
+  --accent: #174c4c;
+  --accent-foreground: #a7f6cf;
+  --destructive: #ff8588;
+  --destructive-foreground: #4c101a;
+  --destructive-hover: #ffa6a5;
+  --destructive-ink: #ffb6b7;
+  --success: #82dc64;
+  --success-foreground: #123d0e;
+  --success-hover: #a8ec8c;
+  --success-ink: #a9ee93;
+  --warning: #f7cb58;
+  --warning-foreground: #493006;
+  --warning-ink: #ffe18b;
+  --border: #3b8196;
+  --input: #4c98aa;
+  --input-background: rgb(5 37 54 / 0.8);
+  --ring: #74e4f8;
+  --chart-1: #5bdcf7;
+  --chart-2: #80dc65;
+  --chart-3: #ffd25f;
+  --chart-4: #b29af5;
+  --chart-5: #ff8db2;
+
+  color-scheme: dark;
+}
+
+:root[data-appearance="aero"] body {
+  background:
+    radial-gradient(circle at 78% 4%, rgb(255 255 255 / 0.9) 0 4%, transparent 14%),
+    linear-gradient(180deg, #74dafa 0%, #d8f8ff 52%, #a6e86f 52%, #e6ffc4 100%);
+  background-attachment: fixed;
+}
+
+:root.dark[data-appearance="aero"] body {
+  background:
+    radial-gradient(circle at 78% 7%, rgb(205 247 255 / 0.42) 0 3%, transparent 13%),
+    linear-gradient(180deg, #061b34 0%, #154d69 55%, #123f37 55%, #092a2c 100%);
+}
+
+:root[data-appearance="aero"] ::selection {
+  background: rgb(75 210 238 / 0.58);
+  color: #072f43;
+}
+
+:root[data-appearance="aero"] :is(h1, h2, h3, h4)[data-aero-component="text"] {
+  font-family: var(--aero-display-font);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"] {
+  --aero-button-top: #8ae9f7;
+  --aero-button-bottom: #27aaca;
+  --aero-button-border: #147d9b;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--aero-button-border);
+  border-radius: calc(var(--radius) + 0.15rem);
+  background: linear-gradient(180deg, var(--aero-button-top), var(--aero-button-bottom));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    inset 0 -2px 3px rgb(0 73 103 / 0.24),
+    0 2px 0 rgb(0 79 105 / 0.3),
+    0 7px 15px rgb(18 109 137 / 0.18);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.45);
+  transition-duration: 180ms;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"]::before {
+  position: absolute;
+  inset: 2px 5px auto;
+  height: 42%;
+  z-index: -1;
+  border-radius: 999px 999px 60% 60%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.86), rgb(255 255 255 / 0.04));
+  content: "";
+  pointer-events: none;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"][data-variant="secondary"] {
+  --aero-button-top: #f5fdff;
+  --aero-button-bottom: #bddfec;
+  --aero-button-border: #6f9fae;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"][data-variant="success"] {
+  --aero-button-top: #a5ed7b;
+  --aero-button-bottom: #55b83b;
+  --aero-button-border: #38862b;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"][data-variant="destructive"] {
+  --aero-button-top: #ffb2aa;
+  --aero-button-bottom: #e4565f;
+  --aero-button-border: #a62b3d;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"][data-variant="outline"] {
+  --aero-button-top: rgb(255 255 255 / 0.72);
+  --aero-button-bottom: rgb(178 225 236 / 0.58);
+  --aero-button-border: #5c9cad;
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"][data-variant="ghost"] {
+  --aero-button-top: rgb(255 255 255 / 0.54);
+  --aero-button-bottom: rgb(127 211 229 / 0.24);
+  --aero-button-border: rgb(80 145 161 / 0.36);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.72);
+}
+
+:root.dark[data-appearance="aero"] [data-aero-component="button"] {
+  filter: saturate(0.92) brightness(0.92);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.16);
+}
+
+:root.dark[data-appearance="aero"] [data-aero-component="button"][data-variant="secondary"] {
+  --aero-button-top: #47788d;
+  --aero-button-bottom: #183c54;
+  --aero-button-border: #62a9bb;
+}
+
+:root.dark[data-appearance="aero"] [data-aero-component="button"][data-variant="outline"] {
+  --aero-button-top: rgb(54 102 120 / 0.84);
+  --aero-button-bottom: rgb(13 52 72 / 0.88);
+  --aero-button-border: #579aae;
+}
+
+:root.dark[data-appearance="aero"] [data-aero-component="button"][data-variant="ghost"] {
+  --aero-button-top: rgb(73 126 142 / 0.52);
+  --aero-button-bottom: rgb(11 48 67 / 0.38);
+  --aero-button-border: rgb(103 183 199 / 0.42);
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"]:hover:not(:disabled) {
+  filter: brightness(1.08) saturate(1.08);
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"]:active:not(:disabled) {
+  box-shadow:
+    inset 0 2px 5px rgb(0 66 91 / 0.3),
+    0 1px 0 rgb(255 255 255 / 0.48);
+}
+
+:root[data-appearance="aero"] [data-aero-component="button"]:disabled,
+:root[data-appearance="aero"] [data-aero-component="button"][data-state="loading"] {
+  filter: grayscale(0.35) saturate(0.55);
+  opacity: 0.6;
+}
+
+:root[data-appearance="aero"] [data-aero-component="card"] {
+  border: 1px solid rgb(92 167 186 / 0.62);
+  border-radius: calc(var(--radius) + 0.35rem);
+  background-image:
+    linear-gradient(145deg, rgb(255 255 255 / 0.78), rgb(218 248 251 / 0.58) 58%, rgb(173 231 224 / 0.38));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.94),
+    inset 0 -1px 0 rgb(39 125 144 / 0.12),
+    0 9px 24px rgb(18 95 120 / 0.13);
+  backdrop-filter: blur(14px) saturate(1.25);
+}
+
+:root.dark[data-appearance="aero"] [data-aero-component="card"] {
+  border-color: rgb(94 181 198 / 0.52);
+  background-image: linear-gradient(145deg, rgb(33 87 104 / 0.76), rgb(7 43 61 / 0.78));
+  box-shadow:
+    inset 0 1px 0 rgb(194 247 255 / 0.28),
+    0 12px 28px rgb(0 9 25 / 0.34);
+}
+
+:root[data-appearance="aero"] [data-aero-component="input"],
+:root[data-appearance="aero"] .aero-native-select {
+  border-width: 1px;
+  border-color: var(--input);
+  border-radius: calc(var(--radius) - 0.1rem);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.93), rgb(226 248 251 / 0.84));
+  box-shadow:
+    inset 0 2px 4px rgb(18 92 111 / 0.11),
+    0 1px 0 rgb(255 255 255 / 0.82);
+}
+
+:root.dark[data-appearance="aero"] [data-aero-component="input"],
+:root.dark[data-appearance="aero"] .aero-native-select {
+  background: linear-gradient(180deg, rgb(5 30 47 / 0.92), rgb(17 58 73 / 0.88));
+  box-shadow:
+    inset 0 2px 5px rgb(0 6 17 / 0.36),
+    0 1px 0 rgb(179 237 247 / 0.18);
+}
+
+:root[data-appearance="aero"] [data-aero-component="input"]:focus-visible,
+:root[data-appearance="aero"] .aero-native-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow:
+    inset 0 1px 3px rgb(12 93 117 / 0.12),
+    0 0 0 3px rgb(70 203 234 / 0.3),
+    0 0 18px rgb(95 222 243 / 0.32);
+}
+
+:root[data-appearance="aero"] [data-aero-component="input"][data-variant="success"] {
+  border-color: var(--success-ink);
+}
+
+:root[data-appearance="aero"] [data-aero-component="input"][data-variant="error"] {
+  border-color: var(--destructive-ink);
+}
+
+:root[data-appearance="aero"] [data-aero-component="badge"] {
+  border: 1px solid rgb(78 146 163 / 0.5);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.72), transparent 68%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.88),
+    0 1px 2px rgb(19 88 105 / 0.18);
+}
+
+:root[data-appearance="aero"] [data-aero-component="spinner"] {
+  filter: drop-shadow(0 1px 2px rgb(0 94 126 / 0.35));
+}
+
+.aero-settings-atmosphere {
+  display: none;
+}
+
+:root[data-appearance="aero"] .aero-settings-page {
+  position: relative;
+  isolation: isolate;
+  max-width: none;
+  background:
+    linear-gradient(180deg, rgb(219 251 255 / 0.2), rgb(8 91 115 / 0.18)),
+    url("/aero/scenes/settings-day-mobile.webp") center / cover fixed;
+}
+
+:root.dark[data-appearance="aero"] .aero-settings-page {
+  background:
+    linear-gradient(180deg, rgb(3 24 44 / 0.2), rgb(2 22 38 / 0.42)),
+    url("/aero/scenes/settings-night-mobile.webp") center / cover fixed;
+}
+
+:root[data-appearance="aero"] .aero-settings-page > div {
+  width: 100%;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+:root[data-appearance="aero"] .aero-settings-atmosphere {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto -0.35rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgb(229 255 255 / 0.78);
+  border-radius: 999px;
+  color: #073e50;
+  background: rgb(239 255 255 / 0.68);
+  box-shadow: inset 0 1px 0 #fff, 0 4px 14px rgb(4 66 88 / 0.2);
+  text-align: center;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(10px) saturate(1.15);
+}
+
+:root.dark[data-appearance="aero"] .aero-settings-atmosphere {
+  color: #e9fbff;
+  background: rgb(7 47 70 / 0.76);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+}
+
+:root[data-appearance="aero"] .aero-settings-card {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  :root[data-appearance="aero"] .aero-settings-page {
+    background-image:
+      linear-gradient(180deg, rgb(219 251 255 / 0.18), rgb(8 91 115 / 0.16)),
+      url("/aero/scenes/settings-day-desktop.webp");
+  }
+
+  :root.dark[data-appearance="aero"] .aero-settings-page {
+    background-image:
+      linear-gradient(180deg, rgb(3 24 44 / 0.18), rgb(2 22 38 / 0.38)),
+      url("/aero/scenes/settings-night-desktop.webp");
+  }
+}
+
+:root[data-appearance="aero"] .aero-settings-switch-row + .aero-settings-switch-row {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgb(66 143 163 / 0.32);
+}
+
+:root[data-appearance="aero"] [data-aero-toggle] > span {
+  border: 1px solid rgb(35 106 124 / 0.5);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.68), transparent 47%);
+  box-shadow:
+    inset 0 2px 4px rgb(0 55 75 / 0.22),
+    0 1px 0 rgb(255 255 255 / 0.82);
+}
+
+:root[data-appearance="aero"] [data-aero-toggle] > span > span {
+  border: 1px solid rgb(66 129 143 / 0.4);
+  box-shadow:
+    inset 0 2px 3px rgb(255 255 255 / 0.9),
+    0 2px 4px rgb(0 63 82 / 0.35);
+}
+
+.aero-mode-preview {
+  position: relative;
+  overflow: hidden;
+  min-height: 10rem;
+  padding: 1rem;
+  border: 1px solid #4f9bb0;
+  border-radius: 1.25rem;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 8px 18px rgb(13 81 105 / 0.18);
+}
+
+.aero-mode-preview[data-color-mode="light"] {
+  color: #123f55;
+  background: linear-gradient(180deg, #6fd5f5 0 51%, #a6e86f 51% 100%);
+}
+
+.aero-mode-preview[data-color-mode="dark"] {
+  color: #e9fbff;
+  background: linear-gradient(180deg, #061b34 0 55%, #17483c 55% 100%);
+}
+
+.aero-mode-preview > div {
+  position: relative;
+  z-index: 1;
+  padding: 0.9rem;
+  border: 1px solid rgb(168 233 245 / 0.7);
+  border-radius: 1rem;
+  background: rgb(240 253 255 / 0.72);
+  box-shadow: inset 0 1px 0 white, 0 8px 22px rgb(8 69 92 / 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.aero-mode-preview[data-color-mode="dark"] > div {
+  background: rgb(7 43 61 / 0.78);
+}
+
+.aero-mode-preview[data-color-mode="light"] [data-aero-component="text"] {
+  color: #123f55;
+}
+
+.aero-mode-preview[data-color-mode="light"] [data-aero-component="badge"] {
+  color: #00668a;
+}
+
+.aero-mode-preview[data-color-mode="light"] [data-aero-component="badge"][data-variant="success"] {
+  color: #28772d;
+}
+
+.aero-mode-preview[data-color-mode="dark"] [data-aero-component="text"] {
+  color: #e9fbff;
+}
+
+.aero-mode-preview[data-color-mode="dark"] [data-aero-component="badge"] {
+  color: #a9edff;
+}
+
+.aero-mode-preview[data-color-mode="dark"] [data-aero-component="badge"][data-variant="success"] {
+  color: #b7f6a0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-appearance="aero"] *,
+  :root[data-appearance="aero"] *::before,
+  :root[data-appearance="aero"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :root[data-appearance="aero"] [data-aero-component] {
+    border-color: ButtonText;
+    box-shadow: none;
+  }
+
+  :root[data-appearance="aero"] [data-aero-component="button"]:focus-visible,
+  :root[data-appearance="aero"] [data-aero-component="input"]:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

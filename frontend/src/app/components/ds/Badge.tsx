@@ -33,7 +33,12 @@ export type BadgeProps = Omit<React.ComponentProps<"div">, "size"> &
 
 function Badge({ className, variant, size, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant, size }), className)} {...props} />
+    <div
+      data-aero-component="badge"
+      data-variant={variant ?? "default"}
+      className={cn(badgeVariants({ variant, size }), className)}
+      {...props}
+    />
   );
 }
 

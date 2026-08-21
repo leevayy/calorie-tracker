@@ -5,17 +5,17 @@ import { LinkButton } from "../components/ds/LinkButton";
 import { Badge } from "../components/ds/Badge";
 import { Spinner } from "../components/ds/Spinner";
 import { Text } from "../components/ds/Text";
-import { Check, X, AlertCircle, Loader2 } from "lucide-react";
+import { Check, X, AlertCircle, Leaf, Loader2 } from "lucide-react";
 import { useTheme } from "../components/ThemeProvider";
 
 export default function DesignSystemPage() {
-  const { theme, toggleTheme } = useTheme();
+  const { appearance, theme, toggleAppearance, toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Text as="h1" size="3xl" weight="medium" className="mb-2">
               Calorie Tracker Design System
@@ -24,13 +24,52 @@ export default function DesignSystemPage() {
               A mobile-first, opinionated design system with Ice Blue theme
             </Text>
           </div>
-          <Button onClick={toggleTheme} variant="outline">
-            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={toggleAppearance} variant={appearance === "aero" ? "success" : "outline"}>
+              <Leaf className="h-4 w-4" aria-hidden="true" />
+              {appearance === "aero" ? "Aero on" : "Aero off"}
+            </Button>
+            <Button onClick={toggleTheme} variant="outline">
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </Button>
+          </div>
         </div>
 
+        <Card variant="elevated">
+          <CardHeader>
+            <CardTitle>Appearance matrix</CardTitle>
+            <CardDescription>
+              Standard and Aero are independent of light and dark color mode. Use the controls above to inspect every combination.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="aero-mode-preview" data-color-mode="light">
+                <div>
+                  <Text as="h3">Aero Day</Text>
+                  <Text size="sm" className="mt-1">Clear sky, bright gel controls, translucent white glass.</Text>
+                  <div className="mt-3 flex gap-2">
+                    <Badge variant="success">Healthy</Badge>
+                    <Badge variant="default">Open air</Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="aero-mode-preview" data-color-mode="dark">
+                <div>
+                  <Text as="h3" className="text-inherit">Aero Night</Text>
+                  <Text size="sm" className="mt-1 text-inherit">Deep blue sky, luminous cyan, quiet evergreen glass.</Text>
+                  <div className="mt-3 flex gap-2">
+                    <Badge variant="success">Luminous</Badge>
+                    <Badge variant="default">Moonlit</Badge>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Colors */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Color Palette</CardTitle>
             <CardDescription>Ice Blue primary with semantic colors</CardDescription>
@@ -62,7 +101,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Buttons */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Buttons</CardTitle>
             <CardDescription>
@@ -141,7 +180,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Inputs */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Inputs</CardTitle>
             <CardDescription>Form inputs with different states and sizes</CardDescription>
@@ -180,7 +219,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Cards */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Cards</CardTitle>
             <CardDescription>
@@ -222,7 +261,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Interactive States */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Interactive States</CardTitle>
             <CardDescription>
@@ -251,7 +290,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Semantic States */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Semantic States</CardTitle>
             <CardDescription>
@@ -281,7 +320,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Typography */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Typography</CardTitle>
             <CardDescription>Consistent text hierarchy</CardDescription>
@@ -315,7 +354,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Spacing & Rounding */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Spacing & Border Radius</CardTitle>
             <CardDescription>Moderate rounding (10px base radius)</CardDescription>
@@ -343,7 +382,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Badges */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Badges</CardTitle>
             <CardDescription>Small labels for tags and status indicators</CardDescription>
@@ -372,7 +411,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Spinners */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Spinners</CardTitle>
             <CardDescription>Loading indicators in different sizes</CardDescription>
@@ -402,7 +441,7 @@ export default function DesignSystemPage() {
         </Card>
 
         {/* Text Component */}
-        <Card>
+        <Card variant="elevated">
           <CardHeader>
             <CardTitle>Text Component</CardTitle>
             <CardDescription>

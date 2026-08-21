@@ -186,7 +186,7 @@
     "itemizedMeals": "Приёмы пищи",
     "duplicateMeal": "Дублировать: {{meal}}",
     "duplicateMealTitle": "Дублировать: {{meal}}",
-    "duplicateMealDescription": "Продублировать все записи за {{date}}.",
+    "duplicateMealDescription": "Продублировать все записи ({{count}}) за {{date}}.",
     "duplicateMealForm": "Дублирование: {{meal}}",
     "destinationDay": "Дата",
     "destinationMeal": "Приём пищи",
@@ -206,6 +206,10 @@
     "goalHint": "Учитывается ИИ при оценке еды.",
     "appearance": "Оформление",
     "darkMode": "Тёмная тема",
+    "aeroMode": "Frutiger Aero",
+    "aeroModeHint": "Открытые пейзажи и глянцевые экотехнологичные элементы.",
+    "aeroModeEnabled": "Оформление Aero включено",
+    "aeroModeDisabled": "Оформление Aero выключено",
     "enabled": "Включена",
     "disabled": "Выключена",
     "dailyGoals": "Дневная цель",
@@ -220,5 +224,12 @@
     "about": "О приложении",
     "version": "Трекер калорий v1.0.0",
     "aboutBody": "Учёт калорий с помощью ИИ."
+  },
+  "aero": {
+    "tagline": "Взгляните на свой день светлее",
+    "authAtmosphere": "Начните под открытым небом.",
+    "todayAtmosphere": "Сегодня больше простора для выбора.",
+    "historyAtmosphere": "Посмотрите на свой прогресс шире.",
+    "settingsAtmosphere": "Создайте пространство под себя."
   }
 }

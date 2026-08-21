@@ -234,10 +234,14 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
 
   return (
     <section
+      data-slot="history-day-detail"
       className="absolute inset-0 z-30 flex min-h-0 flex-col bg-background"
       aria-labelledby="history-day-detail-title"
     >
-      <div className="flex shrink-0 items-center gap-2 bg-background/95 px-3 py-1 backdrop-blur-sm">
+      <div
+        data-slot="history-detail-header"
+        className="flex shrink-0 items-center gap-2 bg-background/95 px-3 py-1 backdrop-blur-sm"
+      >
         <Button
           type="button"
           variant="ghost"
@@ -262,15 +266,18 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div
+        data-slot="history-detail-scroll"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+      >
         <AsyncSection
           fetchState={fetchState}
           errorKey={fetchErrorKey}
           onRetry={() => void loadDay()}
         >
           {data ? (
-            <div className="space-y-4">
-              <Card variant="elevated" className="space-y-3">
+            <div data-slot="history-detail-content" className="space-y-4">
+              <Card data-slot="history-day-total" variant="elevated" className="space-y-3">
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <Text variant="muted">{t("history.dayTotal")}</Text>
@@ -300,11 +307,12 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                 </div>
               </Card>
 
-              <Text as="h3" weight="medium">
+              <Text data-slot="history-panel-title" as="h3" weight="medium">
                 {t("history.itemizedMeals")}
               </Text>
               {duplicateReceipt ? (
                 <Card
+                  data-slot="history-duplicate-success"
                   variant="elevated"
                   className="space-y-3 bg-success/10"
                   role="status"
@@ -335,17 +343,17 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                 </Card>
               ) : null}
               {foods.length === 0 ? (
-                <Card variant="elevated" className="py-8">
+                <Card data-slot="history-state-card" variant="elevated" className="py-8">
                   <Text variant="muted" align="center">
                     {t("states.emptyDay")}
                   </Text>
                 </Card>
               ) : (
-                <div className="space-y-3">
+                <div data-slot="history-meals" className="space-y-3">
                   {MEAL_TYPES.map((mealType) => {
                     const mealEntries = entriesForMeal(data, mealType);
                     return (
-                      <div key={mealType} className="space-y-2">
+                      <div data-slot="history-meal" key={mealType} className="space-y-2">
                         <MealSection
                           title={t(`meals.${mealType}`)}
                           foods={mealEntries}
@@ -367,7 +375,10 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
                         ) : null}
 
                         {duplicateSourceMealType === mealType ? (
-                          <Card className="space-y-4 rounded-xl bg-muted/45 p-4">
+                          <Card
+                            data-slot="history-duplicate-form"
+                            className="space-y-4 rounded-xl bg-muted/45 p-4"
+                          >
                             <div>
                               <Text as="h4" weight="medium">
                                 {t("history.duplicateMealTitle", {
@@ -450,6 +461,7 @@ export const HistoryDayDetail = observer(function HistoryDayDetail({
 
       {undoEntry ? (
         <div
+          data-slot="history-undo-toast"
           className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-xl bg-card px-4 py-3 shadow-lg"
           role="status"
         >

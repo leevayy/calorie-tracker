@@ -38,7 +38,7 @@ export function DateInput({
   const errorId = `${id}-error`;
 
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div data-slot="date-input" className="flex min-w-0 flex-col gap-1">
       <Text as="label" htmlFor={id} size="sm" weight="medium">
         {t("entryEditor.day")}
       </Text>
@@ -81,7 +81,7 @@ export function MealInput({
   const errorId = `${id}-error`;
 
   return (
-    <div className="flex min-w-0 flex-col gap-1">
+    <div data-slot="meal-input" className="flex min-w-0 flex-col gap-1">
       <Text as="label" htmlFor={id} size="sm" weight="medium">
         {t("entryEditor.meal")}
       </Text>
@@ -130,7 +130,7 @@ export function ScheduleInputs({
   errors = {},
 }: ScheduleInputsProps) {
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+    <div data-slot="schedule-inputs" className="grid min-w-0 grid-cols-1 gap-3 min-[360px]:grid-cols-2">
       <DateInput
         value={value.day}
         onChange={(day) => onChange({ ...value, day })}

@@ -1,4 +1,10 @@
-/*
- * Keep typography available during startup and offline. The platform UI stacks
- * below cover both Latin and Cyrillic without a render-blocking font request.
- */
+/* Comfortaa is bundled for Aero display text under the SIL Open Font License. */
+@font-face {
+  font-family: "Comfortaa Aero";
+  src: url("/aero/fonts/Comfortaa-Variable.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+/* Body copy stays on an offline-safe humanist stack with broad Cyrillic support. */

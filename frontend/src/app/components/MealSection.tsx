@@ -48,12 +48,15 @@ export function MealSection({
 
   return (
     <Card
+      data-slot="mobile-meal-section"
+      data-expanded={expanded || undefined}
       className={cn(
         "overflow-hidden rounded-xl transition-colors",
         !expanded && "hover:bg-muted/45",
       )}
     >
       <button
+        data-slot="meal-section-trigger"
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
@@ -81,7 +84,7 @@ export function MealSection({
       </button>
 
       {pendingFoods.length > 0 ? (
-        <div className="mx-2 space-y-1 rounded-xl bg-muted/30 p-2" aria-live="polite">
+        <div data-slot="meal-pending-list" className="mx-2 space-y-1 rounded-xl bg-muted/30 p-2" aria-live="polite">
           {pendingFoods.map((pending) => (
             <div
               key={pending.id}
@@ -106,6 +109,7 @@ export function MealSection({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
+            data-slot="meal-food-list"
             className="mx-2 overflow-hidden rounded-xl bg-muted/25"
           >
             <div className="space-y-1 p-2">

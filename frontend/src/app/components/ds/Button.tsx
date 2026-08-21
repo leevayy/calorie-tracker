@@ -56,6 +56,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         data-state={buttonState}
+        data-aero-component="button"
+        data-variant={variant ?? "primary"}
         {...props}
       >
         {loading ? <Loader2 className="absolute h-4 w-4 animate-spin" aria-hidden="true" /> : null}

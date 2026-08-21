@@ -20,7 +20,13 @@ export type CardProps = React.HTMLAttributes<HTMLDivElement> & VariantProps<type
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant, ...props }, ref) => (
-    <div ref={ref} className={cn(cardVariants({ variant }), className)} {...props} />
+    <div
+      ref={ref}
+      data-aero-component="card"
+      data-variant={variant ?? "plain"}
+      className={cn(cardVariants({ variant }), className)}
+      {...props}
+    />
   ),
 );
 Card.displayName = "Card";

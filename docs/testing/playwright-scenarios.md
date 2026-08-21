@@ -29,6 +29,7 @@ controls.
 | Concise English UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps English core screens contained and typographically consistent` | Yes | Yes | — |
 | Idiomatic Russian UI and compact-editor consistency | `e2e/ui-consistency.spec.ts` — `keeps Russian core screens contained and typographically consistent` | Yes | Yes | — |
 | Dashboard visual consistency | Both localized `e2e/ui-consistency.spec.ts` scenarios verify the calorie ring has no slice outlines | Yes | Yes | — |
+| Whole-number nutrition display | `e2e/number-formatting.spec.ts` — `rounds fractional nutrition values across Today and History` | Yes | Yes | — |
 | Localized composer hints | `e2e/composer.spec.ts` — `rotates concise food examples without changing the input label`; both localized `e2e/ui-consistency.spec.ts` scenarios | Yes | Yes | — |
 | Entry ownership | `e2e/authorization.spec.ts` — `cannot read, edit, delete, or restore another user's food entry` | Yes | Yes | — |
 | Historical ownership | `e2e/authorization.spec.ts` — `cannot open or duplicate another user's historical meal` | Yes | Yes | — |
@@ -277,6 +278,25 @@ resize-only window makes no day, history, parse, suggestion, or save request.
 | 23.3 | Null- and empty-slug candidates remain individually unique, and empty stored slugs are omitted from the response. | `e2e/suggestions.spec.ts` — `merges shared-slug suggestions and keeps the highest-ranked representative` covers distinct null-slug results; `backend/src/routes/food-log.test.ts` — `keeps the highest-ranked configuration per non-empty slug while null slugs stay unique`; `treats empty slugs as missing and keeps those suggestions individually unique` | Yes | Yes | — |
 | 23.4 | Filtering is limited to the repository's requested ranked candidate set, with no backfill beyond `limit`, so merging may return fewer items. | `backend/src/routes/food-log.test.ts` — `filters only the requested ranked candidate set without backfilling after a slug merge` | Yes | Yes | — |
 | 23.5 | Contracts and deterministic backend plus desktop/mobile browser coverage document and verify the rule, including Issue 23's supersession of Issue 06 only for shared non-empty slugs. | `contracts/food-log.ts` historical-suggestion contract documentation; all three Issue 23 `backend/src/routes/food-log.test.ts` scenarios above; `e2e/suggestions.spec.ts` — `merges shared-slug suggestions and keeps the highest-ranked representative`; Issue 06.2 inventory coverage above | Yes | Yes | — |
+
+## Frutiger Aero optional appearance
+
+The Aero scenarios exercise the optional appearance as a cross-cutting visual
+mode. Existing canonical specs remain the detailed behavioral coverage for each
+journey; these scenarios prove that the same routes, state, recovery actions,
+and accessibility boundaries remain available when Aero is active. The suite
+does not make paid external AI calls.
+
+| AC | Acceptance criterion | Planned spec and exact test title | D | M | L |
+| --- | --- | --- | :---: | :---: | :---: |
+| Aero.1 | A clean browser starts in Standard; Settings toggles Aero locally and independently of light/dark, persists across reload, causes no backend preference request, and applies the stored root attribute before first paint. | `e2e/aero-theme.spec.ts` — `defaults to Standard and persists an independent Aero preference without a first-paint flash` | Yes | Yes | — |
+| Aero.2 | Standard remains the default while Aero Day and Aero Night cover Auth, Today, History, historical detail, and Settings without document overflow. | `e2e/aero-theme.spec.ts` — `keeps Aero Day and Aero Night coherent across Auth Today History detail and Settings`; the existing baseline specs continue to cover Standard appearance | Yes | Yes | — |
+| Aero.3 | Logging, keyboard suggestion selection without AI, editing, retry, deletion, and Undo remain operable in Aero. | `e2e/aero-theme.spec.ts` — `keeps logging suggestions editing retry deletion and Undo operable in Aero`; canonical details remain in `logging.spec.ts`, `suggestions.spec.ts`, `ai-correction.spec.ts`, `composer.spec.ts`, and `entry-mutations.spec.ts` | Yes | Yes | — |
+| Aero.4 | History aggregate/detail navigation and whole-meal duplication remain operable in Aero. | `e2e/aero-theme.spec.ts` — `keeps History navigation and meal duplication operable in Aero`; canonical details remain in `history.spec.ts` and `meal-duplication.spec.ts` | Yes | Yes | — |
+| Aero.5 | Aero is contained at 390×844, 900×1024, 1280×720, and 1440×900, and crossing 767/768 preserves appearance, route, selected date and meal, and composer draft without resize-caused application requests. | `e2e/aero-theme.spec.ts` — `preserves Aero session state across responsive seams and representative viewports` | Yes | Yes | — |
+| Aero.6 | Russian, Polish, and Tatar content remains contained at 320, 390, and 430 CSS pixels. | `e2e/aero-theme.spec.ts` — `contains long locales and honors reduced motion focus targets and safe areas in Aero` | Yes | Yes | — |
+| Aero.7 | Aero retains visible keyboard focus, modal containment, 44-pixel primary targets, safe-area containment, and reduced-motion behavior. | `e2e/aero-theme.spec.ts` — `keeps logging suggestions editing retry deletion and Undo operable in Aero`; `contains long locales and honors reduced motion focus targets and safe areas in Aero`; existing `ui-consistency.spec.ts`, `ai-correction.spec.ts`, and `shared-schedule-inputs.spec.ts` provide the canonical accessibility assertions | Yes | Yes | — |
+| Aero.8 | Deterministic Aero coverage uses the running frontend/backend and isolated PostgreSQL database without browser HTTP mocks or paid AI calls, and preserves one video per project/test result. | All six `e2e/aero-theme.spec.ts` scenarios; the root Playwright configuration retains `video: "on"` for every deterministic result | Yes | Yes | — |
 
 ## Required state-shape coverage
 

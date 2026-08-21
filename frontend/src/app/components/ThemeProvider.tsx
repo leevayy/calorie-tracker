@@ -1,10 +1,36 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
+export type Appearance = "standard" | "aero";
+
+const APPEARANCE_STORAGE_KEY = "appearance";
+
+function readStoredAppearance(): Appearance {
+  try {
+    return localStorage.getItem(APPEARANCE_STORAGE_KEY) === "aero" ? "aero" : "standard";
+  } catch {
+    return "standard";
+  }
+}
+
+function applyAppearanceToRoot(appearance: Appearance) {
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.appearance = appearance;
+  }
+}
+
+// Apply the local appearance as soon as this entry module executes, before the
+// provider's first React render.
+if (typeof document !== "undefined") {
+  applyAppearanceToRoot(readStoredAppearance());
+}
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  appearance: Appearance;
+  setAppearance: (appearance: Appearance) => void;
+  toggleAppearance: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -34,6 +60,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return prefersDark ? "dark" : "light";
   });
 
+  const [appearance, setAppearanceState] = useState<Appearance>(readStoredAppearance);
+
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark") {
@@ -55,6 +83,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setHasUserPreferredTheme(true);
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
+
+  const setAppearance = (nextAppearance: Appearance) => {
+    setAppearanceState(nextAppearance);
+  };
+
+  const toggleAppearance = () => {
+    setAppearanceState((current) => (current === "aero" ? "standard" : "aero"));
+  };
+
+  useEffect(() => {
+    applyAppearanceToRoot(appearance);
+    try {
+      localStorage.setItem(APPEARANCE_STORAGE_KEY, appearance);
+    } catch {
+      // Keep the in-memory appearance usable when storage is unavailable.
+    }
+  }, [appearance]);
 
   useEffect(() => {
     if (hasUserPreferredTheme) return;
@@ -79,7 +124,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [hasUserPreferredTheme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{ theme, toggleTheme, appearance, setAppearance, toggleAppearance }}
+    >
       {children}
     </ThemeContext.Provider>
   );

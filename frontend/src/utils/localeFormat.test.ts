@@ -8,11 +8,13 @@ import {
 } from "./localeFormat";
 
 describe("locale-aware display formatting", () => {
-  it("formats English and Russian decimal values with their locale conventions", () => {
-    expect(formatLocalizedNumber(12.5, "en")).toBe("12.5");
-    expect(formatLocalizedNumber(12.5, "ru")).toBe("12,5");
-    expect(formatLocalizedGrams(12.5, "en")).toBe("12.5\u00a0g");
-    expect(formatLocalizedGrams(12.5, "ru")).toBe("12,5\u00a0г");
+  it("rounds displayed numbers to locale-aware whole values", () => {
+    expect(formatLocalizedNumber(1_668.7, "en")).toBe("1669");
+    expect(formatLocalizedNumber(1_668.7, "ru")).toBe("1669");
+    expect(formatLocalizedNumber(1_668.7, "en", { useGrouping: true })).toBe("1,669");
+    expect(formatLocalizedGrams(12.5, "en")).toBe("13\u00a0g");
+    expect(formatLocalizedGrams(12.5, "ru")).toBe("13\u00a0г");
+    expect(formatLocalizedEnergy(1_668.7, "ru", "ккал")).toBe("1669\u00a0ккал");
     expect(formatLocalizedEnergy(320, "ru", "ккал")).toBe("320\u00a0ккал");
   });
 

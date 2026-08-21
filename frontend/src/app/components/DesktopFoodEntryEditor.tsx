@@ -141,6 +141,7 @@ export function DesktopFoodEntryEditor({ entry, busy, errorKey, onClose, onSave,
 
   return (
     <form
+      data-aero-slot="desktop-food-entry-editor"
       aria-label={t("entryEditor.editEntry", { name: entry.name, defaultValue: `Edit ${entry.name}` })}
       className="rounded-xl bg-muted/35 p-3"
       onSubmit={(event) => void handleSubmit(event)}

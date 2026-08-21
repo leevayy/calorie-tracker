@@ -21,9 +21,8 @@ export function sumDayMacros(day: DayLogResponse): MacroGramTotals {
   );
 }
 
-/** Compact display: integers when whole, else one decimal */
+/** Compact display: nutrition values are always shown as whole numbers. */
 export function formatMacroGrams(n: number): string {
   if (!Number.isFinite(n)) return "0";
-  const rounded = Math.round(n * 10) / 10;
-  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+  return String(Math.round(n));
 }

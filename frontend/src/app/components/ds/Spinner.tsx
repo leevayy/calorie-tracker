@@ -15,6 +15,7 @@ export function Spinner({ size = "md", className }: SpinnerProps) {
 
   return (
     <Loader2
+      data-aero-component="spinner"
       className={cn("animate-spin text-primary", sizeClasses[size], className)}
     />
   );
